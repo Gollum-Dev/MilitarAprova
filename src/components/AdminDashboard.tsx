@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save } from "lucide-react";
+import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree } from "lucide-react";
 import CourseEditor, { CourseData } from "./CourseEditor";
 
 interface AdminDashboardProps {
@@ -158,36 +158,97 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {courses.map(course => (
-                        <div key={course.id} className="glass-panel p-5 rounded-2xl border border-slate-200 flex flex-col justify-between h-48 group">
-                          <div>
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                                <BookOpen className="w-4 h-4" />
+                      {courses.map(course => {
+                        let qtdDisciplinas = 0;
+                        let qtdEixos = 0;
+                        let qtdConteudos = 0;
+                        let qtdVideos = 0, qtdAudios = 0, qtdPdfs = 0, qtdQuestoes = 0, qtdFlashcards = 0, qtdResumos = 0;
+
+                        if (course.disciplines) {
+                          qtdDisciplinas = course.disciplines.length;
+                          course.disciplines.forEach(d => {
+                            qtdEixos += d.areas?.length || 0;
+                            d.areas?.forEach(a => {
+                              qtdConteudos += a.contents?.length || 0;
+                              a.contents?.forEach(c => {
+                                c.resources?.forEach(r => {
+                                  if (r.type === 'video') qtdVideos++;
+                                  else if (r.type === 'audio') qtdAudios++;
+                                  else if (r.type === 'pdf') qtdPdfs++;
+                                  else if (r.type === 'question') qtdQuestoes++;
+                                  else if (r.type === 'flashcard') qtdFlashcards++;
+                                  else if (r.type === 'summary') qtdResumos++;
+                                });
+                              });
+                            });
+                          });
+                        }
+
+                        return (
+                          <div key={course.id} className="glass-panel p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between h-auto group hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden bg-gradient-to-br from-white to-slate-50">
+                            {/* Decorative accent */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-bl-full -z-10 group-hover:bg-indigo-500/10 transition-colors"></div>
+                            
+                            <div>
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+                                  <BookOpen className="w-5 h-5" />
+                                </div>
+                                <span className={`text-[9px] font-mono font-bold px-2.5 py-1 rounded-full border shadow-sm ${course.status === 'Publicado' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                  {course.status}
+                                </span>
                               </div>
-                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${course.status === 'Publicado' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
-                                {course.status}
-                              </span>
+                              <h4 className="text-base font-display font-bold text-slate-800 line-clamp-2 leading-tight mb-1 group-hover:text-indigo-700 transition-colors">{course.title}</h4>
+                              <p className="text-[11px] text-slate-500 font-mono mb-4">{course.institution} • {course.year}</p>
+                              
+                              {/* Structure Stats */}
+                              <div className="grid grid-cols-3 gap-2 mb-4 p-2.5 bg-slate-100/50 rounded-xl border border-slate-100">
+                                <div className="flex flex-col items-center justify-center text-center">
+                                  <span className="text-lg font-display font-bold text-slate-700">{qtdDisciplinas}</span>
+                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Disciplinas</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center text-center border-l border-r border-slate-200/60">
+                                  <span className="text-lg font-display font-bold text-slate-700">{qtdEixos}</span>
+                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Eixos</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center text-center">
+                                  <span className="text-lg font-display font-bold text-slate-700">{qtdConteudos}</span>
+                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Conteúdos</span>
+                                </div>
+                              </div>
+
+                              {/* Resources Badges */}
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {qtdVideos > 0 && <span className="inline-flex items-center space-x-1 bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100"><Video className="w-3 h-3"/> <span>{qtdVideos}</span></span>}
+                                {qtdAudios > 0 && <span className="inline-flex items-center space-x-1 bg-purple-50 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold border border-purple-100"><Headphones className="w-3 h-3"/> <span>{qtdAudios}</span></span>}
+                                {qtdPdfs > 0 && <span className="inline-flex items-center space-x-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-100"><FileText className="w-3 h-3"/> <span>{qtdPdfs}</span></span>}
+                                {qtdResumos > 0 && <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100"><FileCheck className="w-3 h-3"/> <span>{qtdResumos}</span></span>}
+                                {qtdFlashcards > 0 && <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-100"><Layers className="w-3 h-3"/> <span>{qtdFlashcards}</span></span>}
+                                {qtdQuestoes > 0 && <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-100"><HelpCircle className="w-3 h-3"/> <span>{qtdQuestoes}</span></span>}
+                                {(qtdVideos + qtdAudios + qtdPdfs + qtdResumos + qtdFlashcards + qtdQuestoes === 0) && (
+                                  <span className="text-[10px] text-slate-400 italic">Nenhum recurso cadastrado</span>
+                                )}
+                              </div>
                             </div>
-                            <h4 className="text-sm font-sans font-bold text-slate-800 line-clamp-2">{course.title}</h4>
-                            <p className="text-[10px] text-slate-500 font-mono mt-1">{course.institution} • {course.year}</p>
+
+                            <div className="flex justify-end space-x-2 border-t border-slate-100/80 pt-3 mt-4 relative z-10">
+                              <button 
+                                onClick={() => setEditingCourseId(course.id)}
+                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>Editar</span>
+                              </button>
+                              <button 
+                                onClick={() => setCourses(courses.filter(c => c.id !== course.id))}
+                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex justify-end space-x-2 border-t border-slate-100 pt-3 mt-4">
-                            <button 
-                              onClick={() => setEditingCourseId(course.id)}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer" title="Editar"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => setCourses(courses.filter(c => c.id !== course.id))}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer" title="Excluir"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 ) : (
