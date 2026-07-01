@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
-  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart 
+  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2
 } from "lucide-react";
 import { COURSES, CourseModule, Course } from "../data";
 import AulasScreen from "./AulasScreen";
@@ -20,8 +20,8 @@ interface MeusCursosProps {
   setSelectedModuleId: (id: string | null) => void;
   courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
   setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
-  subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards";
-  setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards") => void;
+  subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio";
+  setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio") => void;
   tutorInitialPrompt: string;
   onClearTutorPrompt: () => void;
 }
@@ -340,6 +340,64 @@ export default function MeusCursos({
               onAskTutor={onAskTutor} 
               disciplineName={cleanDisciplineName}
             />
+          )}
+
+          {subjectActiveTab === "audio" && (
+            <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-6 animate-smooth-fade">
+              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2 flex items-center space-x-1.5">
+                <Headphones className="w-4.5 h-4.5 text-indigo-600" />
+                <span>Áudio Aulas - {cleanDisciplineName}</span>
+              </h3>
+              
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="w-full md:w-1/3 bg-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-indigo-500/10 blur-xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-700 flex items-center justify-center shadow-2xl mb-4 relative z-10">
+                    <Headphones className="w-10 h-10 text-white" />
+                  </div>
+                  <h4 className="text-sm font-display font-bold text-white z-10 truncate w-full px-2">{cleanDisciplineName}</h4>
+                  <p className="text-[10px] font-mono text-slate-400 mt-1 z-10">Escute no trânsito ou na academia</p>
+                  
+                  <div className="mt-6 flex items-center space-x-4 z-10">
+                    <button className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md">
+                      <Play className="w-5 h-5 fill-current ml-1" />
+                    </button>
+                  </div>
+                  
+                  <div className="w-full mt-4 flex items-center space-x-2 z-10">
+                    <span className="text-[10px] text-slate-400 font-mono">00:00</span>
+                    <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
+                      <div className="absolute left-0 top-0 h-full bg-indigo-500 w-1/3"></div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">45:30</span>
+                  </div>
+                </div>
+                
+                <div className="w-full md:w-2/3 space-y-3">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
+                    Faixas Disponíveis
+                  </h4>
+                  
+                  {[1, 2, 3, 4, 5].map((track) => (
+                    <div key={track} className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                          <Play className="w-3.5 h-3.5 text-indigo-600 fill-current" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-sans font-bold text-slate-800">Faixa {track < 10 ? `0${track}` : track}: Revisão Tática</h5>
+                          <p className="text-[10px] text-slate-500 font-mono">Parte {track} da Doutrina Oficial</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <Volume2 className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="text-[10px] font-mono text-slate-400">{15 + track}:00</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {subjectActiveTab === "materiais" && (

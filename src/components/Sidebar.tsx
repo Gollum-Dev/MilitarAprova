@@ -1,7 +1,7 @@
 import { 
   Home, BookOpen, Tv, HelpCircle, GraduationCap, Scale, 
   MessageSquare, LineChart, Settings, LogOut, ShieldAlert, 
-  Award, Bot, ArrowLeft, HelpCircle as SupportIcon 
+  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones
 } from "lucide-react";
 import { COURSES } from "../data";
 
@@ -17,8 +17,8 @@ interface SidebarProps {
   setSelectedModuleId: (id: string | null) => void;
   courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
   setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
-  subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards";
-  setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards") => void;
+  subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio";
+  setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio") => void;
 }
 
 export default function Sidebar({ 
@@ -44,6 +44,7 @@ export default function Sidebar({
     sidebarSubtitle = "Estudo do Módulo";
     menuItems = [
       { id: "aulas", label: "Vídeo Aulas", icon: Tv },
+      { id: "audio", label: "Áudio Aula", icon: Headphones },
       { id: "materiais", label: "Material (PDFs)", icon: FileText },
       { id: "questoes", label: "Questões", icon: HelpCircle },
       { id: "flashcards", label: "Flashcards", icon: Award },

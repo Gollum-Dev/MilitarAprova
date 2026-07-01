@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import LoginScreen from "./components/LoginScreen";
+import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
 import DashboardHome from "./components/DashboardHome";
 import MeusCursos from "./components/MeusCursos";
+import AdminDashboard from "./components/AdminDashboard";
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authView, setAuthView] = useState<"landing" | "login" | "app">("landing");
+  const [userRole, setUserRole] = useState<"aluno" | "admin">("aluno");
   const [userName, setUserName] = useState("Silva");
   const [currentTab, setCurrentTab] = useState("inicio");
   const [userRank, setUserRank] = useState("SOLDADO");
@@ -16,7 +19,7 @@ export default function App() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho">("materias");
-  const [subjectActiveTab, setSubjectActiveTab] = useState<"aulas" | "materiais" | "questoes" | "flashcards">("aulas");
+  const [subjectActiveTab, setSubjectActiveTab] = useState<"aulas" | "materiais" | "questoes" | "flashcards" | "audio">("aulas");
 
   // Check health and offline status of Gemini API on load
   useEffect(() => {
@@ -33,13 +36,14 @@ export default function App() {
       });
   }, []);
 
-  const handleLoginSuccess = (name: string) => {
+  const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno") => {
     setUserName(name);
-    setIsLoggedIn(true);
+    setUserRole(role);
+    setAuthView("app");
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    setAuthView("landing");
     setCurrentTab("inicio");
     setSelectedCourseId(null);
     setSelectedModuleId(null);
@@ -126,8 +130,16 @@ export default function App() {
     }
   };
 
-  if (!isLoggedIn) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  if (authView === "landing") {
+    return <LandingPage onNavigateToLogin={() => setAuthView("login")} />;
+  }
+
+  if (authView === "login") {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} onBackToLanding={() => setAuthView("landing")} />;
+  }
+
+  if (authView === "app" && userRole === "admin") {
+    return <AdminDashboard onLogout={handleLogout} userName={userName} />;
   }
 
   return (
