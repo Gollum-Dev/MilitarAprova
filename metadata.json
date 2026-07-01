@@ -1,0 +1,6 @@
+{
+  "name": "Militar Aprova IA",
+  "description": "Plataforma avançada de preparação e estudos para concursos e exames militares com simuladores, leis inteligentes e tutor de inteligência artificial.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
