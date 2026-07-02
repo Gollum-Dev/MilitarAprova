@@ -111,8 +111,8 @@ export default function Sidebar({
           </button>
         )}
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 bg-[var(--accent)] rounded-lg flex items-center justify-center text-white shadow-sm">
-            <Bot className="w-5.5 h-5.5" />
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden border border-emerald-200/50 shadow-sm bg-slate-50">
+            <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-sm font-display font-bold text-[var(--ink)] tracking-tight leading-tight">

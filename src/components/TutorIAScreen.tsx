@@ -122,8 +122,8 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
       {/* Header Info */}
       <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-emerald-200/50 flex items-center justify-center relative">
-            <Bot className="w-5.5 h-5.5 text-white" />
+          <div className="w-10 h-10 rounded-full border border-emerald-200/50 flex items-center justify-center relative overflow-hidden bg-slate-100">
+            <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
           </div>
           <div>
@@ -163,12 +163,12 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
               className={`flex space-x-3 max-w-3xl ${isModel ? "mr-auto" : "ml-auto flex-row-reverse space-x-reverse"}`}
             >
               {/* Avatar indicator */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${
                 isModel 
-                  ? "bg-emerald-50 border-emerald-200/50 text-emerald-700" 
+                  ? "border-emerald-200 bg-slate-50" 
                   : "bg-slate-200 border-slate-300 text-slate-600"
               }`}>
-                {isModel ? <Bot className="w-4 h-4 text-emerald-700" /> : <User className="w-4 h-4" />}
+                {isModel ? <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" /> : <User className="w-4 h-4" />}
               </div>
 
               {/* Message box */}
@@ -191,8 +191,8 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
         {/* Loading Bubble */}
         {isLoading && (
           <div className="flex space-x-3 max-w-xl mr-auto">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200/50 text-emerald-700 flex items-center justify-center shrink-0">
-              <Bot className="w-4 h-4 animate-bounce" />
+            <div className="w-8 h-8 rounded-full border border-emerald-200/50 flex items-center justify-center shrink-0 overflow-hidden bg-slate-50">
+              <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover animate-bounce" />
             </div>
             <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none text-xs text-slate-500 flex items-center space-x-2 shadow-sm">
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-700" />
