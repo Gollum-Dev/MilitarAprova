@@ -337,7 +337,7 @@ export const BADGES: Badge[] = [
   {
     id: "badge-1",
     title: "Grito de Guerra",
-    description: "Criou sua conta de preparação militar.",
+    description: "Alistou-se na caserna do Cabo Véio.",
     icon: "ShieldAlert",
     unlocked: true,
     date: "14/05/2026"

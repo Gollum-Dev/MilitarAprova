@@ -20,10 +20,10 @@ export default function TutorIAScreen({ initialPrompt, onClearInitialPrompt }: T
     {
       id: "msg-1",
       role: "model",
-      text: `Apresente-se, combatente! Sou o Major Aranha, seu tutor de Inteligência Artificial para o CHO CBMMG.
-Minha diretriz é guiá-lo com absoluto rigor doutrinário e fornecer conselhos estratégicos sobre as matérias do concurso. 
+      text: `Apresente-se, recruta! Sou o Cabo Véio, seu mentor de caserna e especialista na doutrina militar do CBMMG.
+Minha missão é te passar os bizus cirúrgicos e a experiência de quem sabe fazer a máquina funcionar para garantir sua aprovação. 
 
-Como posso ajudá-lo hoje? Você pode me perguntar sobre:
+Como posso te ajudar hoje? Você pode me perguntar sobre:
 • O rito disciplinar da Lei 14.310/02 (CEDM)
 • Crimes militares de deserção, motim ou recusa de obediência (CPM)
 • Direitos individuais e garantias fundamentais aplicados à caserna (CF/88)
@@ -85,7 +85,7 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
       const modelMsg: Message = {
         id: `msg-model-${Date.now()}`,
         role: "model",
-        text: data.text || "Desculpe, combatente. Não compreendi o sinal de rádio. Pode repetir?",
+        text: data.text || "Desculpe, recruta. Não compreendi o sinal de rádio. Pode repetir a mensagem?",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, modelMsg]);
@@ -122,32 +122,32 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
       {/* Header Info */}
       <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-700 border border-indigo-200/50 flex items-center justify-center relative">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-emerald-200/50 flex items-center justify-center relative">
             <Bot className="w-5.5 h-5.5 text-white" />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
               <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-slate-800">
-                Estratégia IA: Major Aranha
+                Doutrina: Cabo Véio
               </h3>
-              <span className="text-[9px] font-sans font-extrabold text-white bg-indigo-600 px-1.5 py-0.5 rounded uppercase">
-                Oficial CBMMG
+              <span className="text-[9px] font-sans font-extrabold text-white bg-emerald-700 px-1.5 py-0.5 rounded uppercase">
+                Veterano
               </span>
             </div>
             <p className="text-[10px] text-slate-500 font-sans mt-0.5">
-              Instrutor e Especialista em Legislação Militar • Pronto para apoiar sua missão
+              Veterano da Caserna • O militar experiente que orienta os recém-chegados
             </p>
           </div>
         </div>
 
         <button
           onClick={() => {
-            if (confirm("Confirmar a limpeza de todo o histórico de conversas com o Major Aranha?")) {
+            if (confirm("Confirmar a limpeza de todo o histórico de conversas com o Cabo Véio?")) {
               setMessages([messages[0]]);
             }
           }}
-          className="text-[10px] font-mono font-bold text-slate-500 hover:text-indigo-600 uppercase tracking-wider cursor-pointer transition-colors px-3 py-1.5 rounded border border-slate-200 hover:border-indigo-200 bg-white"
+          className="text-[10px] font-mono font-bold text-slate-500 hover:text-emerald-700 uppercase tracking-wider cursor-pointer transition-colors px-3 py-1.5 rounded border border-slate-200 hover:border-emerald-200 bg-white"
         >
           Limpar Rádio
         </button>
@@ -165,10 +165,10 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
               {/* Avatar indicator */}
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
                 isModel 
-                  ? "bg-indigo-50 border-indigo-200/50 text-indigo-600" 
+                  ? "bg-emerald-50 border-emerald-200/50 text-emerald-700" 
                   : "bg-slate-200 border-slate-300 text-slate-600"
               }`}>
-                {isModel ? <Bot className="w-4 h-4 text-indigo-600" /> : <User className="w-4 h-4" />}
+                {isModel ? <Bot className="w-4 h-4 text-emerald-700" /> : <User className="w-4 h-4" />}
               </div>
 
               {/* Message box */}
@@ -176,7 +176,7 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
                 <div className={`p-4 rounded-2xl text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${
                   isModel 
                     ? "bg-white border border-slate-200/80 text-slate-700 rounded-tl-none" 
-                    : "bg-indigo-600 text-white rounded-tr-none"
+                    : "bg-emerald-700 text-white rounded-tr-none"
                 }`}>
                   {m.text}
                 </div>
@@ -191,12 +191,12 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
         {/* Loading Bubble */}
         {isLoading && (
           <div className="flex space-x-3 max-w-xl mr-auto">
-            <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200/50 text-indigo-600 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200/50 text-emerald-700 flex items-center justify-center shrink-0">
               <Bot className="w-4 h-4 animate-bounce" />
             </div>
             <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none text-xs text-slate-500 flex items-center space-x-2 shadow-sm">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-              <span className="font-mono uppercase text-[10px] tracking-wider">Major Aranha está redigindo parecer doutrinário...</span>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+              <span className="font-mono uppercase text-[10px] tracking-wider">O Cabo Véio está preparando o bizu...</span>
             </div>
           </div>
         )}
@@ -207,7 +207,7 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
       {messages.length === 1 && !isLoading && (
         <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 shrink-0">
           <p className="text-[10px] font-mono uppercase text-slate-500 mb-2 flex items-center space-x-1 font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
             <span>Módulos de Consulta Rápida</span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
@@ -215,7 +215,7 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
               <button
                 key={index}
                 onClick={() => handleSendMessage(topic.prompt)}
-                className="text-left text-[11px] text-slate-600 hover:text-indigo-600 bg-white border border-slate-200 rounded-lg p-2.5 hover:border-indigo-300 transition-all cursor-pointer truncate"
+                className="text-left text-[11px] text-slate-600 hover:text-emerald-700 bg-white border border-slate-200 rounded-lg p-2.5 hover:border-emerald-300 transition-all cursor-pointer truncate"
               >
                 <strong>{topic.label}</strong>
               </button>
@@ -250,14 +250,14 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Pergunte ao Major Aranha: 'Explique o rito do PAD no CEDM'..."
-            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600"
+            placeholder="Pergunte ao Cabo Véio: 'Como memorizar o rito do PAD?'..."
+            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700"
           />
 
           <button
             type="submit"
             disabled={isLoading || !inputText.trim()}
-            className="px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white rounded-xl font-sans font-bold text-xs uppercase transition-colors flex items-center justify-center space-x-1.5 cursor-pointer border-none shadow-sm"
+            className="px-5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-200 text-white rounded-xl font-sans font-bold text-xs uppercase transition-colors flex items-center justify-center space-x-1.5 cursor-pointer border-none shadow-sm"
           >
             <Send className="w-3.5 h-3.5" />
             <span>Enviar</span>

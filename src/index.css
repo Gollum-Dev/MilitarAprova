@@ -4,7 +4,7 @@
 @theme {
   --color-natural-bg: #F8F9FA;
   --color-natural-ink: #1E293B;
-  --color-natural-accent: #2563EB;
+  --color-natural-accent: #2D5A27;
   --color-natural-line: #E2E8F0;
   --color-natural-panel: #FFFFFF;
   
@@ -16,7 +16,7 @@
 :root {
   --bg: #F8F9FA;
   --ink: #1E293B;
-  --accent: #2563EB;
+  --accent: #2D5A27;
   --line: #E2E8F0;
   --panel: #FFFFFF;
   

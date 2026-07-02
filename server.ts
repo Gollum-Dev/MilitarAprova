@@ -288,7 +288,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Militar Aprova IA Server listening on port ${PORT}`);
+    console.log(`Cabo Véio Server listening on port ${PORT}`);
   });
 }
 

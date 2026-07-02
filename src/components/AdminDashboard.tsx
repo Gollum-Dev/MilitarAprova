@@ -51,14 +51,14 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         {/* Top Brand / Logo */}
         <div className="p-5 border-b border-slate-100 space-y-2">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-indigo-700 border border-indigo-400/20 flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-emerald-400/20 flex items-center justify-center shrink-0 shadow-sm">
               <ShieldAlert className="w-4 h-4 text-white" />
             </div>
             <div className="overflow-hidden">
               <h1 className="text-xs font-sans font-bold text-slate-800 tracking-wide uppercase truncate">
-                Militar Aprova IA
+                Cabo Véio
               </h1>
-              <p className="text-[9px] text-indigo-500 font-mono font-bold tracking-wider uppercase truncate">
+              <p className="text-[9px] text-emerald-700 font-mono font-bold tracking-wider uppercase truncate">
                 Painel Administrativo
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         {/* User Info */}
         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-mono font-bold text-sm shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center text-white font-mono font-bold text-sm shadow-sm">
               AD
             </div>
             <div className="overflow-hidden">

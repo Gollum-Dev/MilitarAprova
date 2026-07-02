@@ -36,16 +36,16 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
       )}
 
       {/* Left side Image (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-[55%] relative bg-indigo-950 items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-indigo-900/60 mix-blend-multiply z-10" />
+      <div className="hidden lg:flex lg:w-[55%] relative bg-emerald-950 items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-emerald-900/60 mix-blend-multiply z-10" />
         <img 
           src="/login-bg-premium.png" 
-          alt="Militar Aprova IA Tactical Background" 
+          alt="Cabo Véio Tactical Background" 
           className="absolute inset-0 w-full h-full object-cover z-0 opacity-90"
         />
         {/* Decorative elements over image */}
         <div className="relative z-20 text-center px-12 mt-[-10%]">
-           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-700 border border-amber-400/20 flex items-center justify-center shadow-2xl mb-8">
+           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-amber-400/20 flex items-center justify-center shadow-2xl mb-8">
              <div className="relative">
                <ShieldAlert className="w-12 h-12 text-white" />
                <div className="absolute inset-0 flex items-center justify-center opacity-40">
@@ -54,9 +54,9 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
              </div>
            </div>
            <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
-             A Inteligência que Aprova
+             A Doutrina que Aprova
            </h2>
-           <p className="text-indigo-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
+           <p className="text-emerald-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
              A plataforma tática definitiva para a sua aprovação.
            </p>
         </div>
@@ -70,7 +70,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
         {/* Header / Logo (Visible mostly on mobile, but kept small on desktop) */}
         <div className="w-full flex justify-center pt-4 lg:hidden z-10">
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-700 border border-amber-400/20 flex items-center justify-center shadow-sm">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-amber-400/20 flex items-center justify-center shadow-sm">
               <div className="relative">
                 <ShieldAlert className="w-9 h-9 text-white" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-40">
@@ -79,10 +79,10 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               </div>
             </div>
             <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800 tracking-tight">
-              Militar Aprova <span className="text-indigo-600">IA</span>
+              Cabo Véio
             </h1>
             <p className="text-xs md:text-sm text-slate-500 font-mono tracking-wider uppercase">
-              Doutrina e Inteligência Bombeiro Militar
+              Doutrina e Bizus de Caserna
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-indigo-600/70" />
+                  <Mail className="h-4 w-4 text-emerald-700/70" />
                 </div>
                 <input
                   id="login-email"
@@ -119,7 +119,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+                  className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 transition-all"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
                 </label>
                 <button
                   type="button"
-                  className="text-xs font-sans text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                  className="text-xs font-sans text-slate-500 hover:text-emerald-700 transition-colors cursor-pointer"
                   onClick={() => alert("Função para redefinir senha em ambiente de desenvolvimento. Utilize seu código militar cadastrado.")}
                 >
                   ESQUECI MINHA SENHA
@@ -140,7 +140,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-indigo-600/70" />
+                  <Lock className="h-4 w-4 text-emerald-700/70" />
                 </div>
                 <input
                   id="login-password"
@@ -149,12 +149,12 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+                  className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -166,7 +166,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               id="login-submit"
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-sans font-bold text-sm uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center space-x-2 border border-transparent active:scale-[0.98]"
+              className="w-full py-3 px-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-700/50 text-white font-sans font-bold text-sm uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center space-x-2 border border-transparent active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
@@ -217,7 +217,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               Ainda não possui conta?{" "}
               <button
                 onClick={() => alert("O cadastro militar de novos usuários é restrito ou exige credencial homologada pela Escola de Formação.")}
-                className="text-indigo-600 hover:underline font-sans font-semibold transition-all cursor-pointer"
+                className="text-emerald-700 hover:underline font-sans font-semibold transition-all cursor-pointer"
               >
                 Criar conta
               </button>
@@ -228,7 +228,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
         {/* Footer */}
         <div className="w-full text-center py-4 text-xs font-sans text-slate-500 border-t border-slate-200/80 z-10 mt-auto">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 max-w-6xl mx-auto px-4">
-            <span>© 2024 Militar Aprova IA. Todos os direitos reservados.</span>
+            <span>© 2024 Cabo Véio. Todos os direitos reservados.</span>
             <div className="flex space-x-4">
               <button className="hover:text-slate-800 uppercase transition-colors cursor-pointer border-none bg-transparent">Termos</button>
               <button className="hover:text-slate-800 uppercase transition-colors cursor-pointer border-none bg-transparent">Privacidade</button>

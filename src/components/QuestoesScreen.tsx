@@ -51,10 +51,10 @@ export default function QuestoesScreen({ discipline }: QuestoesScreenProps = {})
         })
       });
       const data = await response.json();
-      setAiComment(data.comment || "Análise do Major Aranha concluída com sucesso.");
+      setAiComment(data.comment || "Bizus do Cabo Véio calculados com sucesso.");
     } catch (err) {
       console.error(err);
-      setAiComment(`Militar! Você selecionou a alternativa ${selectedAnswer}. O gabarito oficial é ${activeQuestion.correct}. Consulte o regulamento para reforçar seu aprendizado.`);
+      setAiComment(`Atenção, recruta! Você marcou a alternativa ${selectedAnswer}, mas o gabarito correto é a letra ${activeQuestion.correct}. Estude o regulamento para ficar bisurado!`);
     } finally {
       setIsGeneratingAi(false);
     }

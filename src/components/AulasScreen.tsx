@@ -61,9 +61,9 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
             {/* Visual simulation screen */}
             <div className="absolute inset-0 bg-slate-950/75 flex items-center justify-center">
               <div className="text-center p-6 space-y-4 max-w-md">
-                <ShieldAlert className="w-16 h-16 text-indigo-500 mx-auto opacity-40 animate-pulse" />
+                <ShieldAlert className="w-16 h-16 text-emerald-600 mx-auto opacity-40 animate-pulse" />
                 <p className="text-xs font-mono text-slate-400 uppercase tracking-widest">
-                  Centro de Ensino Militar Aprova IA
+                  Centro de Doutrina Cabo Véio
                 </p>
                 <h4 className="text-lg font-sans font-bold text-gray-100">
                   AULA 05: Bases do Regulamento e Caserna

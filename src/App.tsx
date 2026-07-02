@@ -117,7 +117,7 @@ export default function App() {
               </div>
             </div>
             
-            <p className="text-[10px] text-slate-400 font-mono">Plataforma Militar Aprova IA homologada • Versão 1.4.0</p>
+            <p className="text-[10px] text-slate-400 font-mono">Plataforma Cabo Véio homologada • Versão 1.4.0</p>
           </div>
         );
       default:
@@ -168,7 +168,7 @@ export default function App() {
           <div className="flex justify-between items-center border-b border-slate-200 pb-4">
             <div>
               <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-                CENTRAL DE INTELIGÊNCIA MILITAR
+                CENTRAL DE DOUTRINA - CABO VÉIO
               </span>
               <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
                 {currentTab === "inicio" && "Painel de Comando"}

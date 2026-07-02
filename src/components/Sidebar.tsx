@@ -35,8 +35,8 @@ export default function Sidebar({
   const isCourseLevel = selectedCourseId !== null && selectedModuleId === null;
 
   // Build items based on level
-  let sidebarHeading = "Militar Aprova IA";
-  let sidebarSubtitle = "Doutrina Bombeiro Militar";
+  let sidebarHeading = "Cabo Véio";
+  let sidebarSubtitle = "Doutrina de Caserna";
   let menuItems: { id: string; label: string; icon: any }[] = [];
 
   if (isSubjectLevel && selectedModule) {
@@ -77,85 +77,65 @@ export default function Sidebar({
     }
   };
 
-  const handleBackAction = () => {
-    if (isSubjectLevel) {
-      setSelectedModuleId(null);
-      setCourseActiveTab("materias");
-    } else if (isCourseLevel) {
-      setSelectedCourseId(null);
-      onChangeTab("cursos");
-    }
-  };
-
   const checkIsActive = (id: string) => {
-    if (isSubjectLevel) return subjectActiveTab === id;
-    if (isCourseLevel) return courseActiveTab === id;
+    if (isSubjectLevel) {
+      return subjectActiveTab === id;
+    }
+    if (isCourseLevel) {
+      return courseActiveTab === id;
+    }
     return currentTab === id;
   };
 
-  return (
-    <aside className="w-64 glass-panel border-r border-slate-200 flex flex-col justify-between shrink-0 h-screen sticky top-0" id="main-sidebar">
-      {/* Top Brand / Logo / Context Header */}
-      <div className="p-5 border-b border-slate-100 space-y-2">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-gradient-to-tr from-indigo-500 to-indigo-700 border border-amber-400/20 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-4 h-4 text-white" />
-          </div>
-          <div className="overflow-hidden">
-            <h1 className="text-xs font-sans font-bold text-slate-800 tracking-wide uppercase truncate">
-              {sidebarHeading}
-            </h1>
-            <p className="text-[9px] text-slate-400 font-mono tracking-wider uppercase truncate">
-              {sidebarSubtitle}
-            </p>
-          </div>
-        </div>
-        
-        {isOfflineMode && !isCourseLevel && !isSubjectLevel && (
-          <div className="mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[8px] font-mono text-amber-600 text-center uppercase tracking-wider">
-            Modo Local / Sem API Key
-          </div>
-        )}
-      </div>
+  const handleBackToCourses = () => {
+    setSelectedCourseId(null);
+    setSelectedModuleId(null);
+    onChangeTab("cursos");
+  };
 
-      {/* Context Back Action Button at top of navigation list */}
-      {(isCourseLevel || isSubjectLevel) && (
-        <div className="px-3 pt-3">
-          <button
-            onClick={handleBackAction}
-            className="w-full flex items-center space-x-2 px-3 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-[10px] font-mono font-bold text-slate-600 hover:text-slate-800 transition-all uppercase cursor-pointer"
+  const handleBackToModules = () => {
+    setSelectedModuleId(null);
+  };
+
+  return (
+    <aside className="w-64 bg-[var(--panel)] border-r border-[var(--line)] flex flex-col h-screen shrink-0">
+      {/* Brand Header */}
+      <div className="p-6 border-b border-slate-100">
+        {(isCourseLevel || isSubjectLevel) && (
+          <button 
+            onClick={isSubjectLevel ? handleBackToModules : handleBackToCourses}
+            className="flex items-center space-x-1.5 text-xs text-[var(--accent)] hover:underline mb-4 font-sans font-medium cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{isSubjectLevel ? "Voltar ao Curso" : "Voltar aos Cursos"}</span>
           </button>
-        </div>
-      )}
-
-      {/* User Info / Profile Section */}
-      {!isCourseLevel && !isSubjectLevel && (
-        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-600 border border-amber-400/20 flex items-center justify-center text-white font-mono font-bold text-sm shadow-sm">
-              SD
-            </div>
-            <div className="overflow-hidden">
-              <h3 className="text-xs font-sans font-semibold text-slate-800 uppercase truncate">
-                Soldado Silva
-              </h3>
-              <p className="text-[10px] text-slate-500 font-mono">
-                CBMMG • {userRank}
-              </p>
-              <span className="inline-block mt-1 text-[8px] font-sans font-extrabold text-amber-700 bg-amber-50 border border-amber-200/50 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Rumo ao Oficialato
-              </span>
-            </div>
+        )}
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 bg-[var(--accent)] rounded-lg flex items-center justify-center text-white shadow-sm">
+            <Bot className="w-5.5 h-5.5" />
+          </div>
+          <div>
+            <h1 className="text-sm font-display font-bold text-[var(--ink)] tracking-tight leading-tight">
+              {sidebarHeading}
+            </h1>
+            <p className="text-[10px] font-sans font-medium text-slate-400 mt-0.5 tracking-wider uppercase">
+              {sidebarSubtitle}
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Navigation Menu Links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin scrollbar-thumb-slate-200">
-        {menuItems.map((item) => {
+      {/* User Context Rank Badge */}
+      <div className="px-6 py-3 border-b border-slate-50 bg-slate-50/50 flex items-center space-x-2">
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider uppercase">
+          Hierarquia: {userRank === "Soldado" ? "Recruta" : userRank}
+        </span>
+      </div>
+
+      {/* Navigation menu */}
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        {menuItems.map(item => {
           const IconComponent = item.icon;
           const isActive = checkIsActive(item.id);
           return (
@@ -165,11 +145,11 @@ export default function Sidebar({
               onClick={() => handleItemClick(item.id)}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
                 isActive 
-                  ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600 font-bold shadow-sm" 
+                  ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-700 font-bold shadow-sm" 
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
-              <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+              <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? "text-emerald-700" : "text-slate-400"}`} />
               <span>{item.label}</span>
             </button>
           );
@@ -180,7 +160,7 @@ export default function Sidebar({
       <div className="p-4 border-t border-slate-100 space-y-3">
         <div className="space-y-1">
           <button
-            onClick={() => alert("Suporte técnico do Militar Aprova IA. Envie suas dúvidas para suporte@militaraprovaia.com.br")}
+            onClick={() => alert("Suporte técnico do Cabo Véio. Envie suas dúvidas para suporte@caboveio.com.br")}
             className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
           >
             <SupportIcon className="w-3.5 h-3.5 text-slate-400" />
