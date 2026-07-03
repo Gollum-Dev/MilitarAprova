@@ -68,11 +68,11 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
           </div>
 
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white tracking-tight leading-tight mb-6 drop-shadow-2xl max-w-4xl">
-            A Doutrina Tática do <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Cabo Véio</span> para sua Aprovação
+            A experiência do <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Cabo Véio</span> para o seu sucesso
           </h2>
 
           <p className="text-lg md:text-xl text-emerald-55 font-sans max-w-2xl mx-auto mb-10 drop-shadow-md leading-relaxed text-slate-100">
-            O ambiente definitivo com bizus do Cabo Véio, vídeo aulas, áudio aulas e o maior banco de questões focadas nas carreiras militares estaduais.
+            O ambiente definitivo com bizus do Cabo Véio, vídeo aulas, áudio aulas e uma grande quantidade de questões focadas nas carreiras militares estaduais.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center w-full space-y-4 sm:space-y-0 sm:space-x-6">

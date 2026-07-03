@@ -53,12 +53,12 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
                </div>
              </div>
            </div>
-           <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
-             A Doutrina que Aprova
-           </h2>
-           <p className="text-emerald-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
-             A plataforma tática definitiva para a sua aprovação.
-           </p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
+              A Doutrina que Aprova
+            </h2>
+            <p className="text-emerald-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
+              A plataforma tática definitiva para a sua aprovação.
+            </p>
         </div>
       </div>
 
