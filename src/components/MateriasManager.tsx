@@ -37,6 +37,8 @@ export function MateriasManager() {
   const [areas, setAreas] = useState<GlobalArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterDiscipline, setFilterDiscipline] = useState('');
+  const [filterArea, setFilterArea] = useState('');
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newMateriaName, setNewMateriaName] = useState('');
@@ -273,11 +275,15 @@ export function MateriasManager() {
 
   const filteredMaterias = materias.filter(m => {
     const term = searchTerm.toLowerCase();
-    return (
+    const matchTerm = !term || (
       m.name.toLowerCase().includes(term) ||
       (m.discipline && m.discipline.toLowerCase().includes(term)) ||
       (m.area && m.area.toLowerCase().includes(term))
     );
+    const matchDisc = !filterDiscipline || m.discipline === filterDiscipline;
+    const matchArea = !filterArea || m.area === filterArea;
+    
+    return matchTerm && matchDisc && matchArea;
   });
 
   const availableAreas = areas.filter(a => a.discipline_id === selectedDisciplineId);
@@ -421,16 +427,6 @@ export function MateriasManager() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-        <div>
-          <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-            VISÃO DO GESTOR
-          </span>
-          <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
-            Gerenciar Matérias
-          </h2>
-        </div>
-      </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -444,24 +440,51 @@ export function MateriasManager() {
             </p>
           </div>
           
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Buscar matéria..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64"
-              />
-            </div>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden whitespace-nowrap shrink-0"
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center space-x-2 relative overflow-hidden whitespace-nowrap shrink-0"
+          >
+            <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
+            <span>Nova Matéria</span>
+          </button>
+        </div>
+
+        {/* Barra de Filtros Dedicada */}
+        <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative w-full sm:w-64 shrink-0">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder="Buscar matéria..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+            />
+          </div>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <select
+              value={filterDiscipline}
+              onChange={(e) => { setFilterDiscipline(e.target.value); setFilterArea(''); }}
+              className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white flex-1 sm:flex-none"
             >
-              <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-              <span>Nova Matéria</span>
-            </button>
+              <option value="">Todas Disciplinas</option>
+              {disciplines.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+            </select>
+            
+            {filterDiscipline && (
+              <select
+                value={filterArea}
+                onChange={(e) => setFilterArea(e.target.value)}
+                className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white flex-1 sm:flex-none"
+              >
+                <option value="">Todos Eixos</option>
+                {areas.filter(a => {
+                  const d = disciplines.find(disc => disc.name === filterDiscipline);
+                  return d && a.discipline_id === d.id;
+                }).map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+              </select>
+            )}
           </div>
         </div>
 

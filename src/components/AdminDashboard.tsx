@@ -212,8 +212,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
               <div className="space-y-6">
                 {!isCreatingCourse ? (
                   <>
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-display font-bold text-slate-800">Cursos Ativos</h3>
+                    <div className="flex justify-end items-center">
                       <button 
                         onClick={() => setIsCreatingCourse(true)}
                         className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden whitespace-nowrap shrink-0"

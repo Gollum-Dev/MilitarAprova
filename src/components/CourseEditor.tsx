@@ -41,7 +41,7 @@ export interface CourseData {
 interface CourseEditorProps {
   course: CourseData;
   institutions: string[];
-  onSave: (updatedCourse: CourseData) => void;
+  onSave: (updatedCourse: CourseData, closeEditor?: boolean) => void;
   onCancel: () => void;
   mode?: 'basic' | 'curriculum' | 'all';
 }
@@ -51,6 +51,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
   const [institution, setInstitution] = useState(course.institution);
   const [year, setYear] = useState(course.year);
   const [disciplines, setDisciplines] = useState<Discipline[]>(course.disciplines || []);
+  
   // Auto-save geral com debounce
   const initialMount = React.useRef(true);
   React.useEffect(() => {
@@ -65,7 +66,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
         institution,
         year,
         disciplines
-      }, false);
+      }, false); // <== IMPORTANTE: não fechar o editor no auto-save
     }, 1000);
     return () => clearTimeout(timeoutId);
   }, [title, institution, year, disciplines]);
@@ -122,9 +123,6 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
     if (name && name.trim()) {
       const newId = Date.now();
       setDisciplines([...disciplines, { id: newId, name: name.trim(), areas: [] }]);
-      setActiveDisciplineId(newId);
-      setActiveAreaId(null);
-      setActiveContentId(null);
     }
   };
 
@@ -353,6 +351,21 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
     }
   };
 
+  const handleCancel = () => {
+    const hasUnsavedChanges = 
+      title !== course.title || 
+      institution !== course.institution || 
+      year !== course.year || 
+      JSON.stringify(disciplines) !== JSON.stringify(course.disciplines || []);
+
+    if (hasUnsavedChanges) {
+      if (!window.confirm("Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?")) {
+        return;
+      }
+    }
+    onCancel();
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -375,17 +388,18 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={mode === 'curriculum'}
             placeholder="Digite o nome do curso..."
-            className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 m-0"
+            className={`w-full bg-transparent border-none outline-none focus:ring-0 p-0 m-0 ${mode === 'curriculum' ? 'opacity-70 cursor-not-allowed' : ''}`}
             form="course-editor-form"
           />
         </h3>
         <button 
-          onClick={onCancel}
-          className="px-4 py-2 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center space-x-2"
+          onClick={handleCancel}
+          className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Voltar para Lista</span>
+          <ArrowLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1" />
+          <span>Voltar para Cursos</span>
         </button>
       </div>
       
@@ -393,11 +407,41 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
       <div className="relative z-0">
         <form id="course-editor-form" onSubmit={handleSave} className="space-y-8 max-w-7xl w-full mx-auto pb-10">
 
+          {/* Dados Básicos (apenas se mode !== 'curriculum') */}
+          {mode !== 'curriculum' && (
+            <section className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-sm">
+              <h4 className="text-sm font-bold font-sans text-slate-800 uppercase tracking-wider mb-4">Dados Básicos</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Instituição</label>
+                  <select
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <option value="">Selecione...</option>
+                    {institutions.map(inst => (
+                      <option key={inst} value={inst}>{inst}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Ano</label>
+                  <input
+                    type="text"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    placeholder="Ex: 2024"
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Estrutura Curricular */}
+          {mode !== 'basic' && (
           <section>
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-sm font-bold font-sans text-slate-800 uppercase tracking-wider">Grade Curricular</h4>
-            </div>
 
             {(() => {
               const activeDiscipline = disciplines.find(d => d.id === activeDisciplineId);
@@ -448,6 +492,22 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                         </span>
                       </>
                     )}
+                    {(activeDiscipline || activeArea || activeContent) && (
+                      <div className="ml-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (activeContent) setActiveContentId(null);
+                            else if (activeArea) setActiveAreaId(null);
+                            else if (activeDiscipline) setActiveDisciplineId(null);
+                          }}
+                          className="group p-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-lg transition-all duration-300 cursor-pointer shadow-sm hover:shadow flex items-center justify-center"
+                          title="Voltar um nível"
+                        >
+                          <ArrowLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Level 0: Disciplinas */}
@@ -457,9 +517,9 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                         <button 
                           type="button"
                           onClick={handleAddDiscipline}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-2 cursor-pointer"
+                          className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden"
                         >
-                          <PlusCircle className="w-4 h-4" />
+                          <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
                           <span>Nova Disciplina</span>
                         </button>
                       </div>
@@ -532,9 +592,9 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                         <button 
                           type="button"
                           onClick={() => handleAddArea(activeDiscipline.id)}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-2 cursor-pointer"
+                          className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden"
                         >
-                          <PlusCircle className="w-4 h-4" />
+                          <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
                           <span>Novo Eixo</span>
                         </button>
                       </div>
@@ -603,9 +663,9 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                         <button 
                           type="button"
                           onClick={() => handleAddContent(activeDiscipline.id, activeArea.id)}
-                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-2 cursor-pointer"
+                          className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden"
                         >
-                          <PlusCircle className="w-4 h-4" />
+                          <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
                           <span>Nova Matéria</span>
                         </button>
                       </div>
@@ -668,7 +728,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                   {activeDiscipline && activeArea && activeContent && (
                     <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm">
                       <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
-                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
                           <FileText className="w-5 h-5" />
                         </div>
                         <h5 className="font-display font-bold text-slate-800 text-lg">Conteúdos de {activeContent.name}</h5>
@@ -772,28 +832,74 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
               );
             })()}
           </section>
+          )}
 
         </form>
       </div>
 
-      {/* Footer / Actions */}
-      <div className="p-4 border-t border-slate-100 bg-white flex justify-end space-x-4 shrink-0 rounded-b-2xl z-10">
-        <button 
-          type="button"
-          onClick={onCancel}
-          className="px-6 py-3 text-slate-500 border border-slate-200 font-bold uppercase tracking-wider text-xs hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
-        >
-          Cancelar
-        </button>
-        <button 
-          type="submit"
-          form="course-editor-form"
-          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer active:scale-95"
-        >
-          <Save className="w-4 h-4" />
-          <span>Salvar Alterações</span>
-        </button>
-      </div>
+      {/* Footer removido conforme solicitado */}
+
+      {/* Modal de Seleção de Matérias */}
+      {showMateriaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-smooth-fade">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-display font-bold text-slate-800 flex items-center space-x-2">
+                <Layers className="w-5 h-5 text-indigo-500" />
+                <span>Adicionar Matéria ao Eixo</span>
+              </h3>
+              <button 
+                onClick={() => { setShowMateriaModal(false); setTargetEixoParaMateria(null); }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-4 border-b border-slate-100 bg-white shrink-0">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar matéria..." 
+                  value={materiaSearchTerm}
+                  onChange={(e) => setMateriaSearchTerm(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                />
+              </div>
+            </div>
+
+            <div className="overflow-y-auto p-4 flex-1 bg-slate-50">
+              {loadingMaterias ? (
+                <div className="py-10 flex justify-center">
+                  <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {globalMaterias.filter(m => m.name.toLowerCase().includes(materiaSearchTerm.toLowerCase())).length === 0 ? (
+                    <div className="text-center py-6 text-slate-500 text-sm">
+                      Nenhuma matéria encontrada.
+                    </div>
+                  ) : (
+                    globalMaterias
+                      .filter(m => m.name.toLowerCase().includes(materiaSearchTerm.toLowerCase()))
+                      .map(materia => (
+                        <button
+                          key={materia.id}
+                          onClick={() => confirmAddMateria(materia.name, materia.resources || [])}
+                          className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-md transition-all group cursor-pointer text-left"
+                        >
+                          <span className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">{materia.name}</span>
+                          <PlusCircle className="w-4 h-4 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
