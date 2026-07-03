@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree } from "lucide-react";
 import CourseEditor, { CourseData } from "./CourseEditor";
+import { MateriasManager } from "./MateriasManager";
+import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCourse, generateNewCourseId } from "../lib/api";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -9,36 +11,82 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ onLogout, userName }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<"cursos" | "usuarios" | "metricas" | "config">("cursos");
-  const [courses, setCourses] = useState<CourseData[]>([
-    { id: 1, title: "Preparatório CHO CBMMG 2027", institution: "CBMMG", year: "2027", status: "Publicado", disciplines: [] }
-  ]);
+  const [courses, setCourses] = useState<CourseData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [institutions, setInstitutions] = useState(["CBMMG", "PMMG", "PMESP", "CBMERJ"]);
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
-  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [editingCourseId, setEditingCourseId] = useState<string | number | null>(null);
+  const [editingCourseMode, setEditingCourseMode] = useState<'basic' | 'curriculum'>('basic');
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseInstitution, setNewCourseInstitution] = useState("");
   const [newCourseYear, setNewCourseYear] = useState("");
 
-  const handleSaveCourse = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadCourses() {
+      setLoading(true);
+      try {
+        const data = await fetchAdminCourses();
+        const mapped = data.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          institution: c.institution || '',
+          year: c.year || '',
+          status: c.status || 'Rascunho',
+          disciplines: c.disciplines_json || []
+        }));
+        setCourses(mapped);
+      } catch (err) {
+        console.error("Erro ao carregar cursos:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCourses();
+  }, []);
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseTitle) return;
     
-    setCourses([...courses, {
-      id: Date.now(),
-      title: newCourseTitle,
-      institution: newCourseInstitution || "N/A",
-      year: newCourseYear || new Date().getFullYear().toString(),
-      status: "Rascunho"
-    }]);
-    
-    setNewCourseTitle("");
-    setNewCourseInstitution("");
-    setNewCourseYear("");
-    setIsCreatingCourse(false);
+    try {
+      const newId = await generateNewCourseId(newCourseTitle);
+      const newCourseData = {
+        id: newId,
+        title: newCourseTitle,
+        institution: newCourseInstitution || "N/A",
+        year: newCourseYear || new Date().getFullYear().toString(),
+        status: "Rascunho",
+        disciplines_json: [],
+        subtitle: "Descrição do curso",
+        hours: 0,
+        lessons: 0,
+        disciplines_count: 0
+      };
+
+      await createAdminCourse(newCourseData);
+      
+      setCourses([...courses, {
+        id: newId,
+        title: newCourseTitle,
+        institution: newCourseData.institution,
+        year: newCourseData.year,
+        status: newCourseData.status,
+        disciplines: []
+      }]);
+      
+      setNewCourseTitle("");
+      setNewCourseInstitution("");
+      setNewCourseYear("");
+      setIsCreatingCourse(false);
+    } catch (err) {
+      console.error("Erro ao criar curso:", err);
+      alert("Erro ao criar curso. Verifique o console.");
+    }
   };
 
   const menuItems = [
     { id: "cursos", label: "Gerenciar Cursos", icon: BookOpen },
+    { id: "materias", label: "Gerenciar Matérias", icon: Layers },
     { id: "usuarios", label: "Alunos Matriculados", icon: Users },
     { id: "metricas", label: "Estatísticas de Uso", icon: LineChart },
     { id: "config", label: "Configurações da Plataforma", icon: Settings },
@@ -90,7 +138,10 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setEditingCourseId(null);
+                }}
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
                   isActive 
                     ? "bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600 font-bold shadow-sm" 
@@ -122,9 +173,24 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           <CourseEditor 
             course={courses.find(c => c.id === editingCourseId)!}
             institutions={institutions}
-            onSave={(updatedCourse) => {
-              setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
-              setEditingCourseId(null);
+            mode={editingCourseMode}
+            onSave={async (updatedCourse, closeEditor = true) => {
+              try {
+                await updateAdminCourse(updatedCourse.id.toString(), {
+                  title: updatedCourse.title,
+                  institution: updatedCourse.institution,
+                  year: updatedCourse.year,
+                  status: updatedCourse.status,
+                  disciplines_json: updatedCourse.disciplines || []
+                });
+                setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+                if (closeEditor) {
+                  setEditingCourseId(null);
+                }
+              } catch (err) {
+                console.error("Erro ao atualizar curso:", err);
+                alert("Erro ao salvar curso. Verifique o console.");
+              }
             }}
             onCancel={() => setEditingCourseId(null)}
           />
@@ -150,13 +216,18 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                       <h3 className="text-lg font-display font-bold text-slate-800">Cursos Ativos</h3>
                       <button 
                         onClick={() => setIsCreatingCourse(true)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-sans font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center space-x-2 cursor-pointer"
+                        className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden whitespace-nowrap shrink-0"
                       >
-                        <PlusCircle className="w-4 h-4" />
+                        <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
                         <span>Novo Curso</span>
                       </button>
                     </div>
                     
+                    {loading ? (
+                      <div className="flex justify-center items-center py-20">
+                        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {courses.map(course => {
                         let qtdDisciplinas = 0;
@@ -231,16 +302,33 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                               </div>
                             </div>
 
-                            <div className="flex justify-end space-x-2 border-t border-slate-100/80 pt-3 mt-4 relative z-10">
+                            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100/80 pt-3 mt-4 relative z-10">
                               <button 
-                                onClick={() => setEditingCourseId(course.id)}
+                                onClick={() => { setEditingCourseMode('basic'); setEditingCourseId(course.id); }}
                                 className="px-3 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
                               >
                                 <Edit className="w-3 h-3" />
                                 <span>Editar</span>
                               </button>
                               <button 
-                                onClick={() => setCourses(courses.filter(c => c.id !== course.id))}
+                                onClick={() => { setEditingCourseMode('curriculum'); setEditingCourseId(course.id); }}
+                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-emerald-600 hover:text-white hover:bg-emerald-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                              >
+                                <Layers className="w-3 h-3" />
+                                <span>Editar Matéria</span>
+                              </button>
+                              <button 
+                                onClick={async () => {
+                                  if (window.confirm("Tem certeza que deseja excluir este curso?")) {
+                                    try {
+                                      await deleteAdminCourse(course.id.toString());
+                                      setCourses(courses.filter(c => c.id !== course.id));
+                                    } catch (err) {
+                                      console.error("Erro ao excluir curso:", err);
+                                      alert("Erro ao excluir curso. Verifique o console.");
+                                    }
+                                  }
+                                }}
                                 className="px-3 py-1.5 text-[10px] uppercase font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -250,6 +338,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                         );
                       })}
                     </div>
+                    )}
                   </>
                 ) : (
                   <div className="glass-panel p-8 rounded-2xl border border-slate-200 relative animate-smooth-fade">
@@ -362,6 +451,10 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === "materias" && (
+              <MateriasManager />
             )}
 
             {activeTab === "usuarios" && (

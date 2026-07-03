@@ -225,7 +225,7 @@ Retorne obrigatoriamente um objeto JSON com a seguinte estrutura estrita:
     res.json({
       title: `Simulado Adaptativo: ${subject} (Fallback)`,
       description: `Erro ao gerar via IA (${err.message || err}). Carregamos questões do banco tático local do CHO CBMMG.`,
-      questions: QUESTIONS.slice(0, 3),
+      questions: [],
       isAiGenerated: false
     });
   }

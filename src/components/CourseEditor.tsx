@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { BookOpen, X, Save, PlusCircle, Trash2, ChevronDown, ChevronUp, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, Eye, Edit2, ArrowLeft, FolderOpen, ChevronRight } from "lucide-react";
+import { BookOpen, X, Save, PlusCircle, Trash2, ChevronDown, ChevronUp, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, Eye, Edit2, ArrowLeft, FolderOpen, ChevronRight, Search } from "lucide-react";
+import { supabase } from '../lib/supabase';
 
 export type ResourceType = 'video' | 'audio' | 'question' | 'summary' | 'flashcard' | 'pdf';
 
@@ -42,19 +43,45 @@ interface CourseEditorProps {
   institutions: string[];
   onSave: (updatedCourse: CourseData) => void;
   onCancel: () => void;
+  mode?: 'basic' | 'curriculum' | 'all';
 }
 
-export default function CourseEditor({ course, institutions, onSave, onCancel }: CourseEditorProps) {
+export default function CourseEditor({ course, institutions, onSave, onCancel, mode = 'all' }: CourseEditorProps) {
   const [title, setTitle] = useState(course.title);
   const [institution, setInstitution] = useState(course.institution);
   const [year, setYear] = useState(course.year);
   const [disciplines, setDisciplines] = useState<Discipline[]>(course.disciplines || []);
+  // Auto-save geral com debounce
+  const initialMount = React.useRef(true);
+  React.useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      onSave({
+        ...course,
+        title,
+        institution,
+        year,
+        disciplines
+      }, false);
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [title, institution, year, disciplines]);
   
   // UI States (Focus Navigation)
   const [activeDisciplineId, setActiveDisciplineId] = useState<number | null>(null);
   const [activeAreaId, setActiveAreaId] = useState<number | null>(null);
   const [activeContentId, setActiveContentId] = useState<number | null>(null);
-  
+
+  // States para o Modal de Matérias globais
+  const [showMateriaModal, setShowMateriaModal] = useState(false);
+  const [globalMaterias, setGlobalMaterias] = useState<{id: string, name: string, resources?: Resource[]}[]>([]);
+  const [loadingMaterias, setLoadingMaterias] = useState(false);
+  const [materiaSearchTerm, setMateriaSearchTerm] = useState('');
+  const [targetEixoParaMateria, setTargetEixoParaMateria] = useState<{disciplineId: number, areaId: number} | null>(null);
+
   // Resource Form & Tab States
   const [activeResourceTab, setActiveResourceTab] = useState<{ [contentId: number]: ResourceType | null }>({});
   const [addingResourceToContent, setAddingResourceToContent] = useState<number | null>(null);
@@ -140,27 +167,74 @@ export default function CourseEditor({ course, institutions, onSave, onCancel }:
     }
   };
 
-  const handleAddContent = (disciplineId: number, areaId: number) => {
-    const name = window.prompt("Nome da nova Matéria / Conteúdo (Ex: Compreensão de Textos):");
-    if (name && name.trim()) {
-      setDisciplines(disciplines.map(d => {
-        if (d.id === disciplineId) {
-          return {
-            ...d,
-            areas: d.areas.map(a => {
-              if (a.id === areaId) {
-                return {
-                  ...a,
-                  contents: [...a.contents, { id: Date.now(), name: name.trim(), resources: [] }]
-                };
-              }
-              return a;
-            })
-          };
-        }
-        return d;
-      }));
+  const handleAddContent = async (disciplineId: number, areaId: number) => {
+    const targetDiscipline = disciplines.find(d => d.id === disciplineId);
+    const targetArea = targetDiscipline?.areas.find(a => a.id === areaId);
+
+    if (!targetDiscipline || !targetArea) {
+      alert("Erro interno: Disciplina ou Eixo não encontrado na estrutura atual.");
+      return;
     }
+
+    try {
+      setLoadingMaterias(true);
+      const { data, error } = await supabase
+        .from('materias')
+        .select('id, name, resources')
+        .eq('discipline', targetDiscipline.name)
+        .eq('area', targetArea.name)
+        .order('name', { ascending: true });
+        
+      if (error) {
+        alert(`Erro do Supabase ao buscar matérias: ${error.message}`);
+        setLoadingMaterias(false);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        alert(`Nenhuma matéria cadastrada no banco global para a disciplina "${targetDiscipline.name}" no eixo "${targetArea.name}". Vá até a aba 'Gerenciar Matérias' e cadastre-as primeiro. Atenção: o nome digitado aqui deve ser exatamente igual ao cadastrado lá.`);
+        setLoadingMaterias(false);
+        return;
+      }
+
+      setGlobalMaterias(data);
+      setTargetEixoParaMateria({ disciplineId, areaId });
+      setShowMateriaModal(true);
+      setLoadingMaterias(false);
+    } catch (err: any) {
+      alert(`Erro inesperado: ${err.message}`);
+      setLoadingMaterias(false);
+    }
+  };
+
+  const confirmAddMateria = (materiaName: string, resources: Resource[] = []) => {
+    if (!targetEixoParaMateria) return;
+    const { disciplineId, areaId } = targetEixoParaMateria;
+    
+    setDisciplines(disciplines.map(d => {
+      if (d.id === disciplineId) {
+        return {
+          ...d,
+          areas: d.areas.map(a => {
+            if (a.id === areaId) {
+              if (a.contents.some(c => c.name === materiaName)) {
+                alert("Esta matéria já está vinculada a este eixo.");
+                return a;
+              }
+              return {
+                ...a,
+                contents: [...a.contents, { id: Date.now(), name: materiaName, resources: resources || [] }]
+              };
+            }
+            return a;
+          })
+        };
+      }
+      return d;
+    }));
+    setShowMateriaModal(false);
+    setTargetEixoParaMateria(null);
+    setMateriaSearchTerm('');
   };
 
   const handleDeleteContent = (disciplineId: number, areaId: number, contentId: number) => {

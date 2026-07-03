@@ -93,3 +93,53 @@ export async function fetchSimulators(): Promise<MockSimulator[]> {
     status: d.status
   }));
 }
+
+export async function generateNewCourseId(title: string): Promise<string> {
+  const baseSlug = title
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return `${baseSlug}-${new Date().getFullYear()}`;
+}
+
+export async function fetchAdminCourses() {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('id, title, institution, year, status, disciplines_json');
+    
+  if (error) {
+    console.error("Erro ao buscar cursos:", error);
+    return [];
+  }
+  return data;
+}
+
+export async function createAdminCourse(course: any) {
+  const { data, error } = await supabase
+    .from('courses')
+    .insert([course]);
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAdminCourse(id: string, course: any) {
+  const { data, error } = await supabase
+    .from('courses')
+    .update(course)
+    .eq('id', id);
+    
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAdminCourse(id: string) {
+  const { data, error } = await supabase
+    .from('courses')
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw error;
+  return data;
+}
