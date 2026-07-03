@@ -3,15 +3,24 @@ import {
   Trophy, BookOpen, Clock, AlertTriangle, Play, ChevronRight, CheckCircle, 
   HelpCircle, Sparkles, RefreshCw, BarChart, FileText, ArrowLeft, Send 
 } from "lucide-react";
-import { Question, MOCK_SIMULATORS, MockSimulator } from "../data";
+import { Question, MockSimulator } from "../data";
+import { fetchSimulators } from "../lib/api";
 
 interface SimuladoresScreenProps {
   onAskTutor: (question: string) => void;
 }
 
 export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps) {
-  const [simulators, setSimulators] = useState<MockSimulator[]>(MOCK_SIMULATORS);
+  const [simulators, setSimulators] = useState<MockSimulator[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeExam, setActiveExam] = useState<MockSimulator | null>(null);
+
+  useEffect(() => {
+    fetchSimulators().then(data => {
+      setSimulators(data);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
   const [isExamSubmitted, setIsExamSubmitted] = useState(false);
@@ -106,6 +115,14 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
       setIsGeneratingAi(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" id="simuladores-view-container">

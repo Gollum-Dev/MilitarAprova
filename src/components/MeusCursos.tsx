@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
   Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2
 } from "lucide-react";
-import { COURSES, CourseModule, Course } from "../data";
+import { CourseModule, Course } from "../data";
+import { fetchCourses } from "../lib/api";
 import AulasScreen from "./AulasScreen";
 import QuestoesScreen from "./QuestoesScreen";
 import SimuladoresScreen from "./SimuladoresScreen";
@@ -32,12 +33,22 @@ export default function MeusCursos({
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab,
   tutorInitialPrompt, onClearTutorPrompt
 }: MeusCursosProps) {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [quickQuestion, setQuickQuestion] = useState("");
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
 
-  const selectedCourse = COURSES.find(c => c.id === selectedCourseId) || null;
+  useEffect(() => {
+    fetchCourses().then(data => {
+      setCourses(data);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+
+  const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
+
 
   const handleAskQuick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +93,13 @@ export default function MeusCursos({
 
   // View 1: List of all courses
   if (!selectedCourseId) {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      );
+    }
     return (
       <div className="space-y-6" id="meus-cursos-list-view">
         <div className="border-b border-slate-200 pb-3 flex justify-between items-center">
@@ -92,12 +110,12 @@ export default function MeusCursos({
             <p className="text-xs text-slate-500">Selecione uma especialização para iniciar a preparação tática.</p>
           </div>
           <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/50 px-2.5 py-1 rounded">
-            {COURSES.length} CURSOS ATIVOS
+            {courses.length} CURSOS ATIVOS
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {COURSES.map((course) => (
+          {courses.map((course) => (
             <div 
               key={course.id}
               className="glass-panel hover:border-indigo-400 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"

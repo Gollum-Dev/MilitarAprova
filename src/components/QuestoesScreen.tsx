@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Filter, HelpCircle, ArrowLeft, ArrowRight, CheckCircle2, XCircle, 
   Sparkles, RefreshCw, BookOpen, ThumbsUp, HelpCircle as HintIcon, ShieldCheck 
 } from "lucide-react";
-import { Question, QUESTIONS } from "../data";
+import { Question } from "../data";
+import { fetchQuestions } from "../lib/api";
 
 interface QuestoesScreenProps {
   discipline?: string;
 }
 
 export default function QuestoesScreen({ discipline }: QuestoesScreenProps = {}) {
-  const [questions, setQuestions] = useState<Question[]>(QUESTIONS);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    fetchQuestions().then(data => {
+      setQuestions(data);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -80,6 +90,14 @@ export default function QuestoesScreen({ discipline }: QuestoesScreenProps = {})
 
   const uniqueDisciplines = ["Todas", ...new Set(questions.map(q => q.discipline))];
   const uniqueSubjects = ["Todos", ...new Set(questions.map(q => q.subject))];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" id="questoes-view-container">

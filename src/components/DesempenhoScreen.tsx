@@ -1,16 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Trophy, Award, Clock, HelpCircle, CheckCircle2, ChevronRight, 
   Sparkles, Bot, Shield, Zap, Flame, Calendar, Crown, Compass, Swords 
 } from "lucide-react";
-import { Badge, BADGES } from "../data";
+import { Badge } from "../data";
+import { fetchBadges } from "../lib/api";
 
 interface DesempenhoScreenProps {
   onStartRecoveryTraining: (subject: string) => void;
 }
 
 export default function DesempenhoScreen({ onStartRecoveryTraining }: DesempenhoScreenProps) {
-  const [badges, setBadges] = useState<Badge[]>(BADGES);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBadges().then(data => {
+      setBadges(data);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
 
   // Icon selector mapping helper
   const renderBadgeIcon = (iconName: string) => {
@@ -24,6 +33,14 @@ export default function DesempenhoScreen({ onStartRecoveryTraining }: Desempenho
       default: return <Award className="w-5 h-5 text-indigo-600" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" id="desempenho-view-container">

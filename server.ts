@@ -3,7 +3,13 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { QUESTIONS, LEIS_ARTICLES, Question, LawArticle } from "./src/data";
+import { createClient } from "@supabase/supabase-js";
+import { Question, LawArticle } from "./src/data";
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.VITE_SUPABASE_ANON_KEY || 'placeholder'
+);
 
 const app = express();
 const PORT = 3000;
@@ -96,17 +102,20 @@ app.post("/api/leis/search", async (req, res) => {
   }
 
   const qLower = query.toLowerCase();
-  // Filter relevant laws locally
-  const matchedLaws = LEIS_ARTICLES.filter(
-    law => law.title.toLowerCase().includes(qLower) || 
+  
+  // Fetch laws from Supabase
+  const { data: allLaws } = await supabase.from('law_articles').select('*');
+  const matchedLaws = (allLaws || []).filter(
+    (law: any) => law.title.toLowerCase().includes(qLower) || 
            law.content.toLowerCase().includes(qLower) || 
            law.citation.toLowerCase().includes(qLower) ||
            law.category.toLowerCase().includes(qLower)
   );
 
-  // Filter relevant questions locally
-  const matchedQuestions = QUESTIONS.filter(
-    q => q.discipline.toLowerCase().includes(qLower) ||
+  // Fetch questions from Supabase
+  const { data: allQuestions } = await supabase.from('questions').select('*');
+  const matchedQuestions = (allQuestions || []).filter(
+    (q: any) => q.discipline.toLowerCase().includes(qLower) ||
          q.subject.toLowerCase().includes(qLower) ||
          q.text.toLowerCase().includes(qLower)
   );
@@ -152,7 +161,8 @@ app.post("/api/simulados/generate", async (req, res) => {
 
   if (!ai) {
     // Return standard simulated test questions
-    const fallbackQuestions = QUESTIONS.slice(0, 3);
+    const { data } = await supabase.from('questions').select('*').limit(3);
+    const fallbackQuestions = data || [];
     return res.json({
       title: `Simulado Adaptativo IA: ${subject}`,
       description: "Gerado com o banco de dados tático local para o CHO CBMMG.",

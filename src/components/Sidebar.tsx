@@ -3,7 +3,9 @@ import {
   MessageSquare, LineChart, Settings, LogOut, ShieldAlert, 
   Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones
 } from "lucide-react";
-import { COURSES } from "../data";
+import { Course } from "../data";
+import { fetchCourses } from "../lib/api";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   currentTab: string;
@@ -26,8 +28,12 @@ export default function Sidebar({
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab
 }: SidebarProps) {
+  const [courses, setCourses] = useState<Course[]>([]);
+  useEffect(() => {
+    fetchCourses().then(setCourses).catch(console.error);
+  }, []);
 
-  const selectedCourse = COURSES.find(c => c.id === selectedCourseId) || null;
+  const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
 
   // Determine current navigation level
