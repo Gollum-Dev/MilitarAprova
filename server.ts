@@ -76,10 +76,30 @@ Aqui está uma resposta pré-programada de suporte para a sua pergunta:
 
 // API Routes
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  let dbStatus = "desconectado";
+  let dbError = null;
+  try {
+    const { data, error } = await supabase.from('law_articles').select('id').limit(1);
+    if (error) {
+      dbStatus = "erro";
+      dbError = error.message;
+    } else {
+      dbStatus = "conectado";
+    }
+  } catch (err: any) {
+    dbStatus = "erro";
+    dbError = err.message || err;
+  }
+
   res.json({
     status: "ok",
-    offlineMode: !process.env.GEMINI_API_KEY
+    offlineMode: !process.env.GEMINI_API_KEY,
+    database: {
+      status: dbStatus,
+      error: dbError,
+      url: process.env.VITE_SUPABASE_URL ? `${process.env.VITE_SUPABASE_URL.substring(0, 25)}...` : 'ausente'
+    }
   });
 });
 
@@ -297,8 +317,20 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Cabo Véio Server listening on port ${PORT}`);
+    
+    // Test Supabase connection on startup
+    try {
+      const { data, error } = await supabase.from('law_articles').select('id').limit(1);
+      if (error) {
+        console.warn("⚠️ Supabase Connection Warning:", error.message);
+      } else {
+        console.log("✅ Supabase Database Connection Successful!");
+      }
+    } catch (err: any) {
+      console.error("❌ Unexpected error during Supabase connection test:", err.message || err);
+    }
   });
 }
 

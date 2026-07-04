@@ -20,6 +20,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseInstitution, setNewCourseInstitution] = useState("");
   const [newCourseYear, setNewCourseYear] = useState("");
+  const [activeMateria, setActiveMateria] = useState<any>(null);
 
   useEffect(() => {
     async function loadCourses() {
@@ -141,6 +142,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                 onClick={() => {
                   setActiveTab(item.id);
                   setEditingCourseId(null);
+                  setActiveMateria(null);
                 }}
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
                   isActive 
@@ -196,16 +198,18 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           />
         ) : (
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <div>
-                <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-                  VISÃO DO GESTOR
-                </span>
-                <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
-                  {menuItems.find(i => i.id === activeTab)?.label}
-                </h2>
+            {!activeMateria && (
+              <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                <div>
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
+                    VISÃO DO GESTOR
+                  </span>
+                  <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
+                    {menuItems.find(i => i.id === activeTab)?.label}
+                  </h2>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="animate-smooth-fade">
             {activeTab === "cursos" && (
@@ -453,7 +457,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
             )}
 
             {activeTab === "materias" && (
-              <MateriasManager />
+              <MateriasManager onActiveMateriaChange={setActiveMateria} />
             )}
 
             {activeTab === "usuarios" && (
