@@ -30,6 +30,7 @@ export interface CourseModule {
   pdfsCount: number;
   questionsCount: number;
   progress: number;
+  rawDiscipline?: any;
 }
 
 export interface Course {
@@ -39,6 +40,8 @@ export interface Course {
   hours: number;
   lessons: number;
   disciplinesCount: number;
+  cover_url?: string;
+  description?: string;
   modules: CourseModule[];
 }
 

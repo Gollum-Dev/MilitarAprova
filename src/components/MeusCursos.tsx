@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
-  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2
+  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye
 } from "lucide-react";
 import { CourseModule, Course } from "../data";
 import { fetchCourses } from "../lib/api";
@@ -25,13 +25,15 @@ interface MeusCursosProps {
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio") => void;
   tutorInitialPrompt: string;
   onClearTutorPrompt: () => void;
+  allowedCourses?: string[];
+  userName: string;
 }
 
 export default function MeusCursos({ 
   onChangeTab, onAskTutor, 
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab,
-  tutorInitialPrompt, onClearTutorPrompt
+  tutorInitialPrompt, onClearTutorPrompt, allowedCourses, userName
 }: MeusCursosProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,12 +41,93 @@ export default function MeusCursos({
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
 
+  // Audio Player States & Ref
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const [currentPlayingAudio, setCurrentPlayingAudio] = useState<any | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioCurrentTime, setAudioCurrentTime] = useState("00:00");
+  const [audioDuration, setAudioDuration] = useState("00:00");
+
+  const formatTime = (timeInSeconds: number) => {
+    if (isNaN(timeInSeconds)) return "00:00";
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+
+    const audio = audioRef.current;
+
+    const handleTimeUpdate = () => {
+      if (audio.duration) {
+        setAudioProgress((audio.currentTime / audio.duration) * 100);
+        setAudioCurrentTime(formatTime(audio.currentTime));
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      setAudioDuration(formatTime(audio.duration));
+    };
+
+    const handleEnded = () => {
+      setIsAudioPlaying(false);
+      setAudioProgress(0);
+      setAudioCurrentTime("00:00");
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      audio.pause();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      if (currentPlayingAudio?.url) {
+        audioRef.current.src = currentPlayingAudio.url;
+        audioRef.current.play()
+          .then(() => setIsAudioPlaying(true))
+          .catch(err => console.error("Erro ao reproduzir áudio:", err));
+      } else {
+        audioRef.current.pause();
+        setIsAudioPlaying(false);
+      }
+    }
+  }, [currentPlayingAudio]);
+
+  const handlePlayPauseAudio = () => {
+    if (audioRef.current && currentPlayingAudio) {
+      if (isAudioPlaying) {
+        audioRef.current.pause();
+        setIsAudioPlaying(false);
+      } else {
+        audioRef.current.play()
+          .then(() => setIsAudioPlaying(true))
+          .catch(err => console.error("Erro ao reproduzir áudio:", err));
+      }
+    }
+  };
+
   useEffect(() => {
     fetchCourses().then(data => {
-      setCourses(data);
+      const filtered = allowedCourses && allowedCourses.length > 0
+        ? data.filter(c => allowedCourses.includes(c.id))
+        : data;
+      setCourses(filtered);
       setLoading(false);
     }).catch(console.error);
-  }, []);
+  }, [allowedCourses]);
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
@@ -89,7 +172,30 @@ export default function MeusCursos({
     }
   };
 
-  const currentFlashcards = selectedModule ? getModuleFlashcards(selectedModule.title) : [];
+  // Extract custom flashcards if they exist
+  let courseFlashcards: any[] = [];
+  if (selectedModule && selectedModule.rawDiscipline && Array.isArray(selectedModule.rawDiscipline.areas)) {
+    selectedModule.rawDiscipline.areas.forEach((area: any) => {
+      if (Array.isArray(area.contents)) {
+        area.contents.forEach((content: any) => {
+          if (Array.isArray(content.resources)) {
+            content.resources.forEach((res: any) => {
+              if (res.type === 'flashcard') {
+                courseFlashcards.push({
+                  q: res.flashcardQuestion || res.title || "Pergunta do Cartão",
+                  a: res.flashcardAnswer || res.description || "Resposta"
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  const currentFlashcards = courseFlashcards.length > 0 
+    ? courseFlashcards 
+    : (selectedModule ? getModuleFlashcards(selectedModule.title) : []);
 
   // View 1: List of all courses
   if (!selectedCourseId) {
@@ -126,7 +232,7 @@ export default function MeusCursos({
                 <span className="text-[9px] font-mono uppercase tracking-widest text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30">
                   Acesso Liberado
                 </span>
-                <h3 className="text-sm font-sans font-bold tracking-tight mt-3 line-clamp-1 group-hover:text-indigo-200 transition-colors">
+                <h3 className="text-sm font-sans font-bold tracking-tight mt-3 line-clamp-2 group-hover:text-indigo-200 transition-colors">
                   {course.title}
                 </h3>
               </div>
@@ -134,7 +240,7 @@ export default function MeusCursos({
               {/* Card Stats/Body */}
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                  {course.subtitle}
+                  {course.description || course.subtitle}
                 </p>
 
                 {/* Progress bar */}
@@ -163,16 +269,30 @@ export default function MeusCursos({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedCourseId(course.id);
-                    setCourseActiveTab("materias");
-                  }}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-sans font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm border-none mt-2 active:scale-95"
-                >
-                  <span>Estudar Agora</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="space-y-2">
+                  {course.cover_url && (
+                    <a
+                      href={course.cover_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-xl text-xs font-sans font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer decoration-none"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Capa</span>
+                    </a>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setSelectedCourseId(course.id);
+                      setCourseActiveTab("materias");
+                    }}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-sans font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm border-none active:scale-95"
+                  >
+                    <span>Estudar Agora</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -331,6 +451,7 @@ export default function MeusCursos({
 
           {courseActiveTab === "desempenho" && (
             <DesempenhoScreen 
+              userName={userName}
               onStartRecoveryTraining={(subject) => {
                 setCourseActiveTab("materias");
                 // Pre-select first module
@@ -349,6 +470,28 @@ export default function MeusCursos({
   if (selectedCourse && selectedModule) {
     const cleanDisciplineName = selectedModule.title.replace(/^Módulo \d+:\s*/, "");
 
+    const rawDisc = selectedModule.rawDiscipline;
+    const courseAudios: any[] = [];
+    const coursePdfs: any[] = [];
+    
+    if (rawDisc && Array.isArray(rawDisc.areas)) {
+      rawDisc.areas.forEach((area: any) => {
+        if (Array.isArray(area.contents)) {
+          area.contents.forEach((content: any) => {
+            if (Array.isArray(content.resources)) {
+              content.resources.forEach((res: any) => {
+                if (res.type === 'audio') {
+                  courseAudios.push({ ...res, materiaName: content.name });
+                } else if (res.type === 'pdf') {
+                  coursePdfs.push({ ...res, materiaName: content.name });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
     return (
       <div className="space-y-6" id="meus-cursos-subject-dashboard">
         {/* Tab Content rendering directly controlled by Sidebar subjectActiveTab */}
@@ -357,6 +500,7 @@ export default function MeusCursos({
             <AulasScreen 
               onAskTutor={onAskTutor} 
               disciplineName={cleanDisciplineName}
+              rawDiscipline={selectedModule.rawDiscipline}
             />
           )}
 
@@ -366,28 +510,39 @@ export default function MeusCursos({
                 <Headphones className="w-4.5 h-4.5 text-indigo-600" />
                 <span>Áudio Aulas - {cleanDisciplineName}</span>
               </h3>
-              
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="w-full md:w-1/3 bg-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
                   <div className="absolute inset-0 bg-indigo-500/10 blur-xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
                   <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-700 flex items-center justify-center shadow-2xl mb-4 relative z-10">
-                    <Headphones className="w-10 h-10 text-white" />
+                    {isAudioPlaying ? (
+                      <Volume2 className="w-10 h-10 text-white animate-bounce" />
+                    ) : (
+                      <Headphones className="w-10 h-10 text-white" />
+                    )}
                   </div>
-                  <h4 className="text-sm font-display font-bold text-white z-10 truncate w-full px-2">{cleanDisciplineName}</h4>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1 z-10">Escute no trânsito ou na academia</p>
+                  <h4 className="text-sm font-display font-bold text-white z-10 truncate w-full px-2">
+                    {currentPlayingAudio ? currentPlayingAudio.title : "Nenhum áudio em execução"}
+                  </h4>
+                  <p className="text-[10px] font-mono text-slate-400 mt-1 z-10">
+                    {currentPlayingAudio ? (currentPlayingAudio.materiaName || "Áudio Aula") : "Selecione uma faixa ao lado"}
+                  </p>
                   
                   <div className="mt-6 flex items-center space-x-4 z-10">
-                    <button className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md">
-                      <Play className="w-5 h-5 fill-current ml-1" />
+                    <button 
+                      onClick={handlePlayPauseAudio}
+                      disabled={!currentPlayingAudio}
+                      className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
+                    >
+                      {isAudioPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                     </button>
                   </div>
                   
                   <div className="w-full mt-4 flex items-center space-x-2 z-10">
-                    <span className="text-[10px] text-slate-400 font-mono">00:00</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{audioCurrentTime}</span>
                     <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
-                      <div className="absolute left-0 top-0 h-full bg-indigo-500 w-1/3"></div>
+                      <div className="absolute left-0 top-0 h-full bg-indigo-500" style={{ width: `${audioProgress}%` }}></div>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">45:30</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{audioDuration}</span>
                   </div>
                 </div>
                 
@@ -396,23 +551,45 @@ export default function MeusCursos({
                     Faixas Disponíveis
                   </h4>
                   
-                  {[1, 2, 3, 4, 5].map((track) => (
-                    <div key={track} className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                          <Play className="w-3.5 h-3.5 text-indigo-600 fill-current" />
+                  {courseAudios.length === 0 ? (
+                    <div className="text-slate-400 text-xs italic py-4 text-center">Nenhum áudio cadastrado para esta matéria.</div>
+                  ) : (
+                    courseAudios.map((audio, index) => {
+                      const isCurrent = currentPlayingAudio?.url === audio.url;
+                      return (
+                        <div 
+                          key={audio.id || index} 
+                          onClick={() => setCurrentPlayingAudio(audio)}
+                          className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group ${
+                            isCurrent 
+                              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' 
+                              : 'bg-slate-50 border-slate-200/60 text-slate-600'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                              isCurrent ? 'bg-indigo-200' : 'bg-indigo-100 group-hover:bg-indigo-200'
+                            }`}>
+                              {isCurrent && isAudioPlaying ? (
+                                <Pause className="w-3.5 h-3.5 text-indigo-700 fill-current" />
+                              ) : (
+                                <Play className="w-3.5 h-3.5 text-indigo-600 fill-current ml-0.5" />
+                              )}
+                            </div>
+                            <div>
+                              <h5 className="text-xs font-sans font-bold">{audio.title}</h5>
+                              <p className="text-[10px] text-slate-500 font-mono">{audio.materiaName || "Áudio Aula"}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+                              {isCurrent && isAudioPlaying ? 'Tocando' : 'Ouvir'}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h5 className="text-xs font-sans font-bold text-slate-800">Faixa {track < 10 ? `0${track}` : track}: Revisão Tática</h5>
-                          <p className="text-[10px] text-slate-500 font-mono">Parte {track} da Doutrina Oficial</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Volume2 className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <span className="text-[10px] font-mono text-slate-400">{15 + track}:00</span>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -426,37 +603,29 @@ export default function MeusCursos({
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-8 h-8 text-indigo-500 shrink-0" />
-                    <div>
-                      <h5 className="text-xs font-sans font-bold text-slate-800">Doutrina Oficial Integrada - {cleanDisciplineName}</h5>
-                      <p className="text-[10px] text-slate-500 font-mono">PDF • 4.5 MB</p>
+                {coursePdfs.length === 0 ? (
+                  <div className="col-span-2 text-slate-400 text-xs italic py-4 text-center">Nenhum PDF cadastrado para esta matéria.</div>
+                ) : (
+                  coursePdfs.map((pdf, index) => (
+                    <div key={pdf.id || index} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-8 h-8 text-indigo-500 shrink-0" />
+                        <div>
+                          <h5 className="text-xs font-sans font-bold text-slate-800">{pdf.title}</h5>
+                          <p className="text-[10px] text-slate-500 font-mono">{pdf.materiaName || "PDF"}</p>
+                        </div>
+                      </div>
+                      <a
+                        href={pdf.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold decoration-none cursor-pointer font-sans"
+                      >
+                        Visualizar
+                      </a>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => alert("Download do PDF da Doutrina iniciado.")}
-                    className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold cursor-pointer bg-transparent border-none font-sans"
-                  >
-                    Baixar
-                  </button>
-                </div>
-
-                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-8 h-8 text-indigo-500 shrink-0" />
-                    <div>
-                      <h5 className="text-xs font-sans font-bold text-slate-800">Resumo Esquemático & Mnemônicos</h5>
-                      <p className="text-[10px] text-slate-500 font-mono">PDF • 2.1 MB</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => alert("Download do PDF de Resumos iniciado.")}
-                    className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold cursor-pointer bg-transparent border-none font-sans"
-                  >
-                    Baixar
-                  </button>
-                </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -464,6 +633,7 @@ export default function MeusCursos({
           {subjectActiveTab === "questoes" && (
             <QuestoesScreen 
               discipline={cleanDisciplineName}
+              rawDiscipline={selectedModule.rawDiscipline}
             />
           )}
 

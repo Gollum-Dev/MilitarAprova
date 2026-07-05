@@ -3,9 +3,10 @@ import { Clock, CheckCircle, BarChart3, Bot, ChevronRight, Award, Zap } from "lu
 interface DashboardHomeProps {
   onChangeTab: (tab: string) => void;
   onGenerateCustomSimulator: (subject: string) => void;
+  userName: string;
 }
 
-export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator }: DashboardHomeProps) {
+export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, userName }: DashboardHomeProps) {
   const weeklyData = [
     { label: "Sem. 01", grade: 7.2 },
     { label: "Sem. 02", grade: 8.0 },
@@ -31,7 +32,7 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator }
             </span>
           </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
-            Bem-vindo de volta, <span className="text-amber-300">Silva</span>.
+            Bem-vindo de volta, <span className="text-amber-300">{userName}</span>.
           </h2>
           <p className="text-sm text-indigo-200 mt-1 max-w-xl">
             Sua preparação para o <strong className="text-white">CHO CBMMG</strong> está em ritmo acelerado. Mantenha a disciplina tática.
@@ -200,7 +201,7 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator }
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic relative">
               <span className="absolute top-1 left-2 text-3xl text-slate-200 select-none">“</span>
               <p className="pl-4 relative z-10">
-                Silva, notei que você errou 3 questões de <span className="text-slate-800 font-semibold not-italic">Direito Administrativo sobre Atos Administrativos</span>. Que tal fazermos um micro-simulado tático e adaptativo focado nesse tema hoje para mitigar essa falha?
+                {userName}, notei que você errou 3 questões de <span className="text-slate-800 font-semibold not-italic">Direito Administrativo sobre Atos Administrativos</span>. Que tal fazermos um micro-simulado tático e adaptativo focado nesse tema hoje para mitigar essa falha?
               </p>
             </div>
           </div>

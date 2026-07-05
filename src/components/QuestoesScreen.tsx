@@ -8,18 +8,51 @@ import { fetchQuestions } from "../lib/api";
 
 interface QuestoesScreenProps {
   discipline?: string;
+  rawDiscipline?: any;
 }
 
-export default function QuestoesScreen({ discipline }: QuestoesScreenProps = {}) {
+export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesScreenProps = {}) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    fetchQuestions().then(data => {
-      setQuestions(data);
+    if (rawDiscipline) {
+      const courseQuestions: Question[] = [];
+      if (Array.isArray(rawDiscipline.areas)) {
+        rawDiscipline.areas.forEach((area: any) => {
+          if (Array.isArray(area.contents)) {
+            area.contents.forEach((content: any) => {
+              const res = content.resources || [];
+              res.forEach((r: any) => {
+                if (r.type === 'question' || r.type === 'questoes') {
+                  const opts = Array.isArray(r.options) && r.options.length > 0
+                    ? r.options 
+                    : [r.optionA, r.optionB, r.optionC, r.optionD].filter(Boolean);
+                  
+                  courseQuestions.push({
+                    id: r.id?.toString() || Math.random().toString(),
+                    discipline: discipline || 'Módulo',
+                    subject: content.name,
+                    text: r.questionText || r.title,
+                    options: opts.length > 0 ? opts : ["A) Opção A", "B) Opção B", "C) Opção C", "D) Opção D"],
+                    correct: (r.correctAnswer || r.correct || 'A') as 'A' | 'B' | 'C' | 'D',
+                    explanation: r.justification || r.explanation || ''
+                  });
+                }
+              });
+            });
+          }
+        });
+      }
+      setQuestions(courseQuestions);
       setLoading(false);
-    }).catch(console.error);
-  }, []);
+    } else {
+      fetchQuestions().then(data => {
+        setQuestions(data);
+        setLoading(false);
+      }).catch(console.error);
+    }
+  }, [rawDiscipline, discipline]);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);

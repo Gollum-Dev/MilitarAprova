@@ -1013,7 +1013,7 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
             isPdfMaximized 
               ? 'w-screen h-screen rounded-none' 
               : previewPdfUrl && previewPdfUrl.includes('docs.google.com/presentation')
-                ? 'w-full max-w-4xl rounded-2xl h-auto'
+                ? 'w-full max-w-3xl rounded-2xl h-auto'
                 : 'w-full max-w-5xl h-[85vh] rounded-2xl'
           }`}>
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">

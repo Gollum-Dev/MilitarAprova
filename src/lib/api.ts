@@ -15,25 +15,79 @@ export async function fetchCourses(): Promise<Course[]> {
   if (modulesError) throw modulesError;
 
   // Reconstruct the nested structure
-  const courses: Course[] = coursesData.map((course: any) => ({
-    id: course.id,
-    title: course.title,
-    subtitle: course.subtitle,
-    hours: course.hours,
-    lessons: course.lessons,
-    disciplinesCount: course.disciplines_count,
-    modules: modulesData
-      .filter((m: any) => m.course_id === course.id)
-      .map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        description: m.description,
-        lessonsCount: m.lessons_count,
-        pdfsCount: m.pdfs_count,
-        questionsCount: m.questions_count,
-        progress: 0 // Will need to fetch from user_course_progress eventually
-      }))
-  }));
+  const courses: Course[] = coursesData.map((course: any) => {
+    let mappedModules: CourseModule[] = [];
+    let disciplinesList: any[] = [];
+    
+    if (course.disciplines_json) {
+      try {
+        disciplinesList = typeof course.disciplines_json === 'string'
+          ? JSON.parse(course.disciplines_json)
+          : course.disciplines_json;
+      } catch (e) {
+        console.error("Erro ao fazer parse de disciplines_json:", e);
+      }
+    }
+
+    if (Array.isArray(disciplinesList) && disciplinesList.length > 0) {
+      mappedModules = disciplinesList.map((disc: any) => {
+        let videos = 0;
+        let pdfs = 0;
+        let questions = 0;
+        
+        if (Array.isArray(disc.areas)) {
+          disc.areas.forEach((area: any) => {
+            if (Array.isArray(area.contents)) {
+              area.contents.forEach((content: any) => {
+                if (Array.isArray(content.resources)) {
+                  content.resources.forEach((res: any) => {
+                    if (res.type === 'video') videos++;
+                    else if (res.type === 'pdf') pdfs++;
+                    else if (res.type === 'questoes') questions++;
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        return {
+          id: disc.id,
+          title: disc.name,
+          description: `Possui ${disc.areas?.length || 0} eixos temáticos vinculados.`,
+          lessonsCount: videos,
+          pdfsCount: pdfs,
+          questionsCount: questions,
+          progress: 0,
+          rawDiscipline: disc
+        };
+      });
+    } else {
+      mappedModules = modulesData
+        .filter((m: any) => m.course_id === course.id)
+        .map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          description: m.description,
+          lessonsCount: m.lessons_count,
+          pdfsCount: m.pdfs_count,
+          questionsCount: m.questions_count,
+          progress: 0
+        }));
+    }
+
+    return {
+      id: course.id,
+      title: course.title,
+      subtitle: course.subtitle || '',
+      hours: course.hours || 0,
+      lessons: course.lessons || 0,
+      disciplinesCount: Array.isArray(disciplinesList) ? disciplinesList.length : (course.disciplines_count || 0),
+      cover_url: course.cover_url || '',
+      description: course.description || '',
+      modules: mappedModules
+    };
+  });
 
   return courses;
 }
@@ -106,7 +160,7 @@ export async function generateNewCourseId(title: string): Promise<string> {
 export async function fetchAdminCourses() {
   const { data, error } = await supabase
     .from('courses')
-    .select('id, title, institution, year, status, disciplines_json');
+    .select('id, title, institution, year, status, cover_url, description, disciplines_json');
     
   if (error) {
     console.error("Erro ao buscar cursos:", error);

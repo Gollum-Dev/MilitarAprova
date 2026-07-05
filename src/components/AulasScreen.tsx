@@ -9,9 +9,10 @@ import { supabase } from "../lib/supabase";
 interface AulasScreenProps {
   onAskTutor: (question: string) => void;
   disciplineName?: string;
+  rawDiscipline?: any;
 }
 
-export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenProps) {
+export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline }: AulasScreenProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState<"resumo" | "pdf" | "questoes" | "flashcards" | "audios" | "slides">("resumo");
   const [chatInput, setChatInput] = useState("");
@@ -47,11 +48,6 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
     async function loadResources() {
       try {
         setLoadingQuestions(true);
-        const { data, error } = await supabase
-          .from('materias')
-          .eq('discipline', displayDiscipline);
-          
-        if (error) throw error;
         
         let loadedQuestions: any[] = [];
         let loadedFlashcards: any[] = [];
@@ -60,49 +56,108 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
         let loadedAudios: any[] = [];
         let loadedVideos: any[] = [];
         let loadedSlides: any[] = [];
-        if (data) {
-          data.forEach((m: any) => {
-            const res = m.resources || [];
-            res.forEach((r: any) => {
-              if (r.type === 'question' && r.questionText) {
-                loadedQuestions.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'flashcard' && r.flashcardQuestion) {
-                loadedFlashcards.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'summary' && r.summaryText) {
-                loadedSummaries.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'pdf' && r.url) {
-                loadedPdfs.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'audio' && r.url) {
-                loadedAudios.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'video' && r.url) {
-                loadedVideos.push({
-                  ...r,
-                  materiaName: m.name
-                });
-              } else if (r.type === 'slides' && r.url) {
-                loadedSlides.push({
-                  ...r,
-                  materiaName: m.name
+
+        if (rawDiscipline) {
+          if (Array.isArray(rawDiscipline.areas)) {
+            rawDiscipline.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                area.contents.forEach((content: any) => {
+                  const res = content.resources || [];
+                  res.forEach((r: any) => {
+                    if (r.type === 'question' || r.type === 'questoes') {
+                      loadedQuestions.push({
+                        ...r,
+                        questionText: r.questionText || r.title,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'flashcard') {
+                      loadedFlashcards.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'summary') {
+                      loadedSummaries.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'pdf') {
+                      loadedPdfs.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'audio') {
+                      loadedAudios.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'video') {
+                      loadedVideos.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    } else if (r.type === 'slides') {
+                      loadedSlides.push({
+                        ...r,
+                        materiaName: content.name
+                      });
+                    }
+                  });
                 });
               }
             });
-          });
+          }
+        } else {
+          const { data, error } = await supabase
+            .from('materias')
+            .eq('discipline', displayDiscipline);
+            
+          if (error) throw error;
+          
+          if (data) {
+            data.forEach((m: any) => {
+              const res = m.resources || [];
+              res.forEach((r: any) => {
+                if (r.type === 'question' && r.questionText) {
+                  loadedQuestions.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'flashcard' && r.flashcardQuestion) {
+                  loadedFlashcards.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'summary' && r.summaryText) {
+                  loadedSummaries.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'pdf' && r.url) {
+                  loadedPdfs.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'audio' && r.url) {
+                  loadedAudios.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'video' && r.url) {
+                  loadedVideos.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                } else if (r.type === 'slides' && r.url) {
+                  loadedSlides.push({
+                    ...r,
+                    materiaName: m.name
+                  });
+                }
+              });
+            });
+          }
         }
+
         setQuestions(loadedQuestions);
         setFlashcards(loadedFlashcards);
         setSummaries(loadedSummaries);
@@ -117,7 +172,7 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
       }
     }
     loadResources();
-  }, [displayDiscipline]);
+  }, [displayDiscipline, rawDiscipline]);
 
   const activeQuestion = questions[currentQuestionIndex] || null;
   const activeFlashcard = flashcards[currentFlashcardIndex] || null;
@@ -809,34 +864,60 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
             <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500">
               Playlist do Curso
             </h3>
-            <span className="text-xs font-mono text-indigo-600 font-bold">5 / 8 Aulas</span>
+            <span className="text-xs font-mono text-indigo-600 font-bold">
+              {videos.length > 0 ? `${activeVideoIndex + 1} / ${videos.length} Vídeo(s)` : "5 / 8 Aulas"}
+            </span>
           </div>
 
           <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
-            {playlist.map((item) => (
-              <div
-                key={item.id}
-                className={`p-3 rounded-lg flex items-center justify-between border transition-all ${
-                  item.active 
-                    ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold" 
-                    : item.locked 
-                      ? "bg-slate-50/50 border-slate-100 text-slate-400" 
-                      : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
-                }`}
-              >
-                <div className="flex items-center space-x-2.5 overflow-hidden">
-                  {item.completed ? (
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                  ) : item.locked ? (
-                    <Lock className="w-4 h-4 text-slate-400 shrink-0" />
-                  ) : (
-                    <Play className={`w-4 h-4 shrink-0 ${item.active ? "text-indigo-600 fill-current" : "text-slate-400"}`} />
-                  )}
-                  <span className="text-xs font-sans truncate pr-1">{item.title}</span>
+            {(() => {
+              const activePlaylist = videos.length > 0
+                ? videos.map((v, idx) => ({
+                    id: v.id || idx,
+                    title: v.title,
+                    duration: "Assistir",
+                    active: idx === activeVideoIndex,
+                    completed: false,
+                    locked: false,
+                    onClick: () => setActiveVideoIndex(idx)
+                  }))
+                : playlist.map((item) => ({
+                    ...item,
+                    onClick: () => {
+                      if (!item.locked) {
+                        alert("Esta é uma aula demonstrativa da plataforma.");
+                      } else {
+                        alert("Aula bloqueada. Cadastre seus próprios vídeos na aba administrativa.");
+                      }
+                    }
+                  }));
+
+              return activePlaylist.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={item.onClick}
+                  className={`p-3 rounded-lg flex items-center justify-between border transition-all cursor-pointer ${
+                    item.active 
+                      ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold" 
+                      : item.locked 
+                        ? "bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed" 
+                        : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5 overflow-hidden">
+                    {item.completed ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : item.locked ? (
+                      <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                    ) : (
+                      <Play className={`w-4 h-4 shrink-0 ${item.active ? "text-indigo-600 fill-current" : "text-slate-400"}`} />
+                    )}
+                    <span className="text-xs font-sans truncate pr-1">{item.title}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-400 shrink-0">{item.duration}</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 shrink-0">{item.duration}</span>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
 
@@ -877,7 +958,7 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
             isPdfMaximized 
               ? 'w-screen h-screen rounded-none' 
               : viewingPdfUrl && viewingPdfUrl.includes('docs.google.com/presentation')
-                ? 'w-full max-w-4xl rounded-2xl h-auto'
+                ? 'w-full max-w-3xl rounded-2xl h-auto'
                 : 'w-full max-w-5xl h-[85vh] rounded-2xl'
           }`}>
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
@@ -958,24 +1039,33 @@ export default function AulasScreen({ onAskTutor, disciplineName }: AulasScreenP
             </div>
             
             <div className="p-8 bg-slate-50 flex flex-col items-center justify-center min-h-[160px]">
-              <div className="w-full h-14 relative overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white">
-                <iframe 
-                  src={(() => {
-                    if (!viewingAudioUrl) return '';
-                    if (viewingAudioUrl.includes('drive.google.com')) {
+              {viewingAudioUrl && viewingAudioUrl.includes('drive.google.com') ? (
+                <div className="w-full h-14 relative overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white">
+                  <iframe 
+                    src={(() => {
                       const match = viewingAudioUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
                       if (match && match[1]) {
                         return `https://drive.google.com/file/d/${match[1]}/preview`;
                       }
-                    }
-                    return viewingAudioUrl;
-                  })()}
-                  className="w-full h-full border-none"
-                  title={viewingAudioTitle}
-                />
-                {/* Bloqueio físico transparente sobre o botão de pop-out/open in new window no canto superior/direito */}
-                <div className="absolute top-0 right-0 w-16 h-full bg-transparent cursor-default" />
-              </div>
+                      return viewingAudioUrl;
+                    })()}
+                    className="w-full h-full border-none"
+                    title={viewingAudioTitle}
+                  />
+                  {/* Bloqueio físico transparente sobre o botão de pop-out/open in new window no canto superior/direito */}
+                  <div className="absolute top-0 right-0 w-16 h-full bg-transparent cursor-default" />
+                </div>
+              ) : (
+                <div className="w-full flex flex-col items-center justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <Headphones className="w-8 h-8 text-indigo-500 mb-2" />
+                  <audio 
+                    src={viewingAudioUrl || ""} 
+                    controls 
+                    autoPlay 
+                    className="w-full"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

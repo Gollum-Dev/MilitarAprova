@@ -7,10 +7,11 @@ import { Badge } from "../data";
 import { fetchBadges } from "../lib/api";
 
 interface DesempenhoScreenProps {
+  userName: string;
   onStartRecoveryTraining: (subject: string) => void;
 }
 
-export default function DesempenhoScreen({ onStartRecoveryTraining }: DesempenhoScreenProps) {
+export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: DesempenhoScreenProps) {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,7 +150,7 @@ export default function DesempenhoScreen({ onStartRecoveryTraining }: Desempenho
 
             <div className="space-y-4">
               <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-xs text-slate-700 leading-relaxed italic">
-                “ Silva, você possui excelente retenção em Direito Constitucional, mas seu tempo médio de resposta em Direito Penal Militar está elevado e identificamos 4 lacunas graves sobre Crimes de Autoridade. Recomendo iniciarmos agora um treino adaptativo corretivo.”
+                “ {userName}, você possui excelente retenção em Direito Constitucional, mas seu tempo médio de resposta em Direito Penal Militar está elevado e identificamos 4 lacunas graves sobre Crimes de Autoridade. Recomendo iniciarmos agora um treino adaptativo corretivo.”
               </div>
 
               <div className="space-y-2 border-t border-slate-100 pt-4 text-xs">

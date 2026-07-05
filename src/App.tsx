@@ -10,6 +10,7 @@ export default function App() {
   const [authView, setAuthView] = useState<"landing" | "login" | "app">("landing");
   const [userRole, setUserRole] = useState<"aluno" | "admin">("aluno");
   const [userName, setUserName] = useState("Silva");
+  const [allowedCourses, setAllowedCourses] = useState<string[]>([]);
   const [currentTab, setCurrentTab] = useState("inicio");
   const [userRank, setUserRank] = useState("SOLDADO");
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -36,9 +37,10 @@ export default function App() {
       });
   }, []);
 
-  const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno") => {
+  const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno", allowedCoursesList: string[] = []) => {
     setUserName(name);
     setUserRole(role);
+    setAllowedCourses(allowedCoursesList);
     setAuthView("app");
   };
 
@@ -78,6 +80,7 @@ export default function App() {
           <DashboardHome 
             onChangeTab={setCurrentTab} 
             onGenerateCustomSimulator={handleGenerateCustomSimulator} 
+            userName={userName}
           />
         );
       case "cursos":
@@ -95,6 +98,8 @@ export default function App() {
             setSubjectActiveTab={setSubjectActiveTab}
             tutorInitialPrompt={tutorInitialPrompt}
             onClearTutorPrompt={() => setTutorInitialPrompt("")}
+            allowedCourses={allowedCourses}
+            userName={userName}
           />
         );
       case "configuracoes":

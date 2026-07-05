@@ -35,6 +35,8 @@ export interface CourseData {
   institution: string;
   year: string;
   status: string;
+  cover_url?: string;
+  description?: string;
   disciplines?: Discipline[];
 }
 
@@ -50,6 +52,8 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
   const [title, setTitle] = useState(course.title);
   const [institution, setInstitution] = useState(course.institution);
   const [year, setYear] = useState(course.year);
+  const [coverUrl, setCoverUrl] = useState(course.cover_url || "");
+  const [description, setDescription] = useState(course.description || "");
   const [disciplines, setDisciplines] = useState<Discipline[]>(course.disciplines || []);
   
   // Auto-save geral com debounce
@@ -65,11 +69,13 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
         title,
         institution,
         year,
+        cover_url: coverUrl,
+        description,
         disciplines
       }, false); // <== IMPORTANTE: não fechar o editor no auto-save
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [title, institution, year, disciplines]);
+  }, [title, institution, year, coverUrl, description, disciplines]);
   
   // UI States (Focus Navigation)
   const [activeDisciplineId, setActiveDisciplineId] = useState<number | null>(null);
@@ -447,6 +453,8 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
       title !== course.title || 
       institution !== course.institution || 
       year !== course.year || 
+      coverUrl !== (course.cover_url || "") ||
+      description !== (course.description || "") ||
       JSON.stringify(disciplines) !== JSON.stringify(course.disciplines || []);
 
     if (hasUnsavedChanges) {
@@ -464,6 +472,8 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
       title,
       institution,
       year,
+      cover_url: coverUrl,
+      description,
       disciplines
     });
   };
@@ -524,6 +534,28 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                     onChange={(e) => setYear(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     placeholder="Ex: 2024"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-6 mt-6">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">URL da Imagem de Capa</label>
+                  <input
+                    type="url"
+                    value={coverUrl}
+                    onChange={(e) => setCoverUrl(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    placeholder="https://exemplo.com/imagem.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Descrição do Curso</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                    placeholder="Descreva os detalhes e objetivos do curso..."
                   />
                 </div>
               </div>
@@ -843,7 +875,8 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                         </button>
                       </div>
 
-                                             {/* Left Tab Menu */}
+                      <div className="flex flex-col md:flex-row gap-6 mt-6">
+                        {/* Left Tab Menu */}
                         <div className="w-full md:w-1/4 space-y-2">
                           {(['video', 'audio', 'pdf', 'slides', 'summary', 'flashcard', 'question'] as ResourceType[]).map(type => {
                             const count = (activeContent.resources || []).filter(r => r.type === type).length;
@@ -1381,7 +1414,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
             isPdfMaximized 
               ? 'w-screen h-screen rounded-none' 
               : previewPdfUrl && previewPdfUrl.includes('docs.google.com/presentation')
-                ? 'w-full max-w-4xl rounded-2xl h-auto'
+                ? 'w-full max-w-3xl rounded-2xl h-auto'
                 : 'w-full max-w-5xl h-[85vh] rounded-2xl'
           }`}>
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">

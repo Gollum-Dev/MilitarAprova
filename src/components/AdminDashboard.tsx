@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree } from "lucide-react";
+import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree, Eye } from "lucide-react";
 import CourseEditor, { CourseData } from "./CourseEditor";
 import { MateriasManager } from "./MateriasManager";
 import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCourse, generateNewCourseId } from "../lib/api";
+import { fetchStudents, createStudent, updateStudent, deleteStudent } from "../lib/student";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -20,7 +21,23 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseInstitution, setNewCourseInstitution] = useState("");
   const [newCourseYear, setNewCourseYear] = useState("");
+  const [newCourseCoverUrl, setNewCourseCoverUrl] = useState("");
+  const [newCourseDescription, setNewCourseDescription] = useState("");
   const [activeMateria, setActiveMateria] = useState<any>(null);
+
+  // Students Management States
+  const [students, setStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<any | null>(null);
+  
+  const [studentName, setStudentName] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
+  const [studentPhone, setStudentPhone] = useState("");
+  const [studentCpf, setStudentCpf] = useState("");
+  const [studentStatus, setStudentStatus] = useState("Ativo");
+  const [studentAllowedCourses, setStudentAllowedCourses] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadCourses() {
@@ -33,6 +50,8 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           institution: c.institution || '',
           year: c.year || '',
           status: c.status || 'Rascunho',
+          cover_url: c.cover_url || '',
+          description: c.description || '',
           disciplines: c.disciplines_json || []
         }));
         setCourses(mapped);
@@ -44,6 +63,102 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
     }
     loadCourses();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "usuarios") {
+      loadStudentsList();
+    }
+  }, [activeTab]);
+
+  async function loadStudentsList() {
+    setLoadingStudents(true);
+    try {
+      const data = await fetchStudents();
+      setStudents(data);
+    } catch (err) {
+      console.error("Erro ao buscar alunos:", err);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }
+
+  const handleOpenNewStudent = () => {
+    setEditingStudent(null);
+    setStudentName("");
+    setStudentEmail("");
+    setStudentPassword("");
+    setStudentPhone("");
+    setStudentCpf("");
+    setStudentStatus("Ativo");
+    setStudentAllowedCourses([]);
+    setShowStudentModal(true);
+  };
+
+  const handleOpenEditStudent = (student: any) => {
+    setEditingStudent(student);
+    setStudentName(student.name);
+    setStudentEmail(student.email);
+    setStudentPassword("");
+    setStudentPhone(student.phone || "");
+    setStudentCpf(student.cpf || "");
+    setStudentStatus(student.status || "Ativo");
+    setStudentAllowedCourses(student.allowed_courses || []);
+    setShowStudentModal(true);
+  };
+
+  const handleSaveStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentName || !studentEmail) return;
+
+    const payload: any = {
+      name: studentName,
+      email: studentEmail.trim().toLowerCase(),
+      phone: studentPhone,
+      cpf: studentCpf,
+      status: studentStatus,
+      allowed_courses: studentAllowedCourses
+    };
+
+    if (studentPassword) {
+      payload.password = studentPassword;
+    }
+
+    try {
+      if (editingStudent) {
+        await updateStudent(editingStudent.id, payload);
+        alert("Aluno atualizado com sucesso!");
+      } else {
+        await createStudent(payload);
+        alert("Aluno cadastrado com sucesso!");
+      }
+      setShowStudentModal(false);
+      loadStudentsList();
+    } catch (err: any) {
+      console.error("Erro ao salvar aluno:", err);
+      alert(`Erro ao salvar aluno: ${err.message || "Erro desconhecido"}\n\n(Se o erro mencionar que a relação "students" não existe, certifique-se de executar o comando SQL de criação da tabela "students" no seu painel do Supabase).`);
+    }
+  };
+
+  const handleDeleteStudentClick = async (id: string) => {
+    if (window.confirm("Deseja realmente excluir este aluno e revogar todo o seu acesso?")) {
+      try {
+        await deleteStudent(id);
+        alert("Aluno excluído com sucesso!");
+        loadStudentsList();
+      } catch (err) {
+        console.error("Erro ao excluir aluno:", err);
+        alert("Erro ao excluir aluno.");
+      }
+    }
+  };
+
+  const handleToggleCourseForStudent = (courseId: string) => {
+    setStudentAllowedCourses(prev => 
+      prev.includes(courseId)
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
 
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +173,9 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         year: newCourseYear || new Date().getFullYear().toString(),
         status: "Rascunho",
         disciplines_json: [],
-        subtitle: "Descrição do curso",
+        subtitle: newCourseDescription || "Descrição do curso",
+        description: newCourseDescription || "Descrição do curso",
+        cover_url: newCourseCoverUrl || "",
         hours: 0,
         lessons: 0,
         disciplines_count: 0
@@ -72,12 +189,16 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         institution: newCourseData.institution,
         year: newCourseData.year,
         status: newCourseData.status,
+        cover_url: newCourseData.cover_url,
+        description: newCourseData.description,
         disciplines: []
       }]);
       
       setNewCourseTitle("");
       setNewCourseInstitution("");
       setNewCourseYear("");
+      setNewCourseCoverUrl("");
+      setNewCourseDescription("");
       setIsCreatingCourse(false);
     } catch (err) {
       console.error("Erro ao criar curso:", err);
@@ -183,6 +304,8 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                   institution: updatedCourse.institution,
                   year: updatedCourse.year,
                   status: updatedCourse.status,
+                  cover_url: updatedCourse.cover_url,
+                  description: updatedCourse.description,
                   disciplines_json: updatedCourse.disciplines || []
                 });
                 setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
@@ -306,6 +429,17 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                             </div>
 
                             <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100/80 pt-3 mt-4 relative z-10">
+                              {course.cover_url && (
+                                <a 
+                                  href={course.cover_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-600 hover:text-white hover:bg-slate-600 rounded transition-colors flex items-center space-x-1 cursor-pointer decoration-none"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Capa</span>
+                                </a>
+                              )}
                               <button 
                                 onClick={() => { setEditingCourseMode('basic'); setEditingCourseId(course.id); }}
                                 className="px-3 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
@@ -318,7 +452,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                                 className="px-3 py-1.5 text-[10px] uppercase font-bold text-emerald-600 hover:text-white hover:bg-emerald-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
                               >
                                 <Layers className="w-3 h-3" />
-                                <span>Editar Matéria</span>
+                                <span>Matéria</span>
                               </button>
                               <button 
                                 onClick={async () => {
@@ -434,6 +568,28 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                         </div>
                       </div>
                       
+                      <div>
+                        <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">URL da Imagem de Capa</label>
+                        <input 
+                          type="url" 
+                          value={newCourseCoverUrl}
+                          onChange={(e) => setNewCourseCoverUrl(e.target.value)}
+                          placeholder="https://exemplo.com/imagem.jpg"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-sans text-slate-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Descrição do Curso</label>
+                        <textarea 
+                          value={newCourseDescription}
+                          onChange={(e) => setNewCourseDescription(e.target.value)}
+                          placeholder="Descrição geral dos objetivos e público-alvo do curso..."
+                          rows={3}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-sans text-slate-800 resize-none"
+                        />
+                      </div>
+                      
                       <div className="pt-6 border-t border-slate-100 flex space-x-4">
                         <button 
                           type="button"
@@ -461,10 +617,115 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
             )}
 
             {activeTab === "usuarios" && (
-              <div className="glass-panel p-8 rounded-2xl border border-slate-200 text-center">
-                <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-display font-bold text-slate-800 mb-2">Gestão de Alunos</h3>
-                <p className="text-sm text-slate-500 max-w-md mx-auto">Esta área está sendo desenvolvida. Aqui você poderá matricular alunos, aprovar pagamentos e ver o progresso.</p>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                  <div>
+                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
+                      VISÃO DO GESTOR
+                    </span>
+                    <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
+                      Alunos Matriculados
+                    </h2>
+                  </div>
+                  <button 
+                    onClick={handleOpenNewStudent}
+                    className="group px-5 py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-100 hover:border-indigo-600 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md flex items-center space-x-2 relative overflow-hidden whitespace-nowrap shrink-0"
+                  >
+                    <PlusCircle className="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
+                    <span>Novo Aluno</span>
+                  </button>
+                </div>
+
+                {loadingStudents ? (
+                  <div className="flex justify-center items-center py-20">
+                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                  </div>
+                ) : students.length === 0 ? (
+                  <div className="glass-panel p-8 rounded-2xl border border-slate-200 text-center bg-white shadow-sm">
+                    <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <h3 className="text-sm font-display font-bold text-slate-700 mb-2">Nenhum aluno cadastrado</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">Cadastre novos alunos para liberar o acesso a cursos individuais da plataforma.</p>
+                    <button 
+                      onClick={handleOpenNewStudent}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all"
+                    >
+                      Cadastrar Primeiro Aluno
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+                            <th className="px-6 py-4">Nome / Email</th>
+                            <th className="px-6 py-4">CPF / Telefone</th>
+                            <th className="px-6 py-4 text-center">Status</th>
+                            <th className="px-6 py-4">Cursos Liberados</th>
+                            <th className="px-6 py-4 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-sm">
+                          {students.map((student) => (
+                            <tr key={student.id} className="hover:bg-slate-50/60 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="font-bold text-slate-800">{student.name}</div>
+                                <div className="text-xs text-slate-400 font-mono">{student.email}</div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="text-slate-600 font-mono text-xs">{student.cpf || "N/D"}</div>
+                                <div className="text-xs text-slate-400 font-mono">{student.phone || "N/D"}</div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border shadow-sm ${
+                                  student.status === 'Ativo' 
+                                    ? 'bg-green-50 text-green-700 border-green-200' 
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                  {student.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 max-w-xs">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {student.allowed_courses && student.allowed_courses.length > 0 ? (
+                                    student.allowed_courses.map((courseId: string) => {
+                                      const courseTitle = courses.find(c => c.id === courseId)?.title || courseId;
+                                      return (
+                                        <span key={courseId} className="inline-flex items-center bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded text-[10px] font-sans font-bold" title={courseTitle}>
+                                          {courses.find(c => c.id === courseId)?.institution || 'CURSO'} - {courses.find(c => c.id === courseId)?.year || ''}
+                                        </span>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="text-slate-400 text-xs italic">Nenhum curso liberado</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right whitespace-nowrap">
+                                <div className="flex justify-end space-x-2">
+                                  <button 
+                                    onClick={() => handleOpenEditStudent(student)}
+                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                                    title="Editar Aluno"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteStudentClick(student.id)}
+                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                                    title="Excluir Aluno"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -486,6 +747,140 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           </div>
         </div>
         )}
+      {/* Student Form Modal */}
+      {showStudentModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-smooth-fade">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-display font-bold text-slate-800 flex items-center space-x-2">
+                <Users className="w-5 h-5 text-indigo-500" />
+                <span>{editingStudent ? 'Editar Cadastro de Aluno' : 'Cadastrar Novo Aluno'}</span>
+              </h3>
+              <button 
+                onClick={() => setShowStudentModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveStudent} className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Nome Completo *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-sans"
+                    placeholder="Ex: Silva"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">E-mail de Login *</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={studentEmail}
+                    onChange={(e) => setStudentEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-sans"
+                    placeholder="aluno@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">CPF</label>
+                  <input 
+                    type="text" 
+                    value={studentCpf}
+                    onChange={(e) => setStudentCpf(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-mono"
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Telefone</label>
+                  <input 
+                    type="text" 
+                    value={studentPhone}
+                    onChange={(e) => setStudentPhone(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-mono"
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Status da Conta</label>
+                  <select 
+                    value={studentStatus}
+                    onChange={(e) => setStudentStatus(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-sans"
+                  >
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Senha de Acesso {editingStudent && "(Deixe em branco para manter a atual)"}</label>
+                <input 
+                  type="password" 
+                  value={studentPassword}
+                  onChange={(e) => setStudentPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm font-mono"
+                  placeholder={editingStudent ? "••••••" : "Defina a senha (mínimo 6 dígitos)"}
+                  minLength={6}
+                  required={!editingStudent}
+                />
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
+                <label className="block text-xs font-sans font-bold text-slate-700 uppercase tracking-wider mb-3">Vincular Cursos Autorizados</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[200px] overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-100">
+                  {courses.length === 0 ? (
+                    <div className="col-span-2 text-center text-slate-500 text-xs py-4">Nenhum curso cadastrado para vincular.</div>
+                  ) : (
+                    courses.map((course) => (
+                      <label key={course.id} className="flex items-center space-x-3 p-2.5 bg-white hover:bg-indigo-50/30 rounded-lg border border-slate-200/80 cursor-pointer transition-colors text-xs font-sans">
+                        <input 
+                          type="checkbox"
+                          checked={studentAllowedCourses.includes(course.id.toString())}
+                          onChange={() => handleToggleCourseForStudent(course.id.toString())}
+                          className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                        />
+                        <div className="overflow-hidden">
+                          <div className="font-bold text-slate-700 truncate">{course.title}</div>
+                          <div className="text-[10px] text-slate-400 font-mono uppercase">{course.institution} • {course.year}</div>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex space-x-3 justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => setShowStudentModal(false)}
+                  className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 cursor-pointer uppercase transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Salvar Cadastro</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </main>
     </div>
   );

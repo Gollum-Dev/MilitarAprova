@@ -1,25 +1,44 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft } from "lucide-react";
+import { validateStudentLogin } from "../lib/student";
 
 interface LoginScreenProps {
-  onLoginSuccess: (name: string, role: "aluno" | "admin") => void;
+  onLoginSuccess: (name: string, role: "aluno" | "admin", allowedCourses: string[]) => void;
   onBackToLanding?: () => void;
 }
 
 export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginScreenProps) {
-  const [email, setEmail] = useState("seu@email.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const role = email.toLowerCase().includes("admin") ? "admin" : "aluno";
-    setTimeout(() => {
-      setIsLoading(false);
-      onLoginSuccess(email.split("@")[0] || "Silva", role);
-    }, 800);
+    
+    const isEmailAdmin = email.toLowerCase().includes("admin");
+    
+    if (isEmailAdmin) {
+      setTimeout(() => {
+        setIsLoading(false);
+        onLoginSuccess("Administrador", "admin", []);
+      }, 800);
+    } else {
+      try {
+        const student = await validateStudentLogin(email, password);
+        setIsLoading(false);
+        if (student) {
+          onLoginSuccess(student.name, "aluno", student.allowed_courses || []);
+        } else {
+          alert("Credenciais de aluno inválidas ou conta inativa. Use a senha definida pelo administrador.");
+        }
+      } catch (err) {
+        setIsLoading(false);
+        console.error("Erro no login do aluno:", err);
+        alert("Erro técnico ao realizar login. Verifique sua conexão.");
+      }
+    }
   };
 
   return (
@@ -78,85 +97,67 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
                 </div>
               </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-800 tracking-tight">
-              Cabo Véio
-            </h1>
-            <p className="text-xs md:text-sm text-slate-500 font-mono tracking-wider uppercase">
-              Doutrina e Bizus de Caserna
-            </p>
+            <div>
+              <h1 className="text-lg font-display font-bold text-slate-800 tracking-tight">
+                Cabo Véio
+              </h1>
+              <p className="text-[9px] text-slate-500 font-mono tracking-wider uppercase">
+                Doutrina e Bizus de Caserna
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Main Login Card */}
+        {/* Form Container */}
         <div className="w-full max-w-md mx-auto my-auto glass-panel rounded-2xl p-6 md:p-8 shadow-md z-10 animate-smooth-zoom" id="login-card">
-          <div className="hidden lg:block mb-6 text-center">
-             <h1 className="text-2xl font-display font-bold text-slate-800 tracking-tight">
-              Acesso Restrito
-             </h1>
-             <p className="text-xs text-slate-500 font-mono tracking-wider uppercase mt-1">
-              Identifique-se para prosseguir
-             </p>
+          <div className="mb-6">
+            <h2 className="text-xl font-display font-bold text-slate-800 tracking-tight">
+              Acesse sua Área Tática
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 font-sans">
+              Entre com suas credenciais de aluno ou administrador.
+            </p>
           </div>
-          
-          <h2 className="text-lg font-display font-bold text-slate-800 text-center mb-6 border-b border-slate-100 pb-3 uppercase tracking-wider lg:hidden">
-            Acesso à Central de Comando
-          </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email input */}
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-mono uppercase tracking-wider text-slate-600">
-                Identificação (Email)
-              </label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Identificação (E-mail)</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-emerald-700/70" />
-                </div>
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  required
                   id="login-email"
                   type="email"
-                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 transition-all"
+                  placeholder="aluno@email.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
                 />
               </div>
             </div>
 
-            {/* Password input */}
-            <div className="flex flex-col space-y-1.5">
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-xs font-mono uppercase tracking-wider text-slate-600">
-                  Código de Acesso (Senha)
-                </label>
-                <button
-                  type="button"
-                  className="text-xs font-sans text-slate-500 hover:text-emerald-700 transition-colors cursor-pointer"
-                  onClick={() => alert("Função para redefinir senha em ambiente de desenvolvimento. Utilize seu código militar cadastrado.")}
-                >
-                  ESQUECI MINHA SENHA
-                </button>
+                <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha de Acesso</label>
+                <a href="#recuperar" className="text-[10px] font-sans font-bold text-emerald-700 hover:text-emerald-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-emerald-700/70" />
-                </div>
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  required
                   id="login-password"
                   type={showPassword ? "text" : "password"}
-                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700 focus:ring-1 focus:ring-emerald-700 transition-all"
+                  placeholder="Sua senha"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -179,7 +180,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
           {/* Divider */}
           <div className="my-6 flex items-center justify-between">
             <span className="w-1/5 border-b border-slate-200"></span>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">OU ACESSE COM</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">INFORMAÇÃO</span>
             <span className="w-1/5 border-b border-slate-200"></span>
           </div>
 
@@ -187,8 +188,8 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
           <button
             id="google-login"
             type="button"
-            onClick={() => onLoginSuccess("Silva")}
-            className="w-full py-2.5 px-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-600 hover:text-slate-800 rounded-lg text-sm font-sans flex items-center justify-center space-x-3 transition-colors cursor-pointer shadow-sm backdrop-blur-sm"
+            onClick={() => alert("Por favor, faça login utilizando o seu E-mail e Senha de aluno cadastrados pelo administrador.")}
+            className="w-full py-2.5 px-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-600 hover:text-slate-800 rounded-lg text-xs font-sans flex items-center justify-center space-x-3 transition-colors cursor-pointer shadow-sm backdrop-blur-sm"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
