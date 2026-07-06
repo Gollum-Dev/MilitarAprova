@@ -17,13 +17,18 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
     e.preventDefault();
     setIsLoading(true);
     
-    const isEmailAdmin = email.toLowerCase().includes("admin");
+    const isEmailAdmin = email.toLowerCase() === "admin@teste.com";
     
     if (isEmailAdmin) {
-      setTimeout(() => {
+      if (password === "123456") {
+        setTimeout(() => {
+          setIsLoading(false);
+          onLoginSuccess("Administrador", "admin", []);
+        }, 800);
+      } else {
         setIsLoading(false);
-        onLoginSuccess("Administrador", "admin", []);
-      }, 800);
+        alert("Senha de administrador incorreta.");
+      }
     } else {
       try {
         const student = await validateStudentLogin(email, password);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Play, Pause, Volume2, Maximize, FileText, CheckCircle, 
   Lock, ArrowRight, Sparkles, BookOpen, Send, Bot, ShieldAlert,
-  ArrowLeft, XCircle, Minimize, X, Presentation
+  ArrowLeft, XCircle, Minimize, X, Presentation, Video, Headphones
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { recordQuestionAnswer, markResourceComplete } from "../lib/progress";
@@ -176,6 +176,10 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
         setAudios(loadedAudios);
         setVideos(loadedVideos);
         setSlides(loadedSlides);
+        setActiveVideoIndex(0); // Reset index on load
+        setCurrentQuestionIndex(0); // Reset other indices too
+        setCurrentFlashcardIndex(0);
+        setActiveSummaryIndex(0);
       } catch (err) {
         console.error("Erro ao carregar recursos da matéria:", err);
       } finally {
@@ -253,19 +257,19 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="aulas-view-container">
       {/* Video and Tabs Column (Left & Center) */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="lg:col-span-2 space-y-4">
         {/* Dynamic Video Player / Lesson selector */}
         {videos.length === 0 ? (
           /* Mock Video Player */
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg relative aspect-video flex flex-col justify-between group">
+          <div id="mock-video-player" className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg relative aspect-video flex flex-col justify-between group">
             {/* Top Info Overlay */}
             <div className="bg-gradient-to-b from-black/80 to-transparent p-4 flex justify-between items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
               <div>
                 <span className="text-[9px] font-mono text-amber-400 uppercase tracking-wider font-semibold">
-                  Módulo 01 • Aula 05
+                  Módulo 01 • {playlist[activeVideoIndex]?.title?.split(':')[0] || 'Aula 01'}
                 </span>
                 <h3 className="text-sm font-sans font-bold text-gray-100">
-                  {displayDiscipline} - Tópicos e Edital CHO
+                  {displayDiscipline}
                 </h3>
               </div>
               <span className="text-xs font-mono text-gray-300 bg-black/60 px-2 py-0.5 rounded">
@@ -283,7 +287,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                     Centro de Doutrina Cabo Véio
                   </p>
                   <h4 className="text-lg font-sans font-bold text-gray-100">
-                    AULA 05: Bases do Regulamento e Caserna
+                    {playlist[activeVideoIndex]?.title?.toUpperCase() || 'AULA 01'}
                   </h4>
                 </div>
               </div>
@@ -313,7 +317,19 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                 </div>
                 <div className="flex items-center space-x-4">
                   <Volume2 className="w-4 h-4 cursor-pointer hover:text-white" />
-                  <Maximize className="w-4 h-4 cursor-pointer hover:text-white" />
+                  <Maximize 
+                    className="w-4 h-4 cursor-pointer hover:text-white" 
+                    onClick={() => {
+                      const elem = document.getElementById('mock-video-player');
+                      if (elem) {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(err => console.log(err));
+                        } else {
+                          elem.requestFullscreen().catch(err => console.log(err));
+                        }
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -324,7 +340,10 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
             <div className="bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-lg relative aspect-video">
               <iframe
                 src={(() => {
-                  const url = videos[activeVideoIndex].url;
+                  const video = videos[activeVideoIndex];
+                  if (!video || !video.url) return '';
+                  
+                  const url = video.url;
                   if (url.includes('drive.google.com')) {
                     const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
                     if (match && match[1]) {
@@ -334,8 +353,9 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                   return url;
                 })()}
                 className="w-full h-full border-none"
-                title={videos[activeVideoIndex].title}
-                allow="autoplay"
+                title={videos[activeVideoIndex]?.title || 'Vídeo'}
+                allow="autoplay; fullscreen"
+                allowFullScreen
               />
               {/* Película de proteção transparente absoluta que impede cliques nas ações superiores do Google Drive */}
               <div className="absolute top-0 right-0 left-0 h-16 bg-transparent cursor-default" />
@@ -362,51 +382,51 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
         )}
 
         {/* Tab Selection menu */}
-        <div className="bg-slate-100 border border-slate-200 rounded-xl p-1.5 flex space-x-2">
+        <div className="bg-slate-50/80 backdrop-blur-md border border-slate-200/80 rounded-xl p-1.5 flex space-x-1 shadow-inner relative z-10">
           <button
             onClick={() => setActiveTab("resumo")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "resumo" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "resumo" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Resumo IA
           </button>
           <button
             onClick={() => setActiveTab("pdf")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "pdf" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "pdf" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Materiais PDF
           </button>
           <button
             onClick={() => setActiveTab("questoes")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "questoes" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "questoes" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Questões
           </button>
           <button
             onClick={() => setActiveTab("flashcards")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "flashcards" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "flashcards" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Flashcards
           </button>
           <button
             onClick={() => setActiveTab("audios")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "audios" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "audios" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Áudios
           </button>
           <button
             onClick={() => setActiveTab("slides")}
-            className={`flex-1 py-2 text-xs font-sans font-bold uppercase rounded-lg transition-all cursor-pointer ${
-              activeTab === "slides" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+              activeTab === "slides" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
             Slides
@@ -414,13 +434,16 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
         </div>
 
         {/* Tab Content Display */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 min-h-[250px] shadow-sm">
+        <div className="bg-gradient-to-br from-white to-slate-50/50 border border-slate-200/80 rounded-2xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+          {/* Subtle decoration */}
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+          
           {activeTab === "resumo" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+            <div className="space-y-3 relative z-10">
+              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100/80">
                 <div className="flex items-center space-x-2 text-indigo-600">
-                  <Sparkles className="w-5 h-5" />
-                  <h4 className="text-sm font-sans font-bold uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4" />
+                  <h4 className="text-xs font-sans font-bold uppercase tracking-wider text-slate-700">
                     {summaries.length > 0 ? "Resumos Cadastrados" : "Resumo Estruturado pela Inteligência Artificial"}
                   </h4>
                 </div>
@@ -428,7 +451,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                   <select
                     value={activeSummaryIndex}
                     onChange={(e) => setActiveSummaryIndex(Number(e.target.value))}
-                    className="p-1.5 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-400 transition-all bg-white"
+                    className="p-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
                   >
                     {summaries.map((sum, index) => (
                       <option key={sum.id} value={index}>
@@ -440,14 +463,15 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
               </div>
 
               {summaries.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 pt-1">
                   {summaries.length === 1 && (
-                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                      Resumo da Matéria: {activeSummary.materiaName}
+                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-full inline-block">
+                      Módulo: {activeSummary.materiaName}
                     </span>
                   )}
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 text-xs text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
-                    <strong className="block text-slate-800 text-sm font-bold mb-3 border-b border-slate-200/60 pb-1.5 uppercase font-display tracking-wide">{activeSummary.title}</strong>
+                  <div className="bg-white border border-indigo-100/50 rounded-xl p-5 text-xs text-slate-600 leading-relaxed font-sans whitespace-pre-wrap shadow-sm relative overflow-hidden group">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-indigo-600 opacity-80"></div>
+                    <strong className="block text-slate-800 text-[13px] font-bold mb-2 pb-1.5 font-display tracking-wide group-hover:text-indigo-900 transition-colors">{activeSummary.title}</strong>
                     {activeSummary.summaryText}
                   </div>
                 </div>
@@ -894,11 +918,13 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                     locked: false,
                     onClick: () => setActiveVideoIndex(idx)
                   }))
-                : playlist.map((item) => ({
+                : playlist.map((item, idx) => ({
                     ...item,
+                    active: idx === activeVideoIndex,
                     onClick: () => {
                       if (!item.locked) {
-                        alert("Esta é uma aula demonstrativa da plataforma.");
+                        setActiveVideoIndex(idx);
+                        setIsPlaying(false);
                       } else {
                         alert("Aula bloqueada. Cadastre seus próprios vídeos na aba administrativa.");
                       }
