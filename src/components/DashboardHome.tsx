@@ -1,12 +1,31 @@
+import { useState, useEffect } from "react";
 import { Clock, CheckCircle, BarChart3, Bot, ChevronRight, Award, Zap } from "lucide-react";
+import { fetchCourses } from "../lib/api";
+import { getStudentStats, StudentStats } from "../lib/progress";
 
 interface DashboardHomeProps {
   onChangeTab: (tab: string) => void;
   onGenerateCustomSimulator: (subject: string) => void;
   userName: string;
+  allowedCourses?: string[];
 }
 
-export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, userName }: DashboardHomeProps) {
+export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, userName, allowedCourses }: DashboardHomeProps) {
+  const [stats, setStats] = useState<StudentStats>({
+    studyHours: 12.5,
+    questionsAnswered: 18,
+    questionsCorrect: 14,
+    precision: 77,
+    progressPercent: 5,
+    patent: "SOLDADO"
+  });
+  
+  const [nextLesson, setNextLesson] = useState({
+    moduleTitle: "Carregando...",
+    subjectTitle: "Selecione uma matéria para estudar",
+    lessonTitle: "Acesse a aba Meus Cursos"
+  });
+
   const weeklyData = [
     { label: "Sem. 01", grade: 7.2 },
     { label: "Sem. 02", grade: 8.0 },
@@ -15,6 +34,62 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
     { label: "Sem. 05", grade: 8.4 },
     { label: "Sem. 06", grade: 9.2, highlighted: true }
   ];
+
+  useEffect(() => {
+    fetchCourses().then(data => {
+      const filtered = allowedCourses && allowedCourses.length > 0
+        ? data.filter(c => allowedCourses.includes(c.id))
+        : data;
+      
+      let totalRes = 0;
+      let firstModuleTitle = "Nenhum módulo";
+      let firstSubjectTitle = "Nenhuma matéria cadastrada";
+      let firstLessonTitle = "Sem conteúdos";
+
+      if (filtered.length > 0 && filtered[0].modules.length > 0) {
+        const mod = filtered[0].modules[0];
+        firstModuleTitle = mod.title;
+        
+        const rawDisc = mod.rawDiscipline;
+        if (rawDisc && Array.isArray(rawDisc.areas) && rawDisc.areas.length > 0) {
+          const area = rawDisc.areas[0];
+          if (Array.isArray(area.contents) && area.contents.length > 0) {
+            const content = area.contents[0];
+            firstSubjectTitle = content.name;
+            if (Array.isArray(content.resources) && content.resources.length > 0) {
+              firstLessonTitle = content.resources[0].title;
+            }
+          }
+        }
+      }
+
+      setNextLesson({
+        moduleTitle: firstModuleTitle,
+        subjectTitle: firstSubjectTitle,
+        lessonTitle: firstLessonTitle
+      });
+
+      // Sum all resources in all modules
+      filtered.forEach(course => {
+        course.modules.forEach(m => {
+          const rawDisc = m.rawDiscipline;
+          if (rawDisc && Array.isArray(rawDisc.areas)) {
+            rawDisc.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                area.contents.forEach((content: any) => {
+                  if (Array.isArray(content.resources)) {
+                    totalRes += content.resources.length;
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+
+      setStats(getStudentStats(totalRes));
+    }).catch(console.error);
+  }, [allowedCourses]);
 
   return (
     <div className="space-y-6" id="dashboard-home-view">
@@ -56,12 +131,12 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
               <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800">
                 Progresso do Curso - CHO CBMMG
               </h3>
-              <span className="text-2xl font-display font-extrabold text-indigo-600">75%</span>
+              <span className="text-2xl font-display font-extrabold text-indigo-600">{stats.progressPercent}%</span>
             </div>
             
             {/* Custom Progress Bar */}
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
-              <div className="h-full bg-indigo-600 rounded-full" style={{ width: "75%" }}></div>
+              <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${stats.progressPercent}%` }}></div>
             </div>
 
             {/* Quick Metrics */}
@@ -71,21 +146,21 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[10px] font-mono uppercase">Estudado</span>
                 </div>
-                <p className="text-lg font-sans font-bold text-slate-800">124h</p>
+                <p className="text-lg font-sans font-bold text-slate-800">{stats.studyHours}h</p>
               </div>
               <div className="text-center border-x border-slate-100 px-2">
                 <div className="flex items-center justify-center space-x-1 text-slate-500 mb-1">
                   <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
                   <span className="text-[10px] font-mono uppercase">Questões</span>
                 </div>
-                <p className="text-lg font-sans font-bold text-slate-800">2.480</p>
+                <p className="text-lg font-sans font-bold text-slate-800">{stats.questionsAnswered}</p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-1 text-amber-700 mb-1">
                   <Award className="w-3.5 h-3.5 text-amber-500" />
                   <span className="text-[10px] font-mono uppercase font-bold">Acertos</span>
                 </div>
-                <p className="text-lg font-sans font-bold text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 inline-block">82%</p>
+                <p className="text-lg font-sans font-bold text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 inline-block">{stats.precision}%</p>
               </div>
             </div>
           </div>
@@ -106,14 +181,14 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
               Continue Estudando
             </h3>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4">
-              <span className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-200/50 px-2 py-0.5 rounded uppercase tracking-wider">
-                Módulo 04: Regulamento Disciplinar
+              <span className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-200/50 px-2 py-0.5 rounded uppercase tracking-wider block truncate">
+                {nextLesson.moduleTitle}
               </span>
-              <h4 className="text-sm font-sans font-bold text-slate-800 mt-2.5">
-                CEDM e Normas de Conduta no CBMMG
+              <h4 className="text-sm font-sans font-bold text-slate-800 mt-2.5 truncate">
+                {nextLesson.subjectTitle}
               </h4>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Próxima aula: <span className="text-slate-800 font-semibold">Regulamento Disciplinar em Detalhe - Deveres e Ética</span>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed truncate">
+                Próxima aula: <span className="text-slate-800 font-semibold">{nextLesson.lessonTitle}</span>
               </p>
             </div>
           </div>

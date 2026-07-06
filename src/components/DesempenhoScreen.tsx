@@ -4,7 +4,8 @@ import {
   Sparkles, Bot, Shield, Zap, Flame, Calendar, Crown, Compass, Swords 
 } from "lucide-react";
 import { Badge } from "../data";
-import { fetchBadges } from "../lib/api";
+import { fetchBadges, fetchCourses } from "../lib/api";
+import { getStudentStats, StudentStats } from "../lib/progress";
 
 interface DesempenhoScreenProps {
   userName: string;
@@ -14,12 +15,46 @@ interface DesempenhoScreenProps {
 export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: DesempenhoScreenProps) {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<StudentStats>({
+    studyHours: 12.5,
+    questionsAnswered: 18,
+    questionsCorrect: 14,
+    precision: 77,
+    progressPercent: 5,
+    patent: "SOLDADO"
+  });
 
   useEffect(() => {
-    fetchBadges().then(data => {
-      setBadges(data);
+    Promise.all([
+      fetchBadges(),
+      fetchCourses()
+    ]).then(([badgeData, courseData]) => {
+      setBadges(badgeData);
+      
+      let count = 0;
+      courseData.forEach(course => {
+        course.modules.forEach(m => {
+          const rawDisc = m.rawDiscipline;
+          if (rawDisc && Array.isArray(rawDisc.areas)) {
+            rawDisc.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                area.contents.forEach((content: any) => {
+                  if (Array.isArray(content.resources)) {
+                    count += content.resources.length;
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+
+      setStats(getStudentStats(count));
       setLoading(false);
-    }).catch(console.error);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
   }, []);
 
   // Icon selector mapping helper
@@ -54,7 +89,7 @@ export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: 
           </div>
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Horas de Estudo</span>
-            <span className="text-xl font-sans font-black text-slate-800">248h</span>
+            <span className="text-xl font-sans font-black text-slate-800">{stats.studyHours}h</span>
           </div>
         </div>
 
@@ -65,7 +100,7 @@ export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: 
           </div>
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Questões Resolvidas</span>
-            <span className="text-xl font-sans font-black text-slate-800">4.120</span>
+            <span className="text-xl font-sans font-black text-slate-800">{stats.questionsAnswered}</span>
           </div>
         </div>
 
@@ -76,7 +111,7 @@ export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: 
           </div>
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Precisão Geral</span>
-            <span className="text-xl font-sans font-black text-indigo-600">82.4%</span>
+            <span className="text-xl font-sans font-black text-indigo-600">{stats.precision}%</span>
           </div>
         </div>
 
@@ -87,7 +122,7 @@ export default function DesempenhoScreen({ userName, onStartRecoveryTraining }: 
           </div>
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Patente Aluno</span>
-            <span className="text-sm font-sans font-black text-slate-800 uppercase tracking-wide">Primeiro Tenente</span>
+            <span className="text-sm font-sans font-black text-slate-800 uppercase tracking-wide">{stats.patent}</span>
           </div>
         </div>
       </div>

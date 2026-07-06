@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Question } from "../data";
 import { fetchQuestions } from "../lib/api";
+import { recordQuestionAnswer } from "../lib/progress";
 
 interface QuestoesScreenProps {
   discipline?: string;
@@ -25,16 +26,44 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
               const res = content.resources || [];
               res.forEach((r: any) => {
                 if (r.type === 'question' || r.type === 'questoes') {
-                  const opts = Array.isArray(r.options) && r.options.length > 0
+                  let mappedAlternatives: { letter: 'A' | 'B' | 'C' | 'D'; text: string }[] = [];
+                  const rawOpts = Array.isArray(r.options) && r.options.length > 0
                     ? r.options 
                     : [r.optionA, r.optionB, r.optionC, r.optionD].filter(Boolean);
                   
+                  if (rawOpts.length > 0) {
+                    const letters: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+                    mappedAlternatives = rawOpts.slice(0, 4).map((opt: any, index: number) => {
+                      const letter = letters[index] || 'A';
+                      let text = "";
+                      if (typeof opt === 'string') {
+                        text = opt.replace(/^[A-D]\s*[\)-\.]\s*/i, "");
+                      } else if (opt && typeof opt === 'object' && opt.text) {
+                        text = opt.text;
+                      } else if (opt && typeof opt === 'object' && opt.letter && opt.text) {
+                        text = opt.text;
+                      } else {
+                        text = String(opt);
+                      }
+                      return { letter, text };
+                    });
+                  } else {
+                    mappedAlternatives = [
+                      { letter: 'A', text: r.optionA || "Opção A" },
+                      { letter: 'B', text: r.optionB || "Opção B" },
+                      { letter: 'C', text: r.optionC || "Opção C" },
+                      { letter: 'D', text: r.optionD || "Opção D" }
+                    ];
+                  }
+                  
                   courseQuestions.push({
                     id: r.id?.toString() || Math.random().toString(),
+                    banca: r.banca || "Militar Aprova",
+                    year: r.year ? Number(r.year) : new Date().getFullYear(),
                     discipline: discipline || 'Módulo',
                     subject: content.name,
                     text: r.questionText || r.title,
-                    options: opts.length > 0 ? opts : ["A) Opção A", "B) Opção B", "C) Opção C", "D) Opção D"],
+                    alternatives: mappedAlternatives,
                     correct: (r.correctAnswer || r.correct || 'A') as 'A' | 'B' | 'C' | 'D',
                     explanation: r.justification || r.explanation || ''
                   });
@@ -81,6 +110,14 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
     if (!activeQuestion || !selectedAnswer) return;
     setIsAnswered(true);
 
+    const isCorrect = selectedAnswer === activeQuestion.correct;
+    recordQuestionAnswer(isCorrect);
+
+    if (activeQuestion.explanation && activeQuestion.explanation.trim() !== "") {
+      setAiComment(activeQuestion.explanation);
+      return;
+    }
+
     setIsGeneratingAi(true);
     try {
       const response = await fetch("/api/questoes/feedback", {
@@ -90,14 +127,31 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
           questionId: activeQuestion.id,
           questionText: activeQuestion.text,
           selectedAnswer: selectedAnswer,
-          correctAnswer: activeQuestion.correct
+          correctAnswer: activeQuestion.correct,
+          explanation: activeQuestion.explanation
         })
       });
       const data = await response.json();
-      setAiComment(data.comment || "Bizus do Cabo Véio calculados com sucesso.");
+      
+      let finalFeedback = "";
+      if (data.comment) {
+        finalFeedback += `${data.comment}\n\n`;
+      }
+      if (activeQuestion.explanation) {
+        finalFeedback += `**Justificativa Oficial:**\n${activeQuestion.explanation}`;
+      } else {
+        finalFeedback += `**Justificativa Oficial:** Gabarito oficial confirmado como alternativa ${activeQuestion.correct}.`;
+      }
+      setAiComment(finalFeedback);
     } catch (err) {
       console.error(err);
-      setAiComment(`Atenção, recruta! Você marcou a alternativa ${selectedAnswer}, mas o gabarito correto é a letra ${activeQuestion.correct}. Estude o regulamento para ficar bisurado!`);
+      let localFeedback = `Atenção, recruta! Você marcou a alternativa ${selectedAnswer}, mas o gabarito correto é a letra ${activeQuestion.correct}.\n\n`;
+      if (activeQuestion.explanation) {
+        localFeedback += `**Justificativa Oficial:**\n${activeQuestion.explanation}`;
+      } else {
+        localFeedback += `Estude a matéria e o regulamento para ficar bisurado!`;
+      }
+      setAiComment(localFeedback);
     } finally {
       setIsGeneratingAi(false);
     }
@@ -302,7 +356,7 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2 text-indigo-600">
                   <Sparkles className="w-5 h-5 animate-spin-slow" />
-                  <h4 className="text-xs font-mono uppercase tracking-widest font-extrabold">PARECER DO MAJOR ARANHA IA</h4>
+                  <h4 className="text-xs font-mono uppercase tracking-widest font-extrabold">PARECER DO CABO VÉIO</h4>
                 </div>
                 <div className="flex space-x-2">
                   <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded ${
@@ -318,18 +372,12 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
               {isGeneratingAi ? (
                 <div className="flex flex-col items-center justify-center py-6 space-y-2">
                   <RefreshCw className="w-5 h-5 text-indigo-600 animate-spin" />
-                  <p className="text-[10px] font-mono text-slate-500 uppercase">Solicitando Parecer Oficial ao Major Aranha...</p>
+                  <p className="text-[10px] font-mono text-slate-500 uppercase">Solicitando Parecer Oficial ao Cabo Véio...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="text-xs text-slate-700 leading-relaxed font-sans italic whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200/80">
                     {aiComment}
-                  </div>
-
-                  {/* Secondary Local Explanation */}
-                  <div className="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-4">
-                    <strong className="text-slate-700 uppercase font-mono text-[10px] block mb-1">Fundamentação Legal (Doutrina):</strong>
-                    {activeQuestion.explanation}
                   </div>
                 </div>
               )}

@@ -39,7 +39,7 @@ if (apiKey) {
 }
 
 // Helper to interact with Gemini
-async function askMajorAranha(prompt: string, contextHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []): Promise<string> {
+async function askCaboVeio(prompt: string, contextHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []): Promise<string> {
   if (!ai) {
     return `[MODO SIMULADO] Olá, combatente! O Tutor IA está operando no modo local.
 
@@ -62,14 +62,14 @@ Aqui está uma resposta pré-programada de suporte para a sua pergunta:
       model: "gemini-3.5-flash",
       contents: contents,
       config: {
-        systemInstruction: "Você é o Major Aranha, um oficial veterano do Corpo de Bombeiros Militar de Minas Gerais (CBMMG) e especialista em Legislação Militar, Direito Constitucional, Penal Militar e Administrativo para o concurso CHO CBMMG (Curso de Habilitação de Oficiais). Seu estilo de fala é firme, militar, encorajador, focado na ética dos bombeiros, na proteção da sociedade, e no rigor acadêmico. Chame o aluno de 'combatente' ou 'Silva' ou pelo sobrenome militar apropriado. Explique os tópicos de forma direta e estruturada (com tópicos se necessário). Sempre fundamente suas explicações nos artigos reais da Constituição Federal, CPM ou CEDM (Lei Estadual 14.310/2002).",
+        systemInstruction: "Você é o Cabo Véio, um militar veterano calejado, extremamente experiente, com décadas de caserna, que conhece tudo sobre a rotina militar, regulamentos oficiais e macetes de sobrevivência nas Forças Militares. Seu estilo de fala é direto, de caserna, firme e objetivo. Chame o aluno de 'combatente' ou pelo sobrenome militar apropriado. Responda de forma curta, sucinta, simples e prática, indo direto ao ponto da dúvida. Use termos militares leves de forma natural e fundamente brevemente nos artigos legais aplicáveis.",
         temperature: 0.7,
       }
     });
 
     return response.text || "Sem resposta do Tutor IA.";
   } catch (err: any) {
-    console.error("Gemini API Error in askMajorAranha:", err);
+    console.error("Gemini API Error in askCaboVeio:", err);
     return `Combatente, houve uma falha de comunicação com o centro de inteligência (Gemini API: ${err.message || err}). Mas não desanime! Continue estudando os materiais indicados na doutrina.`;
   }
 }
@@ -103,14 +103,14 @@ app.get("/api/health", async (req, res) => {
   });
 });
 
-// 1. Chat with the IA Tutor (Major Aranha)
+// 1. Chat with the IA Tutor (Cabo Véio)
 app.post("/api/tutor/chat", async (req, res) => {
   const { message, history } = req.body;
   if (!message) {
     return res.status(400).json({ error: "Mensagem é obrigatória." });
   }
 
-  const responseText = await askMajorAranha(message, history || []);
+  const responseText = await askCaboVeio(message, history || []);
   res.json({ text: responseText });
 });
 
@@ -144,11 +144,11 @@ app.post("/api/leis/search", async (req, res) => {
   if (ai) {
     try {
       const lawsContext = matchedLaws.map(l => `[${l.citation}] ${l.title}:\n${l.content}`).join("\n\n");
-      const prompt = `Como especialista jurídico-militar, faça uma síntese objetiva e analítica para concurso sobre o termo de pesquisa "${query}". 
-Utilize as seguintes leis encontradas no banco de dados local para embasar e explicar sua resposta de maneira prática e concisa:
-${lawsContext || "Nenhuma lei correspondente direta encontrada. Por favor, discorra sobre as regras gerais desse tema no âmbito militar do CBMMG."}
+      const prompt = `Como Cabo Véio, faça uma síntese ultra direta, curta e objetiva sobre o termo de pesquisa "${query}".
+Seja extremamente sucinto e vá direto aos artigos aplicáveis listados a seguir, explicando em poucas linhas:
+${lawsContext || "Nenhuma lei correspondente direta encontrada. Discorra de forma muito breve e direta sobre as regras desse tema no âmbito militar."}
 
-Destaque o que mais cai nas provas do CBMMG sobre esse assunto de forma tática. Se expresse como o Major Aranha, instrutor experiente.`;
+Destaque o que cai na prova em poucas frases curtas.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
@@ -263,7 +263,7 @@ app.post("/api/questoes/feedback", async (req, res) => {
 
   if (!ai) {
     return res.json({
-      comment: `[Análise do Major Aranha]
+      comment: `[Análise do Cabo Véio]
 Você escolheu a alternativa ${selectedAnswer}. A resposta correta é ${correctAnswer}.
 ${isCorrect ? "Excelente trabalho, combatente! Você demonstrou atenção aos preceitos legais e doutrina oficial dos bombeiros. Mantenha essa precisão nos seus estudos!" : "Atenção, combatente! Errar na preparação é oportunidade de aprendizado. Lembre-se de revisar minuciosamente os artigos aplicáveis e a literalidade da lei."}
 
@@ -278,9 +278,9 @@ Gabarito Oficial: ${correctAnswer}
 Resposta do Aluno: ${selectedAnswer}
 O aluno acertou? ${isCorrect ? "SIM" : "NÃO"}
 
-Como Major Aranha, veterano e instrutor do CBMMG, comente a questão de forma entusiasmada e militar. 
-Explique de maneira cirúrgica por que a alternativa ${correctAnswer} está correta e por que a resposta do aluno (${selectedAnswer}) está ${isCorrect ? "correta e é o gabarito" : "incorreta"}. 
-Dê um mnemônico ou macete estratégico para o aluno nunca mais errar esse tópico na prova do CHO.`;
+Como Cabo Véio, veterano e instrutor militar, comente a questão de forma extremamente curta, direta e objetiva.
+Explique em no máximo 3 frases curtas por que a alternativa ${correctAnswer} está correta e por que a resposta do aluno (${selectedAnswer}) está ${isCorrect ? "correta" : "incorreta"}.
+Dê um mnemônico ou macete rápido de 1 linha.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
@@ -296,7 +296,7 @@ Dê um mnemônico ou macete estratégico para o aluno nunca mais errar esse tóp
   } catch (err: any) {
     console.error("Gemini failed to generate question comment:", err);
     res.json({
-      comment: `Erro de conexão com o Major Aranha IA (${err.message || err}). Lembre-se que o gabarito oficial é a alternativa ${correctAnswer}.`
+      comment: `Erro de conexão com o Cabo Véio IA (${err.message || err}). Lembre-se que o gabarito oficial é a alternativa ${correctAnswer}.`
     });
   }
 });

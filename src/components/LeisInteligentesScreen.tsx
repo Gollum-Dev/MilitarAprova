@@ -121,7 +121,7 @@ export default function LeisInteligentesScreen() {
                 <div className="flex flex-col items-center justify-center py-12 space-y-3">
                   <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
                   <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">
-                    Major Aranha está consolidando as referências e redigindo parecer...
+                    Cabo Véio está consolidando as referências e redigindo parecer...
                   </p>
                 </div>
               ) : (

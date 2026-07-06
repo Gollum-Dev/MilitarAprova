@@ -5,6 +5,8 @@ import Sidebar from "./components/Sidebar";
 import DashboardHome from "./components/DashboardHome";
 import MeusCursos from "./components/MeusCursos";
 import AdminDashboard from "./components/AdminDashboard";
+import { fetchCourses } from "./lib/api";
+import { getStudentStats, StudentStats } from "./lib/progress";
 
 export default function App() {
   const [authView, setAuthView] = useState<"landing" | "login" | "app">("landing");
@@ -14,6 +16,31 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState("inicio");
   const [userRank, setUserRank] = useState("SOLDADO");
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  useEffect(() => {
+    if (authView === "app" && userRole === "aluno") {
+      const timer = setInterval(() => {
+        const currentHours = parseFloat(localStorage.getItem("militar_study_hours") || "12.5");
+        localStorage.setItem("militar_study_hours", (currentHours + 10 / 3600).toFixed(4));
+      }, 10000);
+
+      const rankTimer = setInterval(() => {
+        const questionsAnswered = parseInt(localStorage.getItem("militar_questions_answered") || "18");
+        let patent = "SOLDADO";
+        if (questionsAnswered >= 50) patent = "CABO";
+        if (questionsAnswered >= 100) patent = "SARGENTO";
+        if (questionsAnswered >= 200) patent = "SUBTENENTE";
+        if (questionsAnswered >= 500) patent = "SEGUNDO TENENTE";
+        if (questionsAnswered >= 1000) patent = "PRIMEIRO TENENTE";
+        setUserRank(patent);
+      }, 2000);
+
+      return () => {
+        clearInterval(timer);
+        clearInterval(rankTimer);
+      };
+    }
+  }, [authView, userRole]);
   const [tutorInitialPrompt, setTutorInitialPrompt] = useState("");
 
   // Lifted navigation states for context-aware sidebar
@@ -81,6 +108,7 @@ export default function App() {
             onChangeTab={setCurrentTab} 
             onGenerateCustomSimulator={handleGenerateCustomSimulator} 
             userName={userName}
+            allowedCourses={allowedCourses}
           />
         );
       case "cursos":

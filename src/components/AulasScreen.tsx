@@ -5,6 +5,7 @@ import {
   ArrowLeft, XCircle, Minimize, X, Presentation
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { recordQuestionAnswer, markResourceComplete } from "../lib/progress";
 
 interface AulasScreenProps {
   onAskTutor: (question: string) => void;
@@ -27,6 +28,16 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
   const [videos, setVideos] = useState<any[]>([]);
   const [slides, setSlides] = useState<any[]>([]);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+
+  useEffect(() => {
+    if (videos.length > 0 && videos[activeVideoIndex]) {
+      const vid = videos[activeVideoIndex];
+      if (vid.id) {
+        markResourceComplete(vid.id.toString());
+      }
+    }
+  }, [activeVideoIndex, videos]);
+
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -184,8 +195,10 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
   };
 
   const handleVerifyAnswer = () => {
-    if (!selectedOption) return;
+    if (!selectedOption || !activeQuestion) return;
     setIsQuestionAnswered(true);
+    const isCorrect = selectedOption === activeQuestion.correctAnswer;
+    recordQuestionAnswer(isCorrect);
   };
 
   const handleNextQuestion = () => {
@@ -607,13 +620,13 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                   </div>
 
                   {/* Justification / Explanation */}
-                  {isQuestionAnswered && activeQuestion.justification && (
+                  {isQuestionAnswered && (activeQuestion.justification || activeQuestion.explanation) && (
                     <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-900 leading-relaxed animate-smooth-fade space-y-1.5">
                       <div className="flex items-center space-x-1.5 text-indigo-950 font-bold uppercase tracking-wider text-[9px] font-mono">
                         <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                         <span>Justificativa / Explicação:</span>
                       </div>
-                      <p className="font-sans text-slate-700">{activeQuestion.justification}</p>
+                      <p className="font-sans text-slate-700">{activeQuestion.justification || activeQuestion.explanation}</p>
                     </div>
                   )}
 
@@ -929,7 +942,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
             <span>Tutor IA Online</span>
           </h3>
           <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">
-            Tem dúvida sobre o conteúdo desta aula? Pergunte ao Major Aranha:
+            Tem dúvida sobre o conteúdo desta aula? Pergunte ao Cabo Véio:
           </p>
 
           <form onSubmit={handleSendChat} className="space-y-3">

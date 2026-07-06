@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
-  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye
+  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X
 } from "lucide-react";
 import { CourseModule, Course } from "../data";
 import { fetchCourses } from "../lib/api";
+import { markResourceComplete, getCompletedResourceIds } from "../lib/progress";
 import AulasScreen from "./AulasScreen";
 import QuestoesScreen from "./QuestoesScreen";
 import SimuladoresScreen from "./SimuladoresScreen";
@@ -48,6 +49,10 @@ export default function MeusCursos({
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState("00:00");
   const [audioDuration, setAudioDuration] = useState("00:00");
+
+  // Secure PDF Viewer States
+  const [viewingPdfUrl, setViewingPdfUrl] = useState<string | null>(null);
+  const [viewingPdfTitle, setViewingPdfTitle] = useState<string>("");
 
   const formatTime = (timeInSeconds: number) => {
     if (isNaN(timeInSeconds)) return "00:00";
@@ -95,10 +100,15 @@ export default function MeusCursos({
   useEffect(() => {
     if (audioRef.current) {
       if (currentPlayingAudio?.url) {
-        audioRef.current.src = currentPlayingAudio.url;
-        audioRef.current.play()
-          .then(() => setIsAudioPlaying(true))
-          .catch(err => console.error("Erro ao reproduzir áudio:", err));
+        if (!currentPlayingAudio.url.includes('drive.google.com')) {
+          audioRef.current.src = currentPlayingAudio.url;
+          audioRef.current.play()
+            .then(() => setIsAudioPlaying(true))
+            .catch(err => console.error("Erro ao reproduzir áudio:", err));
+        } else {
+          audioRef.current.pause();
+          setIsAudioPlaying(true); // Mock tocando para o Drive
+        }
       } else {
         audioRef.current.pause();
         setIsAudioPlaying(false);
@@ -107,14 +117,18 @@ export default function MeusCursos({
   }, [currentPlayingAudio]);
 
   const handlePlayPauseAudio = () => {
-    if (audioRef.current && currentPlayingAudio) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-        setIsAudioPlaying(false);
-      } else {
-        audioRef.current.play()
-          .then(() => setIsAudioPlaying(true))
-          .catch(err => console.error("Erro ao reproduzir áudio:", err));
+    if (currentPlayingAudio) {
+      if (currentPlayingAudio.url.includes('drive.google.com')) {
+        setIsAudioPlaying(!isAudioPlaying);
+      } else if (audioRef.current) {
+        if (isAudioPlaying) {
+          audioRef.current.pause();
+          setIsAudioPlaying(false);
+        } else {
+          audioRef.current.play()
+            .then(() => setIsAudioPlaying(true))
+            .catch(err => console.error("Erro ao reproduzir áudio:", err));
+        }
       }
     }
   };
@@ -128,6 +142,62 @@ export default function MeusCursos({
       setLoading(false);
     }).catch(console.error);
   }, [allowedCourses]);
+
+  const completedResources = getCompletedResourceIds();
+
+  const calculateCourseProgress = (course: Course) => {
+    let total = 0;
+    let completedCount = 0;
+
+    course.modules.forEach(m => {
+      const rawDisc = m.rawDiscipline;
+      if (rawDisc && Array.isArray(rawDisc.areas)) {
+        rawDisc.areas.forEach((area: any) => {
+          if (Array.isArray(area.contents)) {
+            area.contents.forEach((content: any) => {
+              if (Array.isArray(content.resources)) {
+                content.resources.forEach((res: any) => {
+                  total++;
+                  if (res.id && completedResources.includes(res.id.toString())) {
+                    completedCount++;
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+
+    if (total === 0) return 35; // Fallback para não ficar zerado caso não haja recursos ainda
+    return Math.max(5, Math.round((completedCount / total) * 100));
+  };
+
+  const calculateModuleProgress = (module: CourseModule) => {
+    let total = 0;
+    let completedCount = 0;
+
+    const rawDisc = module.rawDiscipline;
+    if (rawDisc && Array.isArray(rawDisc.areas)) {
+      rawDisc.areas.forEach((area: any) => {
+        if (Array.isArray(area.contents)) {
+          area.contents.forEach((content: any) => {
+            if (Array.isArray(content.resources)) {
+              content.resources.forEach((res: any) => {
+                total++;
+                if (res.id && completedResources.includes(res.id.toString())) {
+                  completedCount++;
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    if (total === 0) return 0;
+    return Math.round((completedCount / total) * 100);
+  };
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
@@ -244,15 +314,20 @@ export default function MeusCursos({
                 </p>
 
                 {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-[10px] font-mono">
-                    <span className="text-slate-400">Progresso de Estudo</span>
-                    <span className="text-indigo-600 font-bold">35%</span>
-                  </div>
-                  <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-600 rounded-full" style={{ width: "35%" }} />
-                  </div>
-                </div>
+                {(() => {
+                  const progress = calculateCourseProgress(course);
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-[10px] font-mono">
+                        <span className="text-slate-400">Progresso de Estudo</span>
+                        <span className="text-indigo-600 font-bold">{progress}%</span>
+                      </div>
+                      <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center text-[10px] font-mono text-slate-500">
                   <div className="flex flex-col">
@@ -343,7 +418,7 @@ export default function MeusCursos({
                           </p>
                         </div>
                         <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200/50 shrink-0">
-                          {mod.progress}% Concluído
+                          {calculateModuleProgress(mod)}% Concluído
                         </span>
                       </div>
 
@@ -407,7 +482,7 @@ export default function MeusCursos({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
                     <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1.5">
                       <Bot className="w-4 h-4 text-indigo-600" />
-                      <span>Rádio Major Aranha</span>
+                      <span>Rádio Cabo Véio</span>
                     </h3>
                     <form onSubmit={handleAskQuick} className="space-y-3">
                       <input
@@ -527,23 +602,43 @@ export default function MeusCursos({
                     {currentPlayingAudio ? (currentPlayingAudio.materiaName || "Áudio Aula") : "Selecione uma faixa ao lado"}
                   </p>
                   
-                  <div className="mt-6 flex items-center space-x-4 z-10">
-                    <button 
-                      onClick={handlePlayPauseAudio}
-                      disabled={!currentPlayingAudio}
-                      className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
-                    >
-                      {isAudioPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
-                    </button>
-                  </div>
-                  
-                  <div className="w-full mt-4 flex items-center space-x-2 z-10">
-                    <span className="text-[10px] text-slate-400 font-mono">{audioCurrentTime}</span>
-                    <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
-                      <div className="absolute left-0 top-0 h-full bg-indigo-500" style={{ width: `${audioProgress}%` }}></div>
+                  {currentPlayingAudio?.url && currentPlayingAudio.url.includes('drive.google.com') ? (
+                    <div className="w-full h-14 relative overflow-hidden rounded-xl border border-slate-700 shadow-sm bg-white mt-6 z-10">
+                      <iframe 
+                        src={(() => {
+                          const match = currentPlayingAudio.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                          if (match && match[1]) {
+                            return `https://drive.google.com/file/d/${match[1]}/preview`;
+                          }
+                          return currentPlayingAudio.url;
+                        })()}
+                        className="w-full h-full border-none"
+                        title={currentPlayingAudio.title}
+                      />
+                      {/* Bloqueio de cliques na barra do Drive */}
+                      <div className="absolute top-0 right-0 w-16 h-full bg-transparent cursor-default" />
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">{audioDuration}</span>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="mt-6 flex items-center space-x-4 z-10">
+                        <button 
+                          onClick={handlePlayPauseAudio}
+                          disabled={!currentPlayingAudio}
+                          className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
+                        >
+                          {isAudioPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
+                        </button>
+                      </div>
+                      
+                      <div className="w-full mt-4 flex items-center space-x-2 z-10">
+                        <span className="text-[10px] text-slate-400 font-mono">{audioCurrentTime}</span>
+                        <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
+                          <div className="absolute left-0 top-0 h-full bg-indigo-500" style={{ width: `${audioProgress}%` }}></div>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">{audioDuration}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="w-full md:w-2/3 space-y-3">
@@ -559,7 +654,14 @@ export default function MeusCursos({
                       return (
                         <div 
                           key={audio.id || index} 
-                          onClick={() => setCurrentPlayingAudio(audio)}
+                          onClick={() => {
+                            if (isCurrent) {
+                              handlePlayPauseAudio();
+                            } else {
+                              setCurrentPlayingAudio(audio);
+                              markResourceComplete(audio.id?.toString() || `audio-${index}`);
+                            }
+                          }}
                           className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group ${
                             isCurrent 
                               ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' 
@@ -615,14 +717,16 @@ export default function MeusCursos({
                           <p className="text-[10px] text-slate-500 font-mono">{pdf.materiaName || "PDF"}</p>
                         </div>
                       </div>
-                      <a
-                        href={pdf.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold decoration-none cursor-pointer font-sans"
+                      <button
+                        onClick={() => {
+                          setViewingPdfUrl(pdf.url);
+                          setViewingPdfTitle(pdf.title);
+                          markResourceComplete(pdf.id?.toString() || `pdf-${index}`);
+                        }}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold cursor-pointer font-sans bg-transparent border-none"
                       >
                         Visualizar
-                      </a>
+                      </button>
                     </div>
                   ))
                 )}
@@ -732,6 +836,45 @@ export default function MeusCursos({
             </div>
           )}
         </div>
+
+        {/* Secure PDF Viewer Overlay */}
+        {viewingPdfUrl && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-smooth-fade">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col">
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+                <h3 className="font-display font-bold text-slate-800 flex items-center space-x-2">
+                  <FileText className="w-5 h-5 text-indigo-500" />
+                  <span>Leitor de PDF Seguro: {viewingPdfTitle}</span>
+                </h3>
+                <button 
+                  onClick={() => setViewingPdfUrl(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 bg-slate-100 p-4 relative">
+                <iframe 
+                  src={(() => {
+                    if (!viewingPdfUrl) return '';
+                    if (viewingPdfUrl.includes('drive.google.com')) {
+                      const match = viewingPdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                      if (match && match[1]) {
+                        return `https://drive.google.com/file/d/${match[1]}/preview`;
+                      }
+                    }
+                    return `${viewingPdfUrl}#toolbar=0&navpanes=0`;
+                  })()}
+                  className="w-full h-full border-none"
+                  title={viewingPdfTitle}
+                />
+                {/* Película de proteção transparente absoluta que impede cliques nas ações superiores do Google Drive */}
+                <div className="absolute top-0 right-0 left-0 h-16 bg-transparent cursor-default" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

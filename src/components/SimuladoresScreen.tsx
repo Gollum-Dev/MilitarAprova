@@ -283,7 +283,7 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
               {isGeneratingAi ? (
                 <div className="flex flex-col items-center justify-center py-6 space-y-2">
                   <RefreshCw className="w-6 h-6 text-indigo-600 animate-spin" />
-                  <p className="text-[10px] font-mono text-slate-500 uppercase">Major Aranha está analisando seu gabarito...</p>
+                  <p className="text-[10px] font-mono text-slate-500 uppercase">Cabo Véio está analisando seu gabarito...</p>
                 </div>
               ) : (
                 <div className="text-xs text-slate-700 leading-relaxed font-sans italic whitespace-pre-line">
