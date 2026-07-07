@@ -39,6 +39,69 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [studentStatus, setStudentStatus] = useState("Ativo");
   const [studentAllowedCourses, setStudentAllowedCourses] = useState<string[]>([]);
 
+  const syncAllCourseMateriasToGlobal = async (coursesList: CourseData[]) => {
+    try {
+      const { data: globalMaterias, error: fetchError } = await supabase
+        .from('materias')
+        .select('name, discipline, area');
+      
+      if (fetchError) {
+        console.error("Erro ao buscar matérias globais para sincronismo:", fetchError);
+        return;
+      }
+      
+      const globalSet = new Set(
+        (globalMaterias || []).map(m => `${m.name.trim()}|${m.discipline?.trim()}|${m.area?.trim()}`.toLowerCase())
+      );
+      
+      const missingMaterias: any[] = [];
+      const processedKeys = new Set<string>();
+
+      coursesList.forEach(course => {
+        if (Array.isArray(course.disciplines)) {
+          course.disciplines.forEach(disc => {
+            if (Array.isArray(disc.areas)) {
+              disc.areas.forEach(area => {
+                if (Array.isArray(area.contents)) {
+                  area.contents.forEach(content => {
+                    if (!content.name) return;
+                    const key = `${content.name.trim()}|${disc.name.trim()}|${area.name.trim()}`.toLowerCase();
+                    
+                    if (!globalSet.has(key) && !processedKeys.has(key)) {
+                      processedKeys.add(key);
+                      missingMaterias.push({
+                        id: "mat-" + Math.random().toString(36).substr(2, 9) + "-" + Date.now(),
+                        name: content.name.trim(),
+                        discipline: disc.name.trim(),
+                        area: area.name.trim(),
+                        resources: content.resources || []
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+      
+      if (missingMaterias.length > 0) {
+        console.log(`Sincronizando ${missingMaterias.length} matérias dos cursos para o banco global...`);
+        const { error: insertError } = await supabase
+          .from('materias')
+          .insert(missingMaterias);
+          
+        if (insertError) {
+          console.error("Erro ao inserir matérias em lote na sincronização:", insertError);
+        } else {
+          console.log("Sincronização concluída com sucesso!");
+        }
+      }
+    } catch (err) {
+      console.error("Erro ao rodar sincronismo de matérias:", err);
+    }
+  };
+
   useEffect(() => {
     async function loadCourses() {
       setLoading(true);
@@ -55,6 +118,15 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           disciplines: c.disciplines_json || []
         }));
         setCourses(mapped);
+        
+        // Executar sincronização de matérias ausentes
+        await syncAllCourseMateriasToGlobal(mapped);
+
+        // Atualizar as categorias da Constituição de 1988 para a nomenclatura oficial no Supabase
+        await supabase
+          .from('law_articles')
+          .update({ category: 'Constituição da República Federativa do Brasil de 1988' })
+          .in('id', ['lei-01', 'lei-02', 'lei-05']);
       } catch (err) {
         console.error("Erro ao carregar cursos:", err);
       } finally {

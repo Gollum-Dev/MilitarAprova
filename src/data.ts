@@ -288,7 +288,7 @@ export const LEIS_ARTICLES: LawArticle[] = [
   {
     id: "lei-01",
     title: "Artigo 142 da Constituição Federal (Das Forças Armadas)",
-    category: "Constitucional",
+    category: "Constituição da República Federativa do Brasil de 1988",
     citation: "Art. 142, CF/88",
     content: "As Forças Armadas, constituídas pela Marinha, pelo Exército e pela Aeronáutica, são instituições nacionais permanentes e regulares, organizadas com base na hierarquia e na disciplina, sob a autoridade suprema do Presidente da República, e destinam-se à defesa da Pátria, à garantia dos poderes constitucionais e, por iniciativa de qualquer destes, da lei e da ordem.\n\n§ 1º Lei complementar estabelecerá as normas gerais a serem adotadas na organização, no preparo e no emprego das Forças Armadas.\n\n§ 2º Não caberá habeas corpus em relação a punições disciplinares militares.",
     relatedQuestions: ["Q-28491"]
@@ -296,7 +296,7 @@ export const LEIS_ARTICLES: LawArticle[] = [
   {
     id: "lei-02",
     title: "Artigo 144 da Constituição Federal (Da Segurança Pública)",
-    category: "Constitucional",
+    category: "Constituição da República Federativa do Brasil de 1988",
     citation: "Art. 144, CF/88",
     content: "A segurança pública, dever do Estado, direito e responsabilidade de todos, é exercida para a preservação da ordem pública e da incolumidade das pessoas e do patrimônio, através dos seguintes órgãos:\nI - polícia federal;\nII - polícia rodoviária federal;\nIII - polícia ferroviária federal;\nIV - polícias civis;\nV - polícias militares e corpos de bombeiros militares.\n\n§ 5º Às polícias militares cabem a polícia ostensiva e a preservação da ordem pública; aos corpos de bombeiros militares, além das atribuições definidas em lei, incumbe a execução de atividades de defesa civil.",
     relatedQuestions: ["Q-28491", "Q-11482"]
@@ -320,7 +320,7 @@ export const LEIS_ARTICLES: LawArticle[] = [
   {
     id: "lei-05",
     title: "Artigo 5º da Constituição Federal (Direitos e Deveres Individuais e Coletivos)",
-    category: "Constitucional",
+    category: "Constituição da República Federativa do Brasil de 1988",
     citation: "Art. 5º, CF/88",
     content: "Todos são iguais perante a lei, sem distinção de qualquer natureza, garantindo-se aos brasileiros e aos estrangeiros residentes no País a inviolabilidade do direito à vida, à liberdade, à igualdade, à segurança e à propriedade, nos termos seguintes:\n\nLXX - o mandado de segurança coletivo pode ser impetrado por:\na) partido político com representação no Congresso Nacional;\nb) organização sindical, entidade de classe ou associação legalmente constituída e em funcionamento há pelo menos um ano, em defesa dos interesses de seus membros ou associados.",
     relatedQuestions: ["Q-11482"]

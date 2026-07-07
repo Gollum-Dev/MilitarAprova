@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { BookOpen, X, Save, PlusCircle, Trash2, ChevronDown, ChevronUp, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, Eye, Edit2, ArrowLeft, FolderOpen, ChevronRight, Search, Maximize, Minimize, Presentation } from "lucide-react";
 import { supabase } from '../lib/supabase';
+import PdfSlidesViewer from "./PdfSlidesViewer";
 
 export type ResourceType = 'video' | 'audio' | 'question' | 'summary' | 'flashcard' | 'pdf' | 'slides';
 
@@ -126,6 +127,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewPdfTitle, setPreviewPdfTitle] = useState<string>("");
   const [isPdfMaximized, setIsPdfMaximized] = useState(false);
+  const [previewPdfType, setPreviewPdfType] = useState<"pdf" | "slides" | null>(null);
 
   // Audio Preview States
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
@@ -265,7 +267,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
     }
   };
 
-  const confirmAddMateria = (materiaName: string, resources: Resource[] = []) => {
+  const confirmAddMateria = (globalId: string, materiaName: string, resources: Resource[] = []) => {
     if (!targetEixoParaMateria) return;
     const { disciplineId, areaId } = targetEixoParaMateria;
     
@@ -281,7 +283,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
               }
               return {
                 ...a,
-                contents: [...a.contents, { id: Date.now(), name: materiaName, resources: resources || [] }]
+                contents: [...a.contents, { id: Date.now(), globalId, name: materiaName, resources: resources || [] }]
               };
             }
             return a;
@@ -314,6 +316,25 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
         }
         return d;
       }));
+    }
+  };
+
+  const updateGlobalMateriaResources = async (globalId: string | undefined, disciplineName: string, areaName: string, materiaName: string, updatedResources: Resource[]) => {
+    try {
+      let query = supabase.from('materias').update({ resources: updatedResources });
+      if (globalId) {
+        query = query.eq('id', globalId);
+      } else {
+        query = query.eq('name', materiaName)
+          .eq('discipline', disciplineName)
+          .eq('area', areaName);
+      }
+      const { error } = await query;
+      if (error) {
+        console.error("Erro ao sincronizar matéria global:", error);
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar matéria global:", err);
     }
   };
 
@@ -364,16 +385,26 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
       }
     }
 
-    setDisciplines(disciplines.map(d => {
+    let disciplineName = "";
+    let areaName = "";
+    let contentName = "";
+    let globalId: string | undefined = undefined;
+    let updatedResourcesList: Resource[] = [];
+
+    const updatedDisciplines = disciplines.map(d => {
       if (d.id === disciplineId) {
+        disciplineName = d.name;
         return {
           ...d,
           areas: d.areas.map(a => {
             if (a.id === areaId) {
+              areaName = a.name;
               return {
                 ...a,
                 contents: a.contents.map(c => {
                   if (c.id === contentId) {
+                    contentName = c.name;
+                    globalId = (c as any).globalId;
                     let updatedResources = c.resources || [];
                     if (editingResourceId) {
                       updatedResources = updatedResources.map(r => 
@@ -382,6 +413,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                     } else {
                       updatedResources = [...updatedResources, resourcePayload];
                     }
+                    updatedResourcesList = updatedResources;
                     return {
                       ...c,
                       resources: updatedResources
@@ -396,7 +428,14 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
         };
       }
       return d;
-    }));
+    });
+
+    setDisciplines(updatedDisciplines);
+
+    // Sincronizar com matérias globais
+    if (disciplineName && areaName && contentName) {
+      updateGlobalMateriaResources(globalId, disciplineName, areaName, contentName, updatedResourcesList);
+    }
 
     setAddingResourceToContent(null);
     setEditingResourceId(null);
@@ -407,19 +446,31 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
 
   const handleDeleteResource = (disciplineId: number, areaId: number, contentId: number, resourceId: number) => {
     if (window.confirm("Excluir este recurso?")) {
-      setDisciplines(disciplines.map(d => {
+      let disciplineName = "";
+      let areaName = "";
+      let contentName = "";
+      let globalId: string | undefined = undefined;
+      let updatedResourcesList: Resource[] = [];
+
+      const updatedDisciplines = disciplines.map(d => {
         if (d.id === disciplineId) {
+          disciplineName = d.name;
           return {
             ...d,
             areas: d.areas.map(a => {
               if (a.id === areaId) {
+                areaName = a.name;
                 return {
                   ...a,
                   contents: a.contents.map(c => {
                     if (c.id === contentId) {
+                      contentName = c.name;
+                      globalId = (c as any).globalId;
+                      const filtered = (c.resources || []).filter(r => r.id !== resourceId);
+                      updatedResourcesList = filtered;
                       return {
                         ...c,
-                        resources: (c.resources || []).filter(r => r.id !== resourceId)
+                        resources: filtered
                       };
                     }
                     return c;
@@ -431,7 +482,14 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
           };
         }
         return d;
-      }));
+      });
+
+      setDisciplines(updatedDisciplines);
+
+      // Sincronizar com matérias globais
+      if (disciplineName && areaName && contentName) {
+        updateGlobalMateriaResources(globalId, disciplineName, areaName, contentName, updatedResourcesList);
+      }
     }
   };
 
@@ -1087,6 +1145,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                                             } else if (resource.type === 'pdf' || resource.type === 'slides') {
                                               setPreviewPdfUrl(resource.url);
                                               setPreviewPdfTitle(resource.title);
+                                              setPreviewPdfType(resource.type as any);
                                             } else if (resource.type === 'audio') {
                                               setPreviewAudioUrl(resource.url);
                                               setPreviewAudioTitle(resource.title);
@@ -1185,7 +1244,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                       .map(materia => (
                         <button
                           key={materia.id}
-                          onClick={() => confirmAddMateria(materia.name, materia.resources || [])}
+                          onClick={() => confirmAddMateria(materia.id, materia.name, materia.resources || [])}
                           className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-md transition-all group cursor-pointer text-left"
                         >
                           <span className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">{materia.name}</span>
@@ -1409,74 +1468,19 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
 
       {/* Modal de Teste/Pré-visualização de PDF/Slides Seguro */}
       {previewPdfUrl && (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-smooth-fade ${isPdfMaximized ? 'p-0' : 'p-4'}`}>
-          <div className={`bg-white shadow-xl overflow-hidden flex flex-col transition-all duration-300 ${
-            isPdfMaximized 
-              ? 'w-screen h-screen rounded-none' 
-              : previewPdfUrl && previewPdfUrl.includes('docs.google.com/presentation')
-                ? 'w-full max-w-3xl rounded-2xl h-auto'
-                : 'w-full max-w-5xl h-[85vh] rounded-2xl'
-          }`}>
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
-              <h3 className="font-display font-bold text-slate-800 flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-indigo-500" />
-                <span>Visualizador Seguro (Somente Leitura): {previewPdfTitle}</span>
-              </h3>
-              <div className="flex items-center space-x-2">
-                <button 
-                  onClick={() => setIsPdfMaximized(!isPdfMaximized)}
-                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer flex items-center space-x-1.5 text-xs font-bold font-sans border-none bg-transparent"
-                  title={isPdfMaximized ? "Restaurar" : "Tela Cheia"}
-                >
-                  {isPdfMaximized ? <Minimize className="w-4 h-4 text-indigo-600" /> : <Maximize className="w-4 h-4 text-indigo-600" />}
-                  <span>{isPdfMaximized ? "Minimizar" : "Tela Cheia"}</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    setPreviewPdfUrl(null);
-                    setIsPdfMaximized(false);
-                  }}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            <div className={`relative overflow-hidden ${
-              !isPdfMaximized && previewPdfUrl && previewPdfUrl.includes('docs.google.com/presentation')
-                ? 'w-full aspect-video bg-black flex-none'
-                : 'flex-1 bg-slate-100'
-            }`}>
-              <iframe 
-                src={(() => {
-                  if (!previewPdfUrl) return '';
-                  if (previewPdfUrl.includes('drive.google.com')) {
-                    const match = previewPdfUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                      return `https://drive.google.com/file/d/${match[1]}/preview`;
-                    }
-                  }
-                  if (previewPdfUrl.includes('docs.google.com/presentation')) {
-                    const match = previewPdfUrl.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                      return `https://docs.google.com/presentation/d/${match[1]}/embed?start=false&loop=false&delayms=3000`;
-                    }
-                  }
-                  return `${previewPdfUrl}#toolbar=0&navpanes=0`;
-                })()}
-                className="w-full h-full border-none"
-                title={previewPdfTitle}
-              />
-              {/* Película de proteção transparente absoluta que impede cliques nas ações superiores do Google Drive */}
-              <div className="absolute top-0 right-0 left-0 h-16 bg-transparent cursor-default" />
-              {/* Bloqueio da barra de controle inferior direita para Google Slides (/embed) */}
-              {previewPdfUrl && previewPdfUrl.includes('docs.google.com/presentation') && (
-                <div className="absolute bottom-0 right-0 w-32 h-10 bg-transparent cursor-default" />
-              )}
-            </div>
-          </div>
-        </div>
+        <PdfSlidesViewer
+          pdfUrl={previewPdfUrl}
+          title={previewPdfTitle}
+          onClose={() => {
+            setPreviewPdfUrl(null);
+            setIsPdfMaximized(false);
+            setPreviewPdfType(null);
+          }}
+          isMaximized={isPdfMaximized}
+          onToggleMaximize={() => setIsPdfMaximized(!isPdfMaximized)}
+          initialMode={previewPdfType === "slides" ? "slides" : "scroll"}
+          hideModeToggle={previewPdfType === "pdf"}
+        />
       )}
 
       {/* Modal de Teste/Pré-visualização de Áudio Seguro */}
