@@ -7,6 +7,7 @@ import MeusCursos from "./components/MeusCursos";
 import AdminDashboard from "./components/AdminDashboard";
 import { fetchCourses } from "./lib/api";
 import { getStudentStats, StudentStats } from "./lib/progress";
+import { supabase } from "./lib/supabase";
 
 export default function App() {
   const [authView, setAuthView] = useState<"landing" | "login" | "app">("landing");
@@ -64,6 +65,79 @@ export default function App() {
       });
   }, []);
 
+  const handleSupabaseUser = async (user: any) => {
+    const userEmail = user.email?.toLowerCase().trim();
+    if (!userEmail) return;
+
+    if (userEmail === "admin@teste.com" || userEmail.endsWith("@admin.com")) {
+      handleLoginSuccess("Administrador", "admin", []);
+      return;
+    }
+
+    try {
+      const { data: student, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('email', userEmail)
+        .single();
+
+      if (error || !student) {
+        const newStudent = {
+          name: user.user_metadata?.full_name || user.user_metadata?.name || userEmail.split('@')[0],
+          email: userEmail,
+          password: 'google-oauth-login',
+          phone: '',
+          cpf: '',
+          status: 'Ativo',
+          allowed_courses: ["cho-cbmmg-2027", "cfo-cbmmg-2027", "eap-cbmmg-2026"]
+        };
+
+        const { data: inserted, error: insertError } = await supabase
+          .from('students')
+          .insert([newStudent])
+          .select()
+          .single();
+
+        if (!insertError && inserted) {
+          handleLoginSuccess(inserted.name, "aluno", inserted.allowed_courses || []);
+        } else {
+          console.error("Erro ao criar estudante via Google Auth:", insertError);
+          handleLoginSuccess(newStudent.name, "aluno", newStudent.allowed_courses);
+        }
+      } else {
+        if (student.status === 'Inativo') {
+          alert("Sua conta de aluno está inativa. Entre em contato com o administrador.");
+          await supabase.auth.signOut();
+          return;
+        }
+        handleLoginSuccess(student.name, "aluno", student.allowed_courses || []);
+      }
+    } catch (err) {
+      console.error("Erro ao processar login social:", err);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        handleSupabaseUser(session.user);
+      } else if (_event === 'SIGNED_OUT') {
+        setAuthView("landing");
+        setCurrentTab("inicio");
+        setSelectedCourseId(null);
+        setSelectedModuleId(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno", allowedCoursesList: string[] = []) => {
     setUserName(name);
     setUserRole(role);
@@ -71,7 +145,8 @@ export default function App() {
     setAuthView("app");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setAuthView("landing");
     setCurrentTab("inicio");
     setSelectedCourseId(null);

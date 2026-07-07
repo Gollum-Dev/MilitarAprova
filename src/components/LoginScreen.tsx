@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft } from "lucide-react";
 import { validateStudentLogin } from "../lib/student";
+import { supabase } from "../lib/supabase";
 
 interface LoginScreenProps {
   onLoginSuccess: (name: string, role: "aluno" | "admin", allowedCourses: string[]) => void;
@@ -12,6 +13,22 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) {
+        alert(`Erro ao conectar com a conta Google: ${error.message}`);
+      }
+    } catch (err: any) {
+      alert(`Erro inesperado: ${err.message || err}`);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +210,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
           <button
             id="google-login"
             type="button"
-            onClick={() => alert("Por favor, faça login utilizando o seu E-mail e Senha de aluno cadastrados pelo administrador.")}
+            onClick={handleGoogleLogin}
             className="w-full py-2.5 px-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-600 hover:text-slate-800 rounded-lg text-xs font-sans flex items-center justify-center space-x-3 transition-colors cursor-pointer shadow-sm backdrop-blur-sm"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
