@@ -89,9 +89,13 @@ export default function PdfSlidesViewer({
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
           "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+        const targetUrl = (pdfUrl.startsWith("http") && !pdfUrl.includes("localhost") && !pdfUrl.includes("127.0.0.1"))
+          ? `/api/proxy/pdf?url=${encodeURIComponent(pdfUrl)}`
+          : pdfUrl;
+
         // Load the document
         const loadingTask = window.pdfjsLib.getDocument({
-          url: pdfUrl,
+          url: targetUrl,
           withCredentials: false
         });
 
@@ -105,7 +109,9 @@ export default function PdfSlidesViewer({
       } catch (err: any) {
         console.error("Erro no PDF.js:", err);
         if (isMounted) {
-          setError("CORS_BLOCK");
+          // Fallback automático para o modo de leitura (iframe) para contornar restrições de CORS
+          setViewMode("scroll");
+          setError("Carregado no Modo de Leitura Seguro (CORS)");
           setLoading(false);
         }
       }
@@ -245,6 +251,12 @@ export default function PdfSlidesViewer({
         return `https://docs.google.com/presentation/d/${match[1]}/embed?start=false&loop=false&delayms=3000`;
       }
     }
+    
+    // Se for URL externa, passa pelo proxy para evitar bloqueio do Cloudflare / CORS
+    if (pdfUrl.startsWith("http") && !pdfUrl.includes("localhost") && !pdfUrl.includes("127.0.0.1")) {
+      return `/api/proxy/pdf?url=${encodeURIComponent(pdfUrl)}`;
+    }
+    
     // Retorna o PDF com parâmetros para ocultar a barra de ferramentas (bloqueando download/impressão) mas permitindo rolagem de páginas
     return `${pdfUrl}#toolbar=0&navpanes=0`;
   };

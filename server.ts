@@ -251,6 +251,37 @@ Retorne obrigatoriamente um objeto JSON com a seguinte estrutura estrita:
   }
 });
 
+// Proxy to bypass CORS / Cloudflare blocking on PDFs and Slides
+app.get("/api/proxy/pdf", async (req, res) => {
+  const url = req.query.url as string;
+  if (!url) {
+    return res.status(400).send("URL is required");
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": new URL(url).origin
+      }
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).send(`Failed to fetch PDF: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get("content-type") || "application/pdf";
+    res.setHeader("Content-Type", contentType);
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    res.send(buffer);
+  } catch (err: any) {
+    console.error("Error in PDF proxy:", err);
+    res.status(500).send(`Proxy error: ${err.message}`);
+  }
+});
+
 // 4. Question Explanation / Comment by IA
 app.post("/api/questoes/feedback", async (req, res) => {
   const { questionId, questionText, selectedAnswer, correctAnswer } = req.body;
