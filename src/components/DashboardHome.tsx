@@ -1,16 +1,22 @@
 import { useState, useEffect } from "react";
 import { Clock, CheckCircle, BarChart3, Bot, ChevronRight, Award, Zap } from "lucide-react";
 import { fetchCourses } from "../lib/api";
-import { getStudentStats, StudentStats } from "../lib/progress";
+import { getStudentStats, StudentStats, getCompletedResourceIds } from "../lib/progress";
 
 interface DashboardHomeProps {
   onChangeTab: (tab: string) => void;
   onGenerateCustomSimulator: (subject: string) => void;
   userName: string;
   allowedCourses?: string[];
+  setSelectedCourseId: (id: string | null) => void;
+  setSelectedModuleId: (id: string | null) => void;
+  setSelectedContentId: (id: number | null) => void;
 }
 
-export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, userName, allowedCourses }: DashboardHomeProps) {
+export default function DashboardHome({ 
+  onChangeTab, onGenerateCustomSimulator, userName, allowedCourses,
+  setSelectedCourseId, setSelectedModuleId, setSelectedContentId
+}: DashboardHomeProps) {
   const [stats, setStats] = useState<StudentStats>({
     studyHours: 12.5,
     questionsAnswered: 18,
@@ -26,6 +32,8 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
     lessonTitle: "Acesse a aba Meus Cursos"
   });
 
+  const [coursesProgress, setCoursesProgress] = useState<{ id: string; title: string; progress: number }[]>([]);
+
   const weeklyData = [
     { label: "Sem. 01", grade: 7.2 },
     { label: "Sem. 02", grade: 8.0 },
@@ -36,20 +44,105 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
   ];
 
   useEffect(() => {
+    console.log("DashboardHome: Carregando cursos e histórico...");
     fetchCourses().then(data => {
+      console.log("DashboardHome: Cursos retornados:", data);
       const filtered = allowedCourses && allowedCourses.length > 0
         ? data.filter(c => allowedCourses.includes(c.id))
         : data;
       
+      console.log("DashboardHome: Cursos filtrados para o aluno:", filtered);
       let totalRes = 0;
-      let firstModuleTitle = "Nenhum módulo";
-      let firstSubjectTitle = "Nenhuma matéria cadastrada";
-      let firstLessonTitle = "Sem conteúdos";
 
-      if (filtered.length > 0 && filtered[0].modules.length > 0) {
-        const mod = filtered[0].modules[0];
-        firstModuleTitle = mod.title;
+      // Calculate progress individually per course
+      const completedResources = getCompletedResourceIds();
+      const progressList = filtered.map(course => {
+        let total = 0;
+        let completedCount = 0;
+
+        course.modules.forEach(m => {
+          const rawDisc = m.rawDiscipline;
+          if (rawDisc && Array.isArray(rawDisc.areas)) {
+            rawDisc.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                area.contents.forEach((content: any) => {
+                  if (Array.isArray(content.resources)) {
+                    content.resources.forEach((res: any) => {
+                      total++;
+                      if (res.id && completedResources.includes(res.id.toString())) {
+                        completedCount++;
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          } else {
+            total += (m.lessonsCount || 0) + (m.pdfsCount || 0) + (m.questionsCount || 0);
+          }
+        });
+
+        const progressPercent = total === 0 ? 35 : Math.max(5, Math.round((completedCount / total) * 100));
+        return {
+          id: course.id,
+          title: course.title.replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*|PREPARATÓRIO ELITE\s*/gi, "").trim(),
+          progress: progressPercent
+        };
+      });
+      setCoursesProgress(progressList);
+
+      // Load last accessed course/module/materia
+      const lastCourseId = localStorage.getItem("militar_last_course_id");
+      const lastModuleId = localStorage.getItem("militar_last_module_id");
+      const lastContentIdStr = localStorage.getItem("militar_last_content_id");
+      console.log("DashboardHome: Histórico no localStorage:", { lastCourseId, lastModuleId, lastContentIdStr });
+
+      let found = false;
+
+      if (lastCourseId && lastModuleId && filtered.length > 0) {
+        const course = filtered.find(c => c.id === lastCourseId);
+        const mod = course?.modules.find(m => m.id === lastModuleId);
         
+        if (mod) {
+          let moduleTitle = mod.title;
+          let subjectTitle = mod.title;
+          let lessonTitle = localStorage.getItem("militar_last_resource_title") || "Aulas Disponíveis";
+
+          const rawDisc = mod.rawDiscipline;
+          if (rawDisc && Array.isArray(rawDisc.areas) && lastContentIdStr) {
+            let foundContent: any = null;
+            rawDisc.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                const matched = area.contents.find((content: any) => content.id?.toString() === lastContentIdStr);
+                if (matched) foundContent = matched;
+              }
+            });
+
+            if (foundContent) {
+              subjectTitle = foundContent.name;
+              if (!localStorage.getItem("militar_last_resource_title") && Array.isArray(foundContent.resources) && foundContent.resources.length > 0) {
+                lessonTitle = foundContent.resources[0].title;
+              }
+            }
+          }
+
+          console.log("DashboardHome: Definindo última aula assistida (histórico):", { moduleTitle, subjectTitle, lessonTitle });
+          setNextLesson({
+            moduleTitle,
+            subjectTitle,
+            lessonTitle
+          });
+          found = true;
+        }
+      }
+
+      // Fallback if no history or content not found
+      if (!found && filtered.length > 0 && filtered[0].modules.length > 0) {
+        const mod = filtered[0].modules[0];
+        let firstModuleTitle = mod.title;
+        let firstSubjectTitle = mod.title;
+        let firstLessonTitle = "Aulas Disponíveis";
+
         const rawDisc = mod.rawDiscipline;
         if (rawDisc && Array.isArray(rawDisc.areas) && rawDisc.areas.length > 0) {
           const area = rawDisc.areas[0];
@@ -61,15 +154,16 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
             }
           }
         }
+
+        console.log("DashboardHome: Definindo última aula assistida (fallback):", { firstModuleTitle, firstSubjectTitle, firstLessonTitle });
+        setNextLesson({
+          moduleTitle: firstModuleTitle,
+          subjectTitle: firstSubjectTitle,
+          lessonTitle: firstLessonTitle
+        });
       }
 
-      setNextLesson({
-        moduleTitle: firstModuleTitle,
-        subjectTitle: firstSubjectTitle,
-        lessonTitle: firstLessonTitle
-      });
-
-      // Sum all resources in all modules
+      // Sum all resources in all modules for stats
       filtered.forEach(course => {
         course.modules.forEach(m => {
           const rawDisc = m.rawDiscipline;
@@ -83,6 +177,8 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
                 });
               }
             });
+          } else {
+            totalRes += (m.lessonsCount || 0) + (m.pdfsCount || 0) + (m.questionsCount || 0);
           }
         });
       });
@@ -90,6 +186,26 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
       setStats(getStudentStats(totalRes));
     }).catch(console.error);
   }, [allowedCourses]);
+
+  const handleResumeStudies = () => {
+    const lastCourseId = localStorage.getItem("militar_last_course_id");
+    const lastModuleId = localStorage.getItem("militar_last_module_id");
+    const lastContentIdStr = localStorage.getItem("militar_last_content_id");
+
+    if (lastCourseId && lastModuleId && lastContentIdStr) {
+      setSelectedCourseId(lastCourseId);
+      setSelectedModuleId(lastModuleId);
+      setSelectedContentId(parseInt(lastContentIdStr));
+      onChangeTab("cursos");
+    } else if (allowedCourses && allowedCourses.length > 0) {
+      setSelectedCourseId(allowedCourses[0]);
+      setSelectedModuleId(null);
+      setSelectedContentId(null);
+      onChangeTab("cursos");
+    } else {
+      onChangeTab("cursos");
+    }
+  };
 
   return (
     <div className="space-y-6" id="dashboard-home-view">
@@ -127,16 +243,29 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
         {/* Card 1: Progresso do Curso */}
         <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:border-slate-300 transition-all">
           <div>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800">
-                Progresso do Curso - CHO CBMMG
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
+                Progresso dos Cursos Matriculados
               </h3>
-              <span className="text-2xl font-display font-extrabold text-indigo-600">{stats.progressPercent}%</span>
             </div>
             
-            {/* Custom Progress Bar */}
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
-              <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${stats.progressPercent}%` }}></div>
+            {/* Custom Progress Bar per Course */}
+            <div className="space-y-4 mb-6">
+              {coursesProgress.length === 0 ? (
+                <div className="text-xs text-slate-400 italic">Carregando progresso dos cursos...</div>
+              ) : (
+                coursesProgress.map(cProgress => (
+                  <div key={cProgress.id} className="space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100/80">
+                    <div className="flex justify-between items-center text-[11px] font-sans font-bold text-slate-700">
+                      <span className="truncate max-w-[80%] uppercase tracking-wide">{cProgress.title}</span>
+                      <span className="text-indigo-600 font-extrabold text-xs">{cProgress.progress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200/50 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-sm" style={{ width: `${cProgress.progress}%` }}></div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Quick Metrics */}
@@ -167,7 +296,7 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
           <div className="mt-6">
             <button
               onClick={() => onChangeTab("cursos")}
-              className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-sans text-slate-700 rounded-lg transition-colors cursor-pointer"
+              className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-sans text-slate-700 rounded-lg transition-colors cursor-pointer uppercase font-bold"
             >
               Ver Grade Curricular Completa
             </button>
@@ -177,7 +306,7 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
         {/* Card 2: Continue Estudando */}
         <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:border-slate-300 transition-all">
           <div>
-            <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 mb-3">
+            <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 mb-3">
               Continue Estudando
             </h3>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4">
@@ -195,11 +324,11 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
           <div className="space-y-2">
             <button
               id="retomar-estudos-btn"
-              onClick={() => onChangeTab("aulas")}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white border border-transparent text-xs font-sans font-bold uppercase rounded-lg transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
+              onClick={handleResumeStudies}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white border border-transparent text-xs font-sans font-bold uppercase rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-[0_4px_14px_rgba(79,70,229,0.35)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] animate-pulse"
             >
-              <Zap className="w-3.5 h-3.5" />
-              <span>RETOMAR ESTUDOS</span>
+              <Zap className="w-3.5 h-3.5 fill-current text-amber-300" />
+              <span className="tracking-wide">RETOMAR ESTUDOS</span>
             </button>
           </div>
         </div>
@@ -208,16 +337,16 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
         <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex justify-between items-center mb-5">
             <div>
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800">
+              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
                 Evolução de Desempenho
               </h3>
               <p className="text-[10px] text-slate-400 font-mono">Notas nos simulados semanais</p>
             </div>
             <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
-              <button className="px-2.5 py-1 text-[9px] font-mono bg-white text-indigo-600 rounded-md font-bold uppercase shadow-sm">
+              <button className="px-2.5 py-1 text-[9px] font-mono bg-white text-indigo-600 rounded-md font-bold uppercase shadow-sm border-none">
                 Mensal
               </button>
-              <button className="px-2.5 py-1 text-[9px] font-mono text-slate-500 rounded-md uppercase hover:text-slate-800 transition-colors">
+              <button className="px-2.5 py-1 text-[9px] font-mono text-slate-500 rounded-md uppercase hover:text-slate-800 transition-colors border-none bg-transparent">
                 Semestral
               </button>
             </div>
@@ -269,14 +398,14 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
           <div>
             <div className="flex items-center space-x-2 text-indigo-600 mb-3">
               <Bot className="w-5 h-5" />
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider">
+              <h3 className="text-xs font-display font-bold uppercase tracking-wider">
                 Insight do Tutor IA
               </h3>
             </div>
             <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic relative">
               <span className="absolute top-1 left-2 text-3xl text-slate-200 select-none">“</span>
               <p className="pl-4 relative z-10">
-                {userName}, notei que você errou 3 questões de <span className="text-slate-800 font-semibold not-italic">Direito Administrativo sobre Atos Administrativos</span>. Que tal fazermos um micro-simulado tático e adaptativo focado nesse tema hoje para mitigar essa falha?
+                {userName}, notei que você errou 3 questões de <span className="text-slate-800 font-semibold not-italic">Direito Administrativo sobre Atos Administrativos</span>. Que tal fazermos um micro-simulado tático e adaptativo focado nesse tema today para mitigar essa falha?
               </p>
             </div>
           </div>

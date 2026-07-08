@@ -9,6 +9,37 @@ export interface StudentStats {
   patent: string;
 }
 
+export type StudyStatus = 'a-estudar' | 'estudando' | 'estudado';
+
+export function getResourceStatuses(): Record<string, StudyStatus> {
+  try {
+    return JSON.parse(localStorage.getItem("militar_resource_statuses") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function setResourceStatus(resourceId: string, status: StudyStatus) {
+  const statuses = getResourceStatuses();
+  statuses[resourceId] = status;
+  localStorage.setItem("militar_resource_statuses", JSON.stringify(statuses));
+  
+  // Sincronizar com completedResources para manter compatibilidade com as barras de progresso
+  const completed = getCompletedResourceIds();
+  if (status === 'estudado') {
+    if (!completed.includes(resourceId)) {
+      completed.push(resourceId);
+      localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+    }
+  } else {
+    const idx = completed.indexOf(resourceId);
+    if (idx > -1) {
+      completed.splice(idx, 1);
+      localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+    }
+  }
+}
+
 export function getCompletedResourceIds(): string[] {
   try {
     return JSON.parse(localStorage.getItem("militar_completed_resources") || "[]");
@@ -22,6 +53,13 @@ export function markResourceComplete(resourceId: string) {
   if (!completed.includes(resourceId)) {
     completed.push(resourceId);
     localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+  }
+  
+  // Também marca o status como estudado
+  const statuses = getResourceStatuses();
+  if (statuses[resourceId] !== 'estudado') {
+    statuses[resourceId] = 'estudado';
+    localStorage.setItem("militar_resource_statuses", JSON.stringify(statuses));
   }
 }
 
@@ -43,7 +81,7 @@ export function getStudentStats(totalResourcesCount: number): StudentStats {
   const precision = questionsAnswered > 0 
     ? Math.round((questionsCorrect / questionsAnswered) * 100) 
     : 0;
-    
+     
   const completedCount = getCompletedResourceIds().length;
   const progressPercent = totalResourcesCount > 0 
     ? Math.min(100, Math.round((completedCount / totalResourcesCount) * 100)) 
@@ -58,11 +96,11 @@ export function getStudentStats(totalResourcesCount: number): StudentStats {
   if (questionsAnswered >= 1000) patent = "PRIMEIRO TENENTE";
 
   return {
-    studyHours: parseFloat(studyHours.toFixed(1)),
+    studyHours,
     questionsAnswered,
     questionsCorrect,
     precision,
-    progressPercent: Math.max(5, progressPercent), // Start with at least 5% visual baseline
+    progressPercent,
     patent
   };
 }

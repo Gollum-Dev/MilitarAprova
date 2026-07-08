@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Question } from "../data";
 import { fetchQuestions } from "../lib/api";
-import { recordQuestionAnswer } from "../lib/progress";
+import { recordQuestionAnswer, setResourceStatus, getResourceStatuses } from "../lib/progress";
 
 interface QuestoesScreenProps {
   discipline?: string;
@@ -118,6 +118,12 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
       const activeQ = filteredQuestions[currentIndex];
       if (activeQ) {
         const qId = activeQ.id?.toString() || currentIndex.toString();
+        
+        const currentStatuses = getResourceStatuses();
+        if (!currentStatuses[qId]) {
+          setResourceStatus(qId, 'estudando');
+        }
+
         setQuestionStatuses(prev => {
           if (prev[qId]?.opened) return prev;
           return {
@@ -165,8 +171,10 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
     const isCorrect = selectedAnswer === activeQuestion.correct;
     recordQuestionAnswer(isCorrect);
 
-    // Método auxiliar para salvar o status de resposta
     const qId = activeQuestion.id?.toString() || currentIndex.toString();
+    setResourceStatus(qId, isCorrect ? 'estudado' : 'a-estudar');
+
+    // Método auxiliar para salvar o status de resposta
     const saveStatus = (isCorrect: boolean, commentText: string) => {
       setQuestionStatuses(prev => ({
         ...prev,
@@ -402,7 +410,7 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
                     id="answer-now-btn"
                     disabled={!selectedAnswer}
                     onClick={handleAnswerQuestion}
-                    className="py-2.5 px-6 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-slate-200 disabled:text-slate-400 font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-md cursor-pointer border-none active:scale-[0.98]"
+                    className="py-3 px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 disabled:from-slate-200 disabled:to-slate-200 text-white disabled:text-slate-400 disabled:shadow-none font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-[0_4px_12px_rgba(79,70,229,0.3)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.45)] cursor-pointer border-none hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                   >
                     Responder Agora
                   </button>
@@ -477,15 +485,15 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
                   if (status) {
                     if (status.answered) {
                       if (status.correct) {
-                        statusIcon = <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" title="Acertou" />;
-                        statusTitle = "Correta";
+                        statusIcon = <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" title="Estudado" />;
+                        statusTitle = "Estudado";
                       } else {
-                        statusIcon = <XCircle className="w-4 h-4 text-rose-500 shrink-0" title="Errou" />;
-                        statusTitle = "Incorreta";
+                        statusIcon = <XCircle className="w-4 h-4 text-rose-500 shrink-0" title="A estudar" />;
+                        statusTitle = "A estudar";
                       }
                     } else if (status.opened) {
-                      statusIcon = <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 animate-pulse" title="Visualizada" />;
-                      statusTitle = "Visualizada";
+                      statusIcon = <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" title="Estudando" />;
+                      statusTitle = "Estudando";
                     }
                   }
 

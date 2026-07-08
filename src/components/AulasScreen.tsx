@@ -2,22 +2,130 @@ import React, { useState, useEffect } from "react";
 import { 
   Play, Pause, Volume2, Maximize, FileText, CheckCircle, 
   Lock, ArrowRight, Sparkles, BookOpen, Send, Bot, ShieldAlert,
-  ArrowLeft, XCircle, Minimize, X, Presentation, Video, Headphones
+  ArrowLeft, XCircle, Minimize, X, Presentation, Video, Headphones, ChevronDown
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { recordQuestionAnswer, markResourceComplete } from "../lib/progress";
+import { recordQuestionAnswer, markResourceComplete, getResourceStatuses, setResourceStatus } from "../lib/progress";
 import PdfSlidesViewer from "./PdfSlidesViewer";
+
+// Custom Premium Status Selector
+const StatusSelector = ({ 
+  resourceId, 
+  currentStatus, 
+  onStatusChange 
+}: { 
+  resourceId: string; 
+  currentStatus: 'a-estudar' | 'estudando' | 'estudado'; 
+  onStatusChange: (status: 'a-estudar' | 'estudando' | 'estudado') => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClose);
+    return () => document.removeEventListener("click", handleClose);
+  }, [isOpen]);
+
+  let colorClass = "bg-rose-50/70 border-rose-200/50 text-rose-700 hover:bg-rose-50";
+  let dotColor = "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]";
+  let label = "A Estudar";
+
+  if (currentStatus === 'estudando') {
+    colorClass = "bg-amber-50/70 border-amber-200/50 text-amber-700 hover:bg-amber-50";
+    dotColor = "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]";
+    label = "Estudando";
+  } else if (currentStatus === 'estudado') {
+    colorClass = "bg-emerald-50/70 border-emerald-200/50 text-emerald-700 hover:bg-emerald-50";
+    dotColor = "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]";
+    label = "Estudado";
+  }
+
+  const handleSelect = (status: 'a-estudar' | 'estudando' | 'estudado', e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStatusChange(status);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative inline-block shrink-0 z-30">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className={`flex items-center space-x-1.5 text-[9.5px] font-sans font-extrabold uppercase rounded-full px-3 py-1.5 border cursor-pointer transition-all duration-200 shadow-sm ${colorClass}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        <span className="tracking-wider">{label}</span>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-28 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] py-1.5 z-50 animate-smooth-fade">
+          <button
+            onClick={(e) => handleSelect('a-estudar', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">A Estudar</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudando', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudando</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudado', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudado</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface AulasScreenProps {
   onAskTutor: (question: string) => void;
   disciplineName?: string;
   rawDiscipline?: any;
+  selectedContentId?: number | null;
 }
 
-export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline }: AulasScreenProps) {
+export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline, selectedContentId }: AulasScreenProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState<"resumo" | "pdf" | "questoes" | "flashcards" | "audios" | "slides">("resumo");
   const [chatInput, setChatInput] = useState("");
+
+  const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
+
+  useEffect(() => {
+    setResourceStatuses(getResourceStatuses());
+  }, []);
+
+  const renderStatusIndicator = (resourceId: string) => {
+    const currentStatus = resourceStatuses[resourceId] || 'a-estudar';
+    return (
+      <StatusSelector
+        resourceId={resourceId}
+        currentStatus={currentStatus}
+        onStatusChange={(nextStatus) => {
+          setResourceStatus(resourceId, nextStatus);
+          setResourceStatuses(getResourceStatuses());
+        }}
+      />
+    );
+  };
 
   const displayDiscipline = disciplineName || "Legislação Militar";
 
@@ -36,6 +144,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
       if (vid.id) {
         markResourceComplete(vid.id.toString());
       }
+      localStorage.setItem("militar_last_resource_title", vid.title);
     }
   }, [activeVideoIndex, videos]);
 
@@ -91,6 +200,9 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
             rawDiscipline.areas.forEach((area: any) => {
               if (Array.isArray(area.contents)) {
                 area.contents.forEach((content: any) => {
+                  if (selectedContentId !== undefined && selectedContentId !== null && content.id !== selectedContentId) {
+                    return;
+                  }
                   const res = content.resources || [];
                   res.forEach((r: any) => {
                     if (r.type === 'question' || r.type === 'questoes') {
@@ -205,13 +317,14 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
       }
     }
     loadResources();
-  }, [displayDiscipline, rawDiscipline]);
+  }, [displayDiscipline, rawDiscipline, selectedContentId]);
 
   // Efeito para marcar questão ativa como aberta sem causar loop de dependência
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= 0) {
       const activeQ = questions[currentQuestionIndex];
       if (activeQ) {
+        localStorage.setItem("militar_last_resource_title", `Questão ${currentQuestionIndex + 1} de ${questions.length}`);
         const qId = activeQ.id?.toString() || currentQuestionIndex.toString();
         setQuestionStatuses(prev => {
           if (prev[qId]?.opened) return prev;
@@ -773,6 +886,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                   {pdfs.map((pdf) => (
                     <div key={pdf.id} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
                       <div className="flex items-center space-x-3 overflow-hidden">
+                        {renderStatusIndicator(pdf.id.toString())}
                         <FileText className="w-8 h-8 text-indigo-500 shrink-0" />
                         <div className="truncate pr-2">
                           <h5 className="text-xs font-sans font-bold text-slate-800 truncate">{pdf.title}</h5>
@@ -937,9 +1051,9 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                           onClick={() => {
                             alert("Combatente! Esse cartão foi marcado para revisão em 1 dia.");
                             setIsFlashcardFlipped(false);
-                            // Salvar classificação
                             if (activeFlashcard) {
                               const cardId = activeFlashcard.id?.toString() || currentFlashcardIndex.toString();
+                              setResourceStatus(cardId, 'a-estudar');
                               setFlashcardStatuses(prev => ({
                                 ...prev,
                                 [cardId]: { opened: true, answered: true, rating: "hard" }
@@ -957,9 +1071,9 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                           onClick={() => {
                             alert("Combatente! Esse cartão foi marcado para revisão em 4 dias.");
                             setIsFlashcardFlipped(false);
-                            // Salvar classificação
                             if (activeFlashcard) {
                               const cardId = activeFlashcard.id?.toString() || currentFlashcardIndex.toString();
+                              setResourceStatus(cardId, 'estudando');
                               setFlashcardStatuses(prev => ({
                                 ...prev,
                                 [cardId]: { opened: true, answered: true, rating: "medium" }
@@ -977,9 +1091,9 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                           onClick={() => {
                             alert("Combatente! Esse cartão foi marcado para revisão em 7 dias.");
                             setIsFlashcardFlipped(false);
-                            // Salvar classificação
                             if (activeFlashcard) {
                               const cardId = activeFlashcard.id?.toString() || currentFlashcardIndex.toString();
+                              setResourceStatus(cardId, 'estudado');
                               setFlashcardStatuses(prev => ({
                                 ...prev,
                                 [cardId]: { opened: true, answered: true, rating: "easy" }
@@ -1027,26 +1141,39 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {audios.map((audio) => (
-                    <div key={audio.id} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center space-x-3 overflow-hidden">
-                        <Volume2 className="w-8 h-8 text-indigo-500 shrink-0" />
-                        <div className="truncate pr-2">
-                          <h5 className="text-xs font-sans font-bold text-slate-800 truncate">{audio.title}</h5>
-                          <p className="text-[10px] text-slate-500 font-mono truncate">{audio.materiaName}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setViewingAudioUrl(audio.url);
-                          setViewingAudioTitle(audio.title);
-                        }}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold cursor-pointer font-sans bg-transparent border-none shrink-0"
+                  {audios.map((audio) => {
+                    const isActive = viewingAudioUrl === audio.url;
+                    return (
+                      <div 
+                        key={audio.id} 
+                        className={`p-4 rounded-xl flex items-center justify-between border transition-all ${
+                          isActive 
+                            ? "bg-indigo-50/40 border-indigo-200 text-indigo-900 shadow-sm" 
+                            : "bg-slate-50 border-slate-200/60 hover:border-slate-350"
+                        }`}
                       >
-                        Ouvir
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center space-x-3 overflow-hidden">
+                          {renderStatusIndicator(audio.id.toString())}
+                          <Volume2 className={`w-8 h-8 shrink-0 ${isActive ? "text-indigo-600 animate-pulse" : "text-indigo-500"}`} />
+                          <div className="truncate pr-2">
+                            <h5 className={`text-xs font-sans font-bold truncate ${isActive ? "text-indigo-900" : "text-slate-800"}`}>{audio.title}</h5>
+                            <p className="text-[10px] text-slate-500 font-mono truncate">{audio.materiaName}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setViewingAudioUrl(audio.url);
+                            setViewingAudioTitle(audio.title);
+                          }}
+                          className={`text-[10px] uppercase font-bold cursor-pointer font-sans bg-transparent border-none shrink-0 transition-colors ${
+                            isActive ? "text-indigo-700 font-extrabold" : "text-indigo-600 hover:text-indigo-700"
+                          }`}
+                        >
+                          {isActive ? "Ouvindo" : "Ouvir"}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1157,21 +1284,31 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                 slides.map((slide, idx) => {
                   const isActive = idx === activeSlideIndex;
                   return (
-                    <button
+                    <div
                       key={slide.id || idx}
-                      onClick={() => setActiveSlideIndex(idx)}
-                      className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                      className={`w-full p-3 rounded-xl border text-xs transition-all flex items-center justify-between ${
                         isActive
                           ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold"
                           : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5 truncate">
-                        <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                        <span className="text-xs truncate pr-1">{slide.title}</span>
+                      {/* Left: status indicator */}
+                      <div className="flex items-center pr-2 shrink-0 z-20">
+                        {renderStatusIndicator(slide.id.toString())}
                       </div>
-                      <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
-                    </button>
+
+                      {/* Right: clickable slide selection area */}
+                      <div
+                        onClick={() => setActiveSlideIndex(idx)}
+                        className="flex-1 flex items-center justify-between cursor-pointer overflow-hidden min-w-0"
+                      >
+                        <div className="flex items-center space-x-2 truncate">
+                          <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                          <span className="text-xs truncate pr-1">{slide.title}</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
+                      </div>
+                    </div>
                   );
                 })
               )}
@@ -1281,26 +1418,31 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline 
                 return activePlaylist.map((item) => (
                   <div
                     key={item.id}
-                    onClick={item.onClick}
-                    className={`p-3 rounded-lg flex items-center justify-between border transition-all cursor-pointer ${
+                    className={`p-3 rounded-lg flex items-center border transition-all ${
                       item.active 
                         ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold" 
                         : item.locked 
                           ? "bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed" 
-                          : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
+                          : "bg-slate-50 border-slate-100 hover:bg-slate-100/85 text-slate-600"
                     }`}
                   >
-                    <div className="flex items-center space-x-2.5 overflow-hidden">
-                      {item.completed ? (
-                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : item.locked ? (
+                    {/* Left: status selector */}
+                    <div className="flex items-center pr-2 shrink-0 z-20">
+                      {item.locked ? (
                         <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                       ) : (
-                        <Play className={`w-4 h-4 shrink-0 ${item.active ? "text-indigo-600 fill-current" : "text-slate-400"}`} />
+                        renderStatusIndicator(item.id.toString())
                       )}
-                      <span className="text-xs font-sans truncate pr-1">{item.title}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 shrink-0">{item.duration}</span>
+
+                    {/* Right: clickable video selection area */}
+                    <div
+                      onClick={!item.locked ? item.onClick : undefined}
+                      className="flex-1 flex items-center justify-between cursor-pointer overflow-hidden min-w-0"
+                    >
+                      <span className="text-xs font-sans truncate pr-2">{item.title}</span>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0">{item.duration}</span>
+                    </div>
                   </div>
                 ));
               })()}

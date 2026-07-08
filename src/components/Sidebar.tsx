@@ -17,6 +17,8 @@ interface SidebarProps {
   setSelectedCourseId: (id: string | null) => void;
   selectedModuleId: string | null;
   setSelectedModuleId: (id: string | null) => void;
+  selectedContentId: number | null;
+  setSelectedContentId: (id: number | null) => void;
   courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
   setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
@@ -27,155 +29,275 @@ interface SidebarProps {
 export default function Sidebar({ 
   currentTab, onChangeTab, userRank, onLogout, isOfflineMode,
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
+  selectedContentId, setSelectedContentId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [isHoveringCursos, setIsHoveringCursos] = useState(false);
+  
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
   }, []);
 
-  const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
-  const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
+  // Base navigation menu items (ALWAYS visible)
+  const menuItems = [
+    { id: "inicio", label: "Início", icon: Home },
+    { id: "cursos", label: "Meus Cursos", icon: BookOpen },
+    { id: "configuracoes", label: "Configurações", icon: Settings },
+  ];
 
-  // Determine current navigation level
-  const isSubjectLevel = selectedCourseId !== null && selectedModuleId !== null;
-  const isCourseLevel = selectedCourseId !== null && selectedModuleId === null;
+  const courseSubItems = [
+    { id: "materias", label: "Painel do Curso", icon: BookOpen },
+    { id: "simuladores", label: "Simuladores", icon: GraduationCap },
+    { id: "leis", label: "Leis Inteligentes", icon: Scale },
+    { id: "tutor", label: "Tutor IA", icon: MessageSquare },
+    { id: "desempenho", label: "Desempenho", icon: LineChart },
+  ];
 
-  // Build items based on level
-  let sidebarHeading = "Cabo Véio";
-  let sidebarSubtitle = "Doutrina de Caserna";
-  let menuItems: { id: string; label: string; icon: any }[] = [];
-
-  if (isSubjectLevel && selectedModule) {
-    sidebarHeading = selectedModule.title.replace(/^Módulo \d+:\s*/, "");
-    sidebarSubtitle = "Estudo do Módulo";
-    menuItems = [
-      { id: "aulas", label: "Vídeo Aulas", icon: Tv },
-      { id: "audio", label: "Áudio Aula", icon: Headphones },
-      { id: "materiais", label: "Material (PDFs)", icon: FileText },
-      { id: "slides", label: "Slides", icon: Presentation },
-      { id: "questoes", label: "Questões", icon: HelpCircle },
-      { id: "flashcards", label: "Flashcards", icon: Award },
-    ];
-  } else if (isCourseLevel && selectedCourse) {
-    sidebarHeading = selectedCourse.title.replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, "");
-    sidebarSubtitle = "Menu do Curso";
-    menuItems = [
-      { id: "materias", label: "Matérias", icon: BookOpen },
-      { id: "simuladores", label: "Simuladores", icon: GraduationCap },
-      { id: "leis", label: "Leis Inteligentes", icon: Scale },
-      { id: "tutor", label: "Tutor IA", icon: MessageSquare },
-      { id: "desempenho", label: "Desempenho", icon: LineChart },
-    ];
-  } else {
-    menuItems = [
-      { id: "inicio", label: "Início", icon: Home },
-      { id: "cursos", label: "Meus Cursos", icon: BookOpen },
-      { id: "configuracoes", label: "Configurações", icon: Settings },
-    ];
-  }
+  const subjectSubItems = [
+    { id: "aulas", label: "Vídeo Aulas", icon: Tv },
+    { id: "audio", label: "Áudio Aula", icon: Headphones },
+    { id: "materiais", label: "Material (PDFs)", icon: FileText },
+    { id: "slides", label: "Slides", icon: Presentation },
+    { id: "questoes", label: "Questões", icon: HelpCircle },
+    { id: "flashcards", label: "Flashcards", icon: Award },
+  ];
 
   const handleItemClick = (id: string) => {
-    if (isSubjectLevel) {
-      setSubjectActiveTab(id as any);
-    } else if (isCourseLevel) {
-      setCourseActiveTab(id as any);
-    } else {
-      onChangeTab(id);
-    }
+    setSelectedCourseId(null);
+    setSelectedModuleId(null);
+    setSelectedContentId(null);
+    onChangeTab(id);
   };
 
   const checkIsActive = (id: string) => {
-    if (isSubjectLevel) {
-      return subjectActiveTab === id;
-    }
-    if (isCourseLevel) {
-      return courseActiveTab === id;
+    if (id === "cursos") {
+      return currentTab === "cursos";
     }
     return currentTab === id;
   };
 
-  const handleBackToCourses = () => {
-    setSelectedCourseId(null);
-    setSelectedModuleId(null);
-    onChangeTab("cursos");
-  };
-
-  const handleBackToModules = () => {
-    setSelectedModuleId(null);
-  };
-
   return (
-    <aside className="w-64 glass-panel border-r border-slate-200/50 flex flex-col h-screen shrink-0 relative z-50">
+    <aside className="w-64 glass-panel border-r border-slate-200/50 flex flex-col h-screen shrink-0 relative z-50 shadow-sm">
       {/* Brand Header */}
-      <div className="p-6 border-b border-slate-100">
-
+      <div 
+        onClick={() => handleItemClick("cursos")}
+        className="p-6 border-b border-slate-100 cursor-pointer hover:bg-slate-50/50 transition-colors"
+        title="Voltar para Meus Cursos"
+      >
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden border border-emerald-200/50 shadow-sm bg-slate-50">
-            <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" />
+          <div className="w-16 h-16 rounded-lg flex items-center justify-center overflow-hidden border border-emerald-200/50 shadow-sm bg-slate-50">
+            <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Cabo Véio" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-sm font-display font-bold text-[var(--ink)] tracking-tight leading-tight">
-              {sidebarHeading}
+            <h1 className="font-display font-bold text-[var(--ink)] tracking-tight leading-tight text-sm hover:text-base transition-all duration-150">
+              Cabo Véio
             </h1>
             <p className="text-[10px] font-sans font-medium text-slate-400 mt-0.5 tracking-wider uppercase">
-              {sidebarSubtitle}
+              Doutrina de Caserna
             </p>
           </div>
         </div>
       </div>
 
-      {/* User Context Rank Badge */}
-      <div className="px-6 py-3 border-b border-slate-50 bg-slate-50/50 flex items-center space-x-2">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider uppercase">
-          Hierarquia: {userRank === "Soldado" ? "Recruta" : userRank}
-        </span>
-      </div>
-
       {/* Navigation menu */}
-      <nav className="flex-1 p-4 space-y-1.5">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         {menuItems.map(item => {
           const IconComponent = item.icon;
           const isActive = checkIsActive(item.id);
-          
-          if (item.id === "cursos" && allowedCourses && allowedCourses.length > 0) {
+          const showCoursesAccordion = item.id === "cursos" && (currentTab === "cursos" || selectedCourseId !== null);
+
+          if (showCoursesAccordion && allowedCourses && allowedCourses.length > 0) {
             const myCourses = courses.filter(c => allowedCourses.includes(c.id));
             return (
-              <div 
-                key={item.id} 
-                className="relative group"
-              >
+              <div key={item.id} className="space-y-1">
+                {/* Main "Meus Cursos" Button */}
                 <button
                   id={`sidebar-tab-${item.id}`}
                   onClick={() => handleItemClick(item.id)}
-                  className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
+                  className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-sans font-medium transition-all duration-150 cursor-pointer text-xs uppercase hover:text-sm hover:font-bold ${
                     isActive 
                       ? "bg-slate-100/50 text-slate-900 border-l-4 border-slate-700 font-bold shadow-sm" 
                       : "text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
                   }`}
                 >
                   <IconComponent className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-slate-700" : "text-slate-400 group-hover:text-blue-600"}`} />
-                  <span>{item.label}</span>
+                  <span>{item.label.toUpperCase()}</span>
                 </button>
                 
+                {/* Courses Accordion Level 1 */}
                 {myCourses.length > 0 && (
-                  <div className="absolute left-[80%] top-0 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] flex flex-col space-y-1.5 p-1.5 glass-panel rounded-xl">
-                    {myCourses.map(course => (
-                      <button
-                        key={course.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCourseId(course.id);
-                          onChangeTab("cursos");
-                        }}
-                        className="group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
-                      >
-                        <BookOpen className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                        <span className="line-clamp-1 text-left">{course.title}</span>
-                      </button>
-                    ))}
+                  <div className="pl-1.5 pr-1 py-1 space-y-2 border-l border-slate-200/50 ml-2 animate-smooth-fade">
+                    {myCourses.map(course => {
+                      const isCourseSelected = selectedCourseId === course.id;
+                      return (
+                        <div key={course.id} className="space-y-1">
+                          <button
+                            onClick={() => {
+                              if (isCourseSelected) {
+                                setSelectedCourseId(null);
+                                setSelectedModuleId(null);
+                                setSelectedContentId(null);
+                              } else {
+                                setSelectedCourseId(course.id);
+                                setSelectedModuleId(null);
+                                setSelectedContentId(null);
+                                setCourseActiveTab("materias");
+                              }
+                              onChangeTab("cursos");
+                            }}
+                            className={`group w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs uppercase hover:text-sm hover:font-bold ${
+                              isCourseSelected
+                                ? "bg-slate-200/60 text-slate-900 font-bold shadow-sm"
+                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                            }`}
+                          >
+                            <BookOpen className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                            <span className="line-clamp-2 leading-tight">{course.title.replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, "").toUpperCase()}</span>
+                          </button>
+
+                          {/* Course Tabs Accordion Level 2 */}
+                          {isCourseSelected && (
+                            <div className="pl-1.5 py-1 space-y-1 border-l border-slate-200 ml-1.5 animate-smooth-fade">
+                              {courseSubItems.map(subItem => {
+                                const SubIcon = subItem.icon;
+                                const isSubActive = courseActiveTab === subItem.id;
+                                const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias";
+                                return (
+                                  <div key={subItem.id} className="space-y-1">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedModuleId(null);
+                                        setSelectedContentId(null);
+                                        setCourseActiveTab(subItem.id as any);
+                                        onChangeTab("cursos");
+                                      }}
+                                      className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs uppercase hover:text-sm hover:font-bold ${
+                                        isSubActive
+                                          ? "text-indigo-700 font-bold bg-indigo-50/50"
+                                          : "text-slate-400 hover:text-slate-700"
+                                      }`}
+                                    >
+                                      <SubIcon className="w-3 h-3 shrink-0" />
+                                      <span>{subItem.label.toUpperCase()}</span>
+                                    </button>
+
+                                    {/* Subject Modules Accordion Level 3 */}
+                                    {showModulesAccordion && course.modules && course.modules.length > 0 && (
+                                      <div className="pl-1 py-1 space-y-1.5 border-l border-slate-200 ml-1 animate-smooth-fade">
+                                        {course.modules.map(module => {
+                                          const isModuleSelected = selectedModuleId === module.id;
+                                          return (
+                                            <div key={module.id} className="space-y-1">
+                                              <button
+                                                onClick={() => {
+                                                  if (isModuleSelected) {
+                                                    setSelectedModuleId(null);
+                                                    setSelectedContentId(null);
+                                                  } else {
+                                                    setSelectedModuleId(module.id);
+                                                    setSelectedContentId(null);
+                                                  }
+                                                  onChangeTab("cursos");
+                                                }}
+                                                className={`group w-full flex items-center space-x-1.5 px-2 py-1.5 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left uppercase hover:text-sm hover:font-bold ${
+                                                  isModuleSelected
+                                                    ? "text-slate-800 font-bold bg-slate-100"
+                                                    : "text-slate-500 hover:text-slate-700"
+                                                }`}
+                                              >
+                                                <BookOpen className="w-2.5 h-2.5 shrink-0 opacity-60" />
+                                                <span className="line-clamp-2 leading-tight">{module.title.replace(/^Módulo \d+:\s*/, "").toUpperCase()}</span>
+                                              </button>
+
+                                              {/* Matérias List (Level 4) */}
+                                              {isModuleSelected && (
+                                                <div className="pl-1.5 py-1 space-y-1 border-l border-slate-200 ml-1.5 animate-smooth-fade">
+                                                  {(() => {
+                                                    const materiasList: any[] = [];
+                                                    if (module.rawDiscipline && Array.isArray(module.rawDiscipline.areas)) {
+                                                      module.rawDiscipline.areas.forEach((area: any) => {
+                                                        if (Array.isArray(area.contents)) {
+                                                          area.contents.forEach((content: any) => {
+                                                            materiasList.push(content);
+                                                          });
+                                                        }
+                                                      });
+                                                    }
+                                                    
+                                                    if (materiasList.length === 0) {
+                                                      return (
+                                                        <div className="text-[10px] text-slate-400 italic pl-2">Nenhuma matéria disponível</div>
+                                                      );
+                                                    }
+                                                    
+                                                    return materiasList.map(materia => {
+                                                      const isMateriaSelected = selectedContentId === materia.id;
+                                                      return (
+                                                        <div key={materia.id} className="space-y-1">
+                                                          <button
+                                                            onClick={() => {
+                                                              if (isMateriaSelected) {
+                                                                setSelectedContentId(null);
+                                                              } else {
+                                                                setSelectedContentId(materia.id);
+                                                              }
+                                                              onChangeTab("cursos");
+                                                            }}
+                                                            className={`group w-full flex items-center space-x-1.5 px-1.5 py-1 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left hover:text-sm hover:font-bold ${
+                                                              isMateriaSelected
+                                                                ? "text-indigo-700 font-bold bg-indigo-50/50"
+                                                                : "text-slate-500 hover:text-slate-700"
+                                                            }`}
+                                                          >
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                                                            <span className="truncate group-hover:whitespace-nowrap group-hover:overflow-visible group-hover:w-max group-hover:relative group-hover:z-50 block">{materia.name}</span>
+                                                          </button>
+                                                          
+                                                          {/* Study Tabs Accordion (Level 5) */}
+                                                          {isMateriaSelected && (
+                                                            <div className="pl-1 py-0.5 space-y-0.5 border-l border-slate-200 ml-1 animate-smooth-fade">
+                                                              {subjectSubItems.map(subjectItem => {
+                                                                const SubjectIcon = subjectItem.icon;
+                                                                const isSubjectActive = subjectActiveTab === subjectItem.id;
+                                                                return (
+                                                                  <button
+                                                                    key={subjectItem.id}
+                                                                    onClick={() => {
+                                                                      setSubjectActiveTab(subjectItem.id as any);
+                                                                      onChangeTab("cursos");
+                                                                    }}
+                                                                    className={`group w-full flex items-center space-x-1.5 px-1.5 py-1 rounded font-sans font-medium transition-all duration-150 cursor-pointer text-left text-[10px] hover:text-sm hover:font-bold ${
+                                                                      isSubjectActive
+                                                                        ? "text-indigo-700 font-bold bg-indigo-50/50"
+                                                                        : "text-slate-400 hover:text-slate-600"
+                                                                    }`}
+                                                                  >
+                                                                    <SubjectIcon className="w-2.5 h-2.5 shrink-0" />
+                                                                    <span className="truncate group-hover:whitespace-nowrap group-hover:overflow-visible group-hover:w-max group-hover:relative group-hover:z-50 block">{subjectItem.label}</span>
+                                                                  </button>
+                                                                );
+                                                              })}
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    });
+                                                  })()}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -187,14 +309,14 @@ export default function Sidebar({
               id={`sidebar-tab-${item.id}`}
               key={item.id}
               onClick={() => handleItemClick(item.id)}
-              className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
+              className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg font-sans font-medium transition-all duration-150 cursor-pointer text-xs uppercase hover:text-sm hover:font-bold ${
                 isActive 
                   ? "bg-slate-100/50 text-slate-900 border-l-4 border-slate-700 font-bold shadow-sm" 
                   : "text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
               }`}
             >
               <IconComponent className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-slate-700" : "text-slate-400 group-hover:text-blue-600"}`} />
-              <span>{item.label}</span>
+              <span>{item.label.toUpperCase()}</span>
             </button>
           );
         })}
@@ -205,18 +327,18 @@ export default function Sidebar({
         <div className="space-y-1">
           <button
             onClick={() => alert("Suporte técnico do Cabo Véio. Envie suas dúvidas para suporte@caboveio.com.br")}
-            className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium uppercase text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
           >
             <SupportIcon className="w-3.5 h-3.5 text-slate-400" />
-            <span>Suporte</span>
+            <span>SUPORTE</span>
           </button>
           
           <button
             onClick={onLogout}
-            className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer text-left"
+            className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium uppercase text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer text-left"
           >
             <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500" />
-            <span>Sair</span>
+            <span>SAIR</span>
           </button>
         </div>
       </div>

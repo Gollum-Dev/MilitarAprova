@@ -48,6 +48,7 @@ export default function App() {
   // Lifted navigation states for context-aware sidebar
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
   const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho">("materias");
   const [subjectActiveTab, setSubjectActiveTab] = useState<"aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides">("aulas");
 
@@ -65,6 +66,18 @@ export default function App() {
         setIsOfflineMode(true);
       });
   }, []);
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      localStorage.setItem("militar_last_course_id", selectedCourseId);
+    }
+    if (selectedModuleId) {
+      localStorage.setItem("militar_last_module_id", selectedModuleId);
+    }
+    if (selectedContentId !== null && selectedContentId !== undefined) {
+      localStorage.setItem("militar_last_content_id", selectedContentId.toString());
+    }
+  }, [selectedCourseId, selectedModuleId, selectedContentId]);
 
   const handleSupabaseUser = async (user: any) => {
     const userEmail = user.email?.toLowerCase().trim();
@@ -185,6 +198,9 @@ export default function App() {
             onGenerateCustomSimulator={handleGenerateCustomSimulator} 
             userName={userName}
             allowedCourses={allowedCourses}
+            setSelectedCourseId={setSelectedCourseId}
+            setSelectedModuleId={setSelectedModuleId}
+            setSelectedContentId={setSelectedContentId}
           />
         );
       case "cursos":
@@ -196,6 +212,8 @@ export default function App() {
             setSelectedCourseId={setSelectedCourseId}
             selectedModuleId={selectedModuleId}
             setSelectedModuleId={setSelectedModuleId}
+            selectedContentId={selectedContentId}
+            setSelectedContentId={setSelectedContentId}
             courseActiveTab={courseActiveTab}
             setCourseActiveTab={setCourseActiveTab}
             subjectActiveTab={subjectActiveTab}
@@ -264,6 +282,8 @@ export default function App() {
         setSelectedCourseId={setSelectedCourseId}
         selectedModuleId={selectedModuleId}
         setSelectedModuleId={setSelectedModuleId}
+        selectedContentId={selectedContentId}
+        setSelectedContentId={setSelectedContentId}
         courseActiveTab={courseActiveTab}
         setCourseActiveTab={setCourseActiveTab}
         subjectActiveTab={subjectActiveTab}
@@ -288,12 +308,12 @@ export default function App() {
             
             {currentTab === "cursos" && (selectedCourseId || selectedModuleId) && (
               <button
-                onClick={() => selectedModuleId ? setSelectedModuleId(null) : setSelectedCourseId(null)}
+                onClick={() => selectedModuleId ? (selectedContentId ? setSelectedContentId(null) : setSelectedModuleId(null)) : setSelectedCourseId(null)}
                 className="group h-8 px-2 flex items-center bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300 rounded-full cursor-pointer overflow-hidden"
               >
                 <ArrowLeft className="w-4 h-4 shrink-0" />
                 <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[150px] group-hover:ml-1.5 transition-all duration-500 font-sans font-bold text-[10px] uppercase">
-                  {selectedModuleId ? "Voltar ao Curso" : "Voltar aos Cursos"}
+                  {selectedContentId ? "Voltar à Matéria" : selectedModuleId ? "Voltar ao Curso" : "Voltar aos Cursos"}
                 </span>
               </button>
             )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
-  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X, Presentation, CheckCircle, XCircle, Filter
+  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X, Presentation, CheckCircle, XCircle, Filter, ChevronDown
 } from "lucide-react";
 import { CourseModule, Course } from "../data";
 import { fetchCourses } from "../lib/api";
-import { markResourceComplete, getCompletedResourceIds } from "../lib/progress";
+import { markResourceComplete, getCompletedResourceIds, getResourceStatuses, setResourceStatus } from "../lib/progress";
 import AulasScreen from "./AulasScreen";
 import QuestoesScreen from "./QuestoesScreen";
 import SimuladoresScreen from "./SimuladoresScreen";
@@ -14,6 +14,93 @@ import TutorIAScreen from "./TutorIAScreen";
 import DesempenhoScreen from "./DesempenhoScreen";
 import PdfSlidesViewer from "./PdfSlidesViewer";
 
+// Custom Premium Status Selector
+const StatusSelector = ({ 
+  resourceId, 
+  currentStatus, 
+  onStatusChange 
+}: { 
+  resourceId: string; 
+  currentStatus: 'a-estudar' | 'estudando' | 'estudado'; 
+  onStatusChange: (status: 'a-estudar' | 'estudando' | 'estudado') => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClose);
+    return () => document.removeEventListener("click", handleClose);
+  }, [isOpen]);
+
+  let colorClass = "bg-rose-50/70 border-rose-200/50 text-rose-700 hover:bg-rose-50";
+  let dotColor = "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]";
+  let label = "A Estudar";
+
+  if (currentStatus === 'estudando') {
+    colorClass = "bg-amber-50/70 border-amber-200/50 text-amber-700 hover:bg-amber-50";
+    dotColor = "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]";
+    label = "Estudando";
+  } else if (currentStatus === 'estudado') {
+    colorClass = "bg-emerald-50/70 border-emerald-200/50 text-emerald-700 hover:bg-emerald-50";
+    dotColor = "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]";
+    label = "Estudado";
+  }
+
+  const handleSelect = (status: 'a-estudar' | 'estudando' | 'estudado', e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStatusChange(status);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative inline-block shrink-0 z-30">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className={`flex items-center space-x-1.5 text-[9.5px] font-sans font-extrabold uppercase rounded-full px-3 py-1.5 border cursor-pointer transition-all duration-200 shadow-sm ${colorClass}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        <span className="tracking-wider">{label}</span>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-28 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] py-1.5 z-50 animate-smooth-fade">
+          <button
+            onClick={(e) => handleSelect('a-estudar', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">A Estudar</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudando', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudando</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudado', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudado</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface MeusCursosProps {
   onChangeTab: (tab: string) => void;
   onAskTutor: (question: string) => void;
@@ -21,6 +108,8 @@ interface MeusCursosProps {
   setSelectedCourseId: (id: string | null) => void;
   selectedModuleId: string | null;
   setSelectedModuleId: (id: string | null) => void;
+  selectedContentId: number | null;
+  setSelectedContentId: (id: number | null) => void;
   courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
   setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
@@ -34,11 +123,31 @@ interface MeusCursosProps {
 export default function MeusCursos({ 
   onChangeTab, onAskTutor, 
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
+  selectedContentId, setSelectedContentId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab,
   tutorInitialPrompt, onClearTutorPrompt, allowedCourses, userName
 }: MeusCursosProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
+
+  useEffect(() => {
+    setResourceStatuses(getResourceStatuses());
+  }, []);
+
+  const renderStatusIndicator = (resourceId: string) => {
+    const currentStatus = resourceStatuses[resourceId] || 'a-estudar';
+    return (
+      <StatusSelector
+        resourceId={resourceId}
+        currentStatus={currentStatus}
+        onStatusChange={(nextStatus) => {
+          setResourceStatus(resourceId, nextStatus);
+          setResourceStatuses(getResourceStatuses());
+        }}
+      />
+    );
+  };
   const [quickQuestion, setQuickQuestion] = useState("");
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
@@ -274,6 +383,9 @@ export default function MeusCursos({
     selectedModule.rawDiscipline.areas.forEach((area: any) => {
       if (Array.isArray(area.contents)) {
         area.contents.forEach((content: any) => {
+          if (selectedContentId !== null && content.id !== selectedContentId) {
+            return;
+          }
           if (Array.isArray(content.resources)) {
             content.resources.forEach((res: any) => {
               if (res.type === 'flashcard') {
@@ -396,10 +508,85 @@ export default function MeusCursos({
             <div className="space-y-6">
 
 
-              {/* Modules list */}
+              {/* Modules list grouped by Eixos Temáticos */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-3">
-                  {selectedCourse.modules.map((mod) => (
+                <div className="lg:col-span-2 space-y-8">
+                {selectedCourse.modules.map((mod) => {
+                  const rawDisc = mod.rawDiscipline;
+                  if (rawDisc && Array.isArray(rawDisc.areas)) {
+                    return (
+                      <div key={mod.id} className="space-y-6">
+                        <div className="border-b border-slate-200 pb-2">
+                          <h3 className="text-base font-display font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                            <Layers className="w-5 h-5 text-indigo-600" />
+                            <span>{mod.title}</span>
+                          </h3>
+                        </div>
+                        
+                        <div className="space-y-6">
+                          {rawDisc.areas.map((area: any) => (
+                            <div key={area.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                              {/* Eixo Temático Header */}
+                              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                                <h4 className="text-xs font-mono font-bold text-slate-600 uppercase tracking-wider">
+                                  {area.name}
+                                </h4>
+                              </div>
+                              
+                              {/* Matérias Grid */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {Array.isArray(area.contents) && area.contents.map((content: any) => {
+                                  let videos = 0;
+                                  let pdfs = 0;
+                                  let questions = 0;
+                                  if (Array.isArray(content.resources)) {
+                                    content.resources.forEach((r: any) => {
+                                      if (r.type === 'video') videos++;
+                                      else if (r.type === 'pdf') pdfs++;
+                                      else if (r.type === 'question' || r.type === 'questoes') questions++;
+                                    });
+                                  }
+                                  
+                                  return (
+                                    <div 
+                                      key={content.id}
+                                      className="bg-slate-50 hover:bg-slate-100/50 border border-slate-200 hover:border-indigo-200 rounded-xl p-4 flex flex-col justify-between transition-all group cursor-pointer"
+                                      onClick={() => {
+                                        setSelectedModuleId(mod.id);
+                                        setSelectedContentId(content.id);
+                                        setSubjectActiveTab("aulas");
+                                      }}
+                                    >
+                                      <div>
+                                        <h5 className="text-xs font-sans font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                                          {content.name}
+                                        </h5>
+                                      </div>
+                                      
+                                      <div className="flex items-center justify-between mt-4 pt-2 border-t border-slate-100/60">
+                                        <div className="flex space-x-3 text-[9px] font-mono text-slate-400">
+                                          <span>{videos} Aulas</span>
+                                          <span>{pdfs} PDFs</span>
+                                          <span>{questions} Qs</span>
+                                        </div>
+                                        <span className="text-[9px] font-mono text-indigo-600 font-bold uppercase tracking-wider flex items-center space-x-1">
+                                          <span>Estudar</span>
+                                          <ChevronRight className="w-3 h-3" />
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Fallback para o caso de o módulo não ter a estrutura de disciplinas_json carregada
+                  return (
                     <div 
                       key={mod.id}
                       className="glass-panel hover:border-blue-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
@@ -448,7 +635,8 @@ export default function MeusCursos({
                         </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
 
                 {/* Right sidebar stats */}
@@ -594,6 +782,9 @@ export default function MeusCursos({
       rawDisc.areas.forEach((area: any) => {
         if (Array.isArray(area.contents)) {
           area.contents.forEach((content: any) => {
+            if (selectedContentId !== null && content.id !== selectedContentId) {
+              return;
+            }
             if (Array.isArray(content.resources)) {
               content.resources.forEach((res: any) => {
                 if (res.type === 'audio') {
@@ -619,6 +810,7 @@ export default function MeusCursos({
               onAskTutor={onAskTutor} 
               disciplineName={cleanDisciplineName}
               rawDiscipline={selectedModule.rawDiscipline}
+              selectedContentId={selectedContentId}
             />
           )}
 
@@ -697,39 +889,49 @@ export default function MeusCursos({
                       return (
                         <div 
                           key={audio.id || index} 
-                          onClick={() => {
-                            if (isCurrent) {
-                              handlePlayPauseAudio();
-                            } else {
-                              setCurrentPlayingAudio(audio);
-                              markResourceComplete(audio.id?.toString() || `audio-${index}`);
-                            }
-                          }}
-                          className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group ${
+                          className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors group ${
                             isCurrent 
                               ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' 
                               : 'bg-slate-50 border-slate-200/60 text-slate-600'
                           }`}
                         >
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                              isCurrent ? 'bg-blue-200' : 'bg-blue-100 group-hover:bg-blue-200'
-                            }`}>
-                              {isCurrent && isAudioPlaying ? (
-                                <Pause className="w-3.5 h-3.5 text-blue-700 fill-current" />
-                              ) : (
-                                <Play className="w-3.5 h-3.5 text-blue-600 fill-current ml-0.5" />
-                              )}
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-sans font-bold">{audio.title}</h5>
-                              <p className="text-[10px] text-slate-500 font-mono">{audio.materiaName || "Áudio Aula"}</p>
-                            </div>
+                          {/* Left: status indicator */}
+                          <div className="flex items-center pr-2 shrink-0 z-20">
+                            {renderStatusIndicator(audio.id?.toString() || `audio-${index}`)}
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">
-                              {isCurrent && isAudioPlaying ? 'Tocando' : 'Ouvir'}
-                            </span>
+
+                          {/* Right: clickable audio selection area */}
+                          <div
+                            onClick={() => {
+                              if (isCurrent) {
+                                handlePlayPauseAudio();
+                              } else {
+                                setCurrentPlayingAudio(audio);
+                                markResourceComplete(audio.id?.toString() || `audio-${index}`);
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-between cursor-pointer min-w-0"
+                          >
+                            <div className="flex items-center space-x-3 truncate">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                isCurrent ? 'bg-blue-200' : 'bg-blue-100 group-hover:bg-blue-200'
+                              }`}>
+                                {isCurrent && isAudioPlaying ? (
+                                  <Pause className="w-3.5 h-3.5 text-blue-700 fill-current" />
+                                ) : (
+                                  <Play className="w-3.5 h-3.5 text-blue-600 fill-current ml-0.5" />
+                                )}
+                              </div>
+                              <div className="truncate text-left">
+                                <h5 className="text-xs font-sans font-bold truncate">{audio.title}</h5>
+                                <p className="text-[10px] text-slate-500 font-mono truncate">{audio.materiaName || "Áudio Aula"}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center pl-2 shrink-0">
+                              <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+                                {isCurrent && isAudioPlaying ? 'Tocando' : 'Ouvir'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -754,6 +956,7 @@ export default function MeusCursos({
                   coursePdfs.map((pdf, index) => (
                     <div key={pdf.id || index} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
                       <div className="flex items-center space-x-3">
+                        {renderStatusIndicator(pdf.id?.toString() || `pdf-${index}`)}
                         <FileText className="w-8 h-8 text-blue-500 shrink-0" />
                         <div>
                           <h5 className="text-xs font-sans font-bold text-slate-800">{pdf.title}</h5>
@@ -827,24 +1030,34 @@ export default function MeusCursos({
                       courseSlides.map((slide, idx) => {
                         const isActive = idx === activeSlideIndex;
                         return (
-                          <button
+                          <div
                             key={slide.id || idx}
-                            onClick={() => {
-                              setActiveSlideIndex(idx);
-                              markResourceComplete(slide.id?.toString() || `slides-${idx}`);
-                            }}
-                            className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            className={`w-full p-3 rounded-xl border text-xs transition-all flex items-center justify-between ${
                               isActive
                                 ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                                 : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                             }`}
                           >
-                            <div className="flex items-center space-x-2.5 truncate">
-                              <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                              <span className="text-xs truncate pr-1">{slide.title}</span>
+                            {/* Left: status indicator */}
+                            <div className="flex items-center pr-2 shrink-0 z-20">
+                              {renderStatusIndicator(slide.id?.toString() || `slides-${idx}`)}
                             </div>
-                            <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
-                          </button>
+
+                            {/* Right: clickable slide selection area */}
+                            <div
+                              onClick={() => {
+                                setActiveSlideIndex(idx);
+                                markResourceComplete(slide.id?.toString() || `slides-${idx}`);
+                              }}
+                              className="flex-1 flex items-center justify-between cursor-pointer min-w-0"
+                            >
+                              <div className="flex items-center space-x-2.5 truncate">
+                                <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                                <span className="text-xs truncate pr-1 text-left">{slide.title}</span>
+                              </div>
+                              <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
+                            </div>
+                          </div>
                         );
                       })
                     )}
