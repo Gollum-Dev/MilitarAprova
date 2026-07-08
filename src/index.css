@@ -2,11 +2,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-natural-bg: #F8F9FA;
-  --color-natural-ink: #1E293B;
-  --color-natural-accent: #2D5A27;
+  --color-natural-bg: #F8FAFC;
+  --color-natural-ink: #0F172A;
+  --color-natural-accent: #2563EB;
   --color-natural-line: #E2E8F0;
   --color-natural-panel: #FFFFFF;
+  --color-natural-success: #10B981;
+  --color-natural-secondary: #64748B;
   
   --font-serif: "Archivo", sans-serif;
   --font-display: "Archivo", sans-serif;
@@ -14,11 +16,13 @@
 }
 
 :root {
-  --bg: #F8F9FA;
-  --ink: #1E293B;
-  --accent: #2D5A27;
+  --bg: #F8FAFC;
+  --ink: #0F172A;
+  --accent: #2563EB;
   --line: #E2E8F0;
   --panel: #FFFFFF;
+  --success: #10B981;
+  --secondary: #64748B;
   
   --font-display: "Archivo", sans-serif;
   --font-sans: "Inter", sans-serif;
@@ -58,20 +62,25 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Glassmorphism acrylic style for modals and transparent panels */
 .glass-panel {
-  background-color: rgba(255, 255, 255, 0.90) !important;
-  backdrop-filter: blur(8px) saturate(130%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 .glass-panel-dark {
-  background-color: rgba(31, 30, 28, 0.90) !important;
-  backdrop-filter: blur(10px) saturate(110%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 .modal-overlay {
-  background-color: rgba(0, 0, 0, 0.35) !important;
+  background-color: rgba(15, 23, 42, 0.4) !important;
   backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 /* Smooth micro-animations for UX (150ms-200ms duration) */

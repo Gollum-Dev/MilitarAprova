@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 import LoginScreen from "./components/LoginScreen";
 import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
@@ -267,6 +268,7 @@ export default function App() {
         setCourseActiveTab={setCourseActiveTab}
         subjectActiveTab={subjectActiveTab}
         setSubjectActiveTab={setSubjectActiveTab}
+        allowedCourses={allowedCourses}
       />
 
       {/* Main Content Area */}
@@ -275,9 +277,6 @@ export default function App() {
           {/* Header context info bar */}
           <div className="flex justify-between items-center border-b border-slate-200 pb-4">
             <div>
-              <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-                CENTRAL DE DOUTRINA - CABO VÉIO
-              </span>
               <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
                 {currentTab === "inicio" && "Painel de Comando"}
                 {currentTab === "cursos" && !selectedCourseId && "Meus Cursos"}
@@ -286,11 +285,18 @@ export default function App() {
                 {currentTab === "configuracoes" && "Configurações"}
               </h2>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] font-mono text-slate-500">
-                Data do Sistema: <strong className="text-slate-700">2026</strong>
-              </span>
-            </div>
+            
+            {currentTab === "cursos" && (selectedCourseId || selectedModuleId) && (
+              <button
+                onClick={() => selectedModuleId ? setSelectedModuleId(null) : setSelectedCourseId(null)}
+                className="group h-8 px-2 flex items-center bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300 rounded-full cursor-pointer overflow-hidden"
+              >
+                <ArrowLeft className="w-4 h-4 shrink-0" />
+                <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[150px] group-hover:ml-1.5 transition-all duration-500 font-sans font-bold text-[10px] uppercase">
+                  {selectedModuleId ? "Voltar ao Curso" : "Voltar aos Cursos"}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Dynamic screen content */}

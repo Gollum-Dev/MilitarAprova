@@ -196,7 +196,7 @@ export default function DashboardHome({ onChangeTab, onGenerateCustomSimulator, 
             <button
               id="retomar-estudos-btn"
               onClick={() => onChangeTab("aulas")}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent text-xs font-sans font-bold uppercase rounded-lg transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white border border-transparent text-xs font-sans font-bold uppercase rounded-lg transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
             >
               <Zap className="w-3.5 h-3.5" />
               <span>RETOMAR ESTUDOS</span>

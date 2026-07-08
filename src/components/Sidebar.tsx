@@ -21,14 +21,16 @@ interface SidebarProps {
   setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
+  allowedCourses: string[];
 }
 
 export default function Sidebar({ 
   currentTab, onChangeTab, userRank, onLogout, isOfflineMode,
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
-  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab
+  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [isHoveringCursos, setIsHoveringCursos] = useState(false);
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
   }, []);
@@ -105,18 +107,10 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-64 bg-[var(--panel)] border-r border-[var(--line)] flex flex-col h-screen shrink-0">
+    <aside className="w-64 glass-panel border-r border-slate-200/50 flex flex-col h-screen shrink-0 relative z-50">
       {/* Brand Header */}
       <div className="p-6 border-b border-slate-100">
-        {(isCourseLevel || isSubjectLevel) && (
-          <button 
-            onClick={isSubjectLevel ? handleBackToModules : handleBackToCourses}
-            className="flex items-center space-x-1.5 text-xs text-[var(--accent)] hover:underline mb-4 font-sans font-medium cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{isSubjectLevel ? "Voltar ao Curso" : "Voltar aos Cursos"}</span>
-          </button>
-        )}
+
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden border border-emerald-200/50 shadow-sm bg-slate-50">
             <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" />
@@ -141,22 +135,65 @@ export default function Sidebar({
       </div>
 
       {/* Navigation menu */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1.5">
         {menuItems.map(item => {
           const IconComponent = item.icon;
           const isActive = checkIsActive(item.id);
+          
+          if (item.id === "cursos" && allowedCourses && allowedCourses.length > 0) {
+            const myCourses = courses.filter(c => allowedCourses.includes(c.id));
+            return (
+              <div 
+                key={item.id} 
+                className="relative group"
+              >
+                <button
+                  id={`sidebar-tab-${item.id}`}
+                  onClick={() => handleItemClick(item.id)}
+                  className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
+                    isActive 
+                      ? "bg-slate-100/50 text-slate-900 border-l-4 border-slate-700 font-bold shadow-sm" 
+                      : "text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
+                  }`}
+                >
+                  <IconComponent className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-slate-700" : "text-slate-400 group-hover:text-blue-600"}`} />
+                  <span>{item.label}</span>
+                </button>
+                
+                {myCourses.length > 0 && (
+                  <div className="absolute left-[80%] top-0 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[100] flex flex-col space-y-1.5 p-1.5 glass-panel rounded-xl">
+                    {myCourses.map(course => (
+                      <button
+                        key={course.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCourseId(course.id);
+                          onChangeTab("cursos");
+                        }}
+                        className="group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
+                      >
+                        <BookOpen className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                        <span className="line-clamp-1 text-left">{course.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <button
               id={`sidebar-tab-${item.id}`}
               key={item.id}
               onClick={() => handleItemClick(item.id)}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
+              className={`group w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
                 isActive 
-                  ? "bg-emerald-50 text-emerald-800 border-l-4 border-emerald-700 font-bold shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-slate-100/50 text-slate-900 border-l-4 border-slate-700 font-bold shadow-sm" 
+                  : "text-slate-600 hover:bg-blue-50/80 hover:text-blue-700"
               }`}
             >
-              <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? "text-emerald-700" : "text-slate-400"}`} />
+              <IconComponent className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-slate-700" : "text-slate-400 group-hover:text-blue-600"}`} />
               <span>{item.label}</span>
             </button>
           );

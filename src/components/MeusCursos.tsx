@@ -331,102 +331,53 @@ export default function MeusCursos({
     if (loading) {
       return (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       );
     }
     return (
       <div className="space-y-6" id="meus-cursos-list-view">
-        <div className="border-b border-slate-200 pb-3 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-display font-extrabold uppercase tracking-wider text-slate-800">
-              Meus Cursos Acadêmicos
-            </h2>
-            <p className="text-xs text-slate-500">Selecione uma especialização para iniciar a preparação tática.</p>
-          </div>
-          <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/50 px-2.5 py-1 rounded">
-            {courses.length} CURSOS ATIVOS
-          </span>
-        </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {courses.map((course) => (
             <div 
               key={course.id}
-              className="glass-panel hover:border-indigo-400 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+              onClick={() => {
+                setSelectedCourseId(course.id);
+                setCourseActiveTab("materias");
+              }}
+              className="bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center"
             >
-              {/* Premium Gradient Header */}
-              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-5 text-white relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
-                <span className="text-[9px] font-mono uppercase tracking-widest text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30">
-                  Acesso Liberado
-                </span>
-                <h3 className="text-sm font-sans font-bold tracking-tight mt-3 line-clamp-2 group-hover:text-indigo-200 transition-colors">
+              {course.cover_url ? (
+                <img 
+                  src={course.cover_url} 
+                  alt={course.title} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <span className="text-sm font-sans font-bold text-slate-700 group-hover:text-blue-700 transition-colors line-clamp-2 px-2">
+                    {course.title}
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-white/60 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-200/50">
+                    Sem Capa
+                  </span>
+                </div>
+              )}
+              
+              {/* Overlay with subtle gradient on hover to indicate it's clickable */}
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                <h3 className="text-white text-sm font-sans font-extrabold mb-1 drop-shadow-md line-clamp-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                   {course.title}
                 </h3>
-              </div>
-
-              {/* Card Stats/Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                  {course.description || course.subtitle}
-                </p>
-
-                {/* Progress bar */}
-                {(() => {
-                  const progress = calculateCourseProgress(course);
-                  return (
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-[10px] font-mono">
-                        <span className="text-slate-400">Progresso de Estudo</span>
-                        <span className="text-indigo-600 font-bold">{progress}%</span>
-                      </div>
-                      <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${progress}%` }} />
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center text-[10px] font-mono text-slate-500">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-slate-800 text-xs">{course.hours}h</span>
-                    <span>Carga</span>
-                  </div>
-                  <div className="flex flex-col border-x border-slate-100">
-                    <span className="font-bold text-slate-800 text-xs">{course.lessons}</span>
-                    <span>Aulas</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-slate-800 text-xs">{course.modules.length}</span>
-                    <span>Matérias</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {course.cover_url && (
-                    <a
-                      href={course.cover_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-xl text-xs font-sans font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer decoration-none"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Capa</span>
-                    </a>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setSelectedCourseId(course.id);
-                      setCourseActiveTab("materias");
-                    }}
-                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-sans font-bold uppercase transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm border-none active:scale-95"
-                  >
-                    <span>Estudar Agora</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <span>Estudar Agora</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </span>
               </div>
             </div>
           ))}
@@ -443,21 +394,7 @@ export default function MeusCursos({
         <div className="mt-2">
           {courseActiveTab === "materias" && (
             <div className="space-y-6">
-              {/* Banner */}
-              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="space-y-2">
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2.5 py-1 rounded">
-                    Diretrizes Doutrinárias
-                  </span>
-                  <h2 className="text-xl md:text-2xl font-sans font-bold text-white tracking-tight mt-1">
-                    Módulos Acadêmicos do Curso
-                  </h2>
-                  <p className="text-xs text-indigo-200 max-w-xl">
-                    Selecione uma matéria na lista abaixo ou utilize a barra lateral para acessar ferramentas integradas como Simuladores, Tutor IA e Desempenho.
-                  </p>
-                </div>
-              </div>
+
 
               {/* Modules list */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -465,18 +402,18 @@ export default function MeusCursos({
                   {selectedCourse.modules.map((mod) => (
                     <div 
                       key={mod.id}
-                      className="glass-panel hover:border-indigo-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
+                      className="glass-panel hover:border-blue-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
                     >
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 pb-3 border-b border-slate-100 mb-3">
                         <div>
-                          <h4 className="text-sm font-sans font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                          <h4 className="text-sm font-sans font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                             {mod.title}
                           </h4>
                           <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                             {mod.description}
                           </p>
                         </div>
-                        <span className="text-xs font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200/50 shrink-0">
+                        <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200/50 shrink-0">
                           {calculateModuleProgress(mod)}% Concluído
                         </span>
                       </div>
@@ -502,10 +439,12 @@ export default function MeusCursos({
                             setSelectedModuleId(mod.id);
                             setSubjectActiveTab("aulas");
                           }}
-                          className="py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-xs font-sans font-bold text-white rounded-lg transition-colors flex items-center justify-center space-x-1 cursor-pointer border-none shadow-sm"
+                          className="group/btn h-8 px-2 rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 flex items-center shadow-sm group-hover:bg-blue-50 group-hover:border-blue-200 group-hover:text-blue-600 cursor-pointer overflow-hidden"
                         >
-                          <span>Estudar Matéria</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
+                          <ChevronRight className="w-4 h-4 shrink-0" />
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover/btn:max-w-[150px] group-hover/btn:ml-1.5 transition-all duration-500 font-sans font-bold text-[10px] uppercase">
+                            Acessar Matéria
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -514,6 +453,48 @@ export default function MeusCursos({
 
                 {/* Right sidebar stats */}
                 <div className="space-y-6">
+                  {/* Course Overview */}
+                  <div className="glass-panel rounded-2xl p-5 shadow-sm">
+                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-1.5">
+                      <BookOpen className="w-4 h-4 text-blue-500" />
+                      <span>Visão Geral do Curso</span>
+                    </h3>
+                    
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium mb-4">
+                      {selectedCourse.description || selectedCourse.subtitle}
+                    </p>
+
+                    {(() => {
+                      const progress = calculateCourseProgress(selectedCourse);
+                      return (
+                        <div className="space-y-2 mb-4 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                          <div className="flex justify-between items-center text-[10px] font-mono">
+                            <span className="text-slate-500 font-semibold uppercase tracking-wider">Progresso</span>
+                            <span className="text-blue-700 font-extrabold text-xs">{progress}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden shadow-inner">
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm" style={{ width: `${progress}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-4 text-center text-[10px] font-mono text-slate-500">
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.hours}h</span>
+                        <span className="uppercase tracking-wider">Carga</span>
+                      </div>
+                      <div className="flex flex-col border-x border-slate-100">
+                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.lessons}</span>
+                        <span className="uppercase tracking-wider">Aulas</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.modules.length}</span>
+                        <span className="uppercase tracking-wider">Matérias</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="glass-panel rounded-2xl p-5 shadow-sm">
                     <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-4 flex items-center space-x-1.5">
                       <Trophy className="w-4 h-4 text-amber-500" />
@@ -538,9 +519,9 @@ export default function MeusCursos({
 
                   {/* Quick AI Tutor */}
                   <div className="glass-panel rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
                     <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1.5">
-                      <Bot className="w-4 h-4 text-indigo-600" />
+                      <Bot className="w-4 h-4 text-blue-600" />
                       <span>Rádio Cabo Véio</span>
                     </h3>
                     <form onSubmit={handleAskQuick} className="space-y-3">
@@ -550,11 +531,11 @@ export default function MeusCursos({
                         value={quickQuestion}
                         onChange={(e) => setQuickQuestion(e.target.value)}
                         placeholder="Perguntar sobre ética ou regulamentos..."
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600"
                       />
                       <button
                         type="submit"
-                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer border-none shadow-sm"
+                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer border-none shadow-sm"
                       >
                         Consultar IA
                       </button>
@@ -644,13 +625,13 @@ export default function MeusCursos({
           {subjectActiveTab === "audio" && (
             <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-6 animate-smooth-fade">
               <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2 flex items-center space-x-1.5">
-                <Headphones className="w-4.5 h-4.5 text-indigo-600" />
+                <Headphones className="w-4.5 h-4.5 text-blue-600" />
                 <span>Áudio Aulas - {cleanDisciplineName}</span>
               </h3>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="w-full md:w-1/3 bg-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-indigo-500/10 blur-xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-700 flex items-center justify-center shadow-2xl mb-4 relative z-10">
+                  <div className="absolute inset-0 bg-blue-500/10 blur-xl pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-500 to-blue-700 flex items-center justify-center shadow-2xl mb-4 relative z-10">
                     {isAudioPlaying ? (
                       <Volume2 className="w-10 h-10 text-white animate-bounce" />
                     ) : (
@@ -686,7 +667,7 @@ export default function MeusCursos({
                         <button 
                           onClick={handlePlayPauseAudio}
                           disabled={!currentPlayingAudio}
-                          className="w-12 h-12 rounded-full bg-white text-indigo-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
+                          className="w-12 h-12 rounded-full bg-white text-blue-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
                         >
                           {isAudioPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                         </button>
@@ -695,7 +676,7 @@ export default function MeusCursos({
                       <div className="w-full mt-4 flex items-center space-x-2 z-10">
                         <span className="text-[10px] text-slate-400 font-mono">{audioCurrentTime}</span>
                         <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
-                          <div className="absolute left-0 top-0 h-full bg-indigo-500" style={{ width: `${audioProgress}%` }}></div>
+                          <div className="absolute left-0 top-0 h-full bg-blue-500" style={{ width: `${audioProgress}%` }}></div>
                         </div>
                         <span className="text-[10px] text-slate-400 font-mono">{audioDuration}</span>
                       </div>
@@ -726,18 +707,18 @@ export default function MeusCursos({
                           }}
                           className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer group ${
                             isCurrent 
-                              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' 
+                              ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' 
                               : 'bg-slate-50 border-slate-200/60 text-slate-600'
                           }`}
                         >
                           <div className="flex items-center space-x-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                              isCurrent ? 'bg-indigo-200' : 'bg-indigo-100 group-hover:bg-indigo-200'
+                              isCurrent ? 'bg-blue-200' : 'bg-blue-100 group-hover:bg-blue-200'
                             }`}>
                               {isCurrent && isAudioPlaying ? (
-                                <Pause className="w-3.5 h-3.5 text-indigo-700 fill-current" />
+                                <Pause className="w-3.5 h-3.5 text-blue-700 fill-current" />
                               ) : (
-                                <Play className="w-3.5 h-3.5 text-indigo-600 fill-current ml-0.5" />
+                                <Play className="w-3.5 h-3.5 text-blue-600 fill-current ml-0.5" />
                               )}
                             </div>
                             <div>
@@ -762,7 +743,7 @@ export default function MeusCursos({
           {subjectActiveTab === "materiais" && (
             <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2 flex items-center space-x-1.5">
-                <FileText className="w-4.5 h-4.5 text-indigo-600" />
+                <FileText className="w-4.5 h-4.5 text-blue-600" />
                 <span>Biblioteca de Materiais de {cleanDisciplineName}</span>
               </h3>
 
@@ -773,7 +754,7 @@ export default function MeusCursos({
                   coursePdfs.map((pdf, index) => (
                     <div key={pdf.id || index} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <FileText className="w-8 h-8 text-indigo-500 shrink-0" />
+                        <FileText className="w-8 h-8 text-blue-500 shrink-0" />
                         <div>
                           <h5 className="text-xs font-sans font-bold text-slate-800">{pdf.title}</h5>
                           <p className="text-[10px] text-slate-500 font-mono">{pdf.materiaName || "PDF"}</p>
@@ -786,7 +767,7 @@ export default function MeusCursos({
                           setViewingPdfType("pdf");
                           markResourceComplete(pdf.id?.toString() || `pdf-${index}`);
                         }}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-700 uppercase font-bold cursor-pointer font-sans bg-transparent border-none"
+                        className="text-[10px] text-blue-600 hover:text-blue-700 uppercase font-bold cursor-pointer font-sans bg-transparent border-none"
                       >
                         Visualizar
                       </button>
@@ -834,7 +815,7 @@ export default function MeusCursos({
                     <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500">
                       Apresentações de Slides
                     </h3>
-                    <span className="text-xs font-mono text-indigo-600 font-bold">
+                    <span className="text-xs font-mono text-blue-600 font-bold">
                       {courseSlides.length} Arquivos
                     </span>
                   </div>
@@ -854,12 +835,12 @@ export default function MeusCursos({
                             }}
                             className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
                               isActive
-                                ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold"
+                                ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                                 : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                             }`}
                           >
                             <div className="flex items-center space-x-2.5 truncate">
-                              <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                              <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
                               <span className="text-xs truncate pr-1">{slide.title}</span>
                             </div>
                             <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
@@ -885,7 +866,7 @@ export default function MeusCursos({
               {/* Filtering Toolbar */}
               <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between shadow-sm">
                 <div className="flex items-center space-x-2 text-slate-700">
-                  <Filter className="w-4 h-4 text-indigo-600" />
+                  <Filter className="w-4 h-4 text-blue-600" />
                   <span className="text-xs font-mono uppercase tracking-wider font-bold">Filtragem de Flashcards</span>
                 </div>
 
@@ -901,7 +882,7 @@ export default function MeusCursos({
                         setCurrentFlashcardIndex(0);
                         setFlashcardFlipped(false);
                       }}
-                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-indigo-600 cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer"
                     >
                       {uniqueFlashcardDisciplines.map(d => (
                         <option key={d} value={d}>{d}</option>
@@ -919,7 +900,7 @@ export default function MeusCursos({
                         setCurrentFlashcardIndex(0);
                         setFlashcardFlipped(false);
                       }}
-                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-indigo-600 cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer"
                     >
                       {uniqueFlashcardSubjects.map(s => (
                         <option key={s} value={s}>{s}</option>
@@ -939,11 +920,11 @@ export default function MeusCursos({
                       {/* Metadata bar */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-slate-500 border-b border-slate-200 pb-3">
                         <div className="flex items-center space-x-3">
-                          <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-[10px]">Card {currentFlashcardIndex + 1} de {filteredFlashcards.length}</span>
+                          <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px]">Card {currentFlashcardIndex + 1} de {filteredFlashcards.length}</span>
                           <span>•</span>
                           <span>Tipo: <span className="font-semibold text-slate-700">Memorização</span></span>
                         </div>
-                        <span className="text-indigo-600 font-bold uppercase tracking-wider text-[10px]">
+                        <span className="text-blue-600 font-bold uppercase tracking-wider text-[10px]">
                           {filteredFlashcards[currentFlashcardIndex]?.discipline || "Geral"} • {filteredFlashcards[currentFlashcardIndex]?.subject || "Geral"}
                         </span>
                       </div>
@@ -960,22 +941,22 @@ export default function MeusCursos({
                         >
                           {/* Lado da Pergunta (Front) */}
                           <div 
-                            className="absolute inset-0 w-full h-full bg-indigo-50 border border-indigo-200 rounded-2xl p-6 flex flex-col justify-between items-center text-center shadow-md backface-hidden"
+                            className="absolute inset-0 w-full h-full bg-blue-50 border border-blue-200 rounded-2xl p-6 flex flex-col justify-between items-center text-center shadow-md backface-hidden"
                             style={{ backfaceVisibility: 'hidden' }}
                           >
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-100/30 via-indigo-50/0 to-indigo-50/0 pointer-events-none rounded-2xl" />
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-100/30 via-blue-50/0 to-blue-50/0 pointer-events-none rounded-2xl" />
                             <div className="absolute top-3 left-3 flex items-center space-x-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-                              <span className="text-[8px] font-mono text-indigo-600 font-bold uppercase tracking-wider">Pergunta Tática</span>
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                              <span className="text-[8px] font-mono text-blue-600 font-bold uppercase tracking-wider">Pergunta Tática</span>
                             </div>
                             
                             <div className="flex-1 flex items-center justify-center pt-4">
-                              <p className="text-xs md:text-sm font-sans font-extrabold text-indigo-950 leading-relaxed px-4">
+                              <p className="text-xs md:text-sm font-sans font-extrabold text-blue-950 leading-relaxed px-4">
                                 {filteredFlashcards[currentFlashcardIndex]?.q}
                               </p>
                             </div>
                             
-                            <span className="text-[10px] text-indigo-700 font-sans font-bold bg-indigo-100/80 border border-indigo-200/60 px-3 py-1 rounded-full hover:bg-indigo-100 transition-colors">
+                            <span className="text-[10px] text-blue-700 font-sans font-bold bg-blue-100/80 border border-blue-200/60 px-3 py-1 rounded-full hover:bg-blue-100 transition-colors">
                               Clique para revelar a resposta
                             </span>
                           </div>
@@ -1101,7 +1082,7 @@ export default function MeusCursos({
                         ) : (
                           <button
                             onClick={() => setFlashcardFlipped(true)}
-                            className="w-full sm:w-auto py-2 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-md cursor-pointer border-none"
+                            className="w-full sm:w-auto py-2 px-5 bg-blue-600 hover:bg-blue-700 text-white font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-md cursor-pointer border-none"
                           >
                             Ver Resposta
                           </button>
@@ -1124,7 +1105,7 @@ export default function MeusCursos({
                       <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500">
                         Flashcards do Módulo
                       </h3>
-                      <span className="text-xs font-mono text-indigo-600 font-bold">
+                      <span className="text-xs font-mono text-blue-600 font-bold">
                         {filteredFlashcards.length} Cartões
                       </span>
                     </div>
@@ -1154,7 +1135,7 @@ export default function MeusCursos({
                                 statusTitle = "Difícil";
                               }
                             } else if (status.opened) {
-                              statusIcon = <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 animate-pulse" title="Visualizado" />;
+                              statusIcon = <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 animate-pulse" title="Visualizado" />;
                               statusTitle = "Visualizado";
                             }
                           }
@@ -1168,7 +1149,7 @@ export default function MeusCursos({
                               }}
                               className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
                                 isActive
-                                  ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold"
+                                  ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                                   : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                               }`}
                             >
