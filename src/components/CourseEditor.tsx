@@ -198,6 +198,15 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
     }
   };
 
+  const handleEditDiscipline = (id: number) => {
+    const discipline = disciplines.find(d => d.id === id);
+    if (!discipline) return;
+    const name = window.prompt("Editar nome da Disciplina:", discipline.name);
+    if (name && name.trim() && name.trim() !== discipline.name) {
+      setDisciplines(disciplines.map(d => d.id === id ? { ...d, name: name.trim() } : d));
+    }
+  };
+
   const handleAddArea = (disciplineId: number) => {
     const name = window.prompt("Nome do novo Eixo Temático / Área (Ex: Conhecimentos Básicos):");
     if (name && name.trim()) {
@@ -220,6 +229,24 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
           return {
             ...d,
             areas: d.areas.filter(a => a.id !== areaId)
+          };
+        }
+        return d;
+      }));
+    }
+  };
+
+  const handleEditArea = (disciplineId: number, areaId: number) => {
+    const discipline = disciplines.find(d => d.id === disciplineId);
+    const area = discipline?.areas.find(a => a.id === areaId);
+    if (!area) return;
+    const name = window.prompt("Editar nome do Eixo Temático / Área:", area.name);
+    if (name && name.trim() && name.trim() !== area.name) {
+      setDisciplines(disciplines.map(d => {
+        if (d.id === disciplineId) {
+          return {
+            ...d,
+            areas: d.areas.map(a => a.id === areaId ? { ...a, name: name.trim() } : a)
           };
         }
         return d;
@@ -748,6 +775,14 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                                 </button>
                                 <button 
                                   type="button"
+                                  onClick={() => handleEditDiscipline(discipline.id)}
+                                  className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-500 hover:text-white hover:bg-slate-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                  title="Editar Disciplina"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  type="button"
                                   onClick={() => handleDeleteDiscipline(discipline.id)}
                                   className="px-3 py-1.5 text-[10px] uppercase font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
                                   title="Excluir Disciplina"
@@ -816,6 +851,14 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                                 >
                                   <span>Gerenciar Matérias</span>
                                   <ChevronRight className="w-3 h-3" />
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleEditArea(activeDiscipline.id, area.id)}
+                                  className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-500 hover:text-white hover:bg-slate-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                  title="Editar Eixo"
+                                >
+                                  <Edit2 className="w-3 h-3" />
                                 </button>
                                 <button 
                                   type="button"

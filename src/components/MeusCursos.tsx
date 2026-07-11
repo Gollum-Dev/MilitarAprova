@@ -270,7 +270,7 @@ export default function MeusCursos({
 
   useEffect(() => {
     fetchCourses().then(data => {
-      const filtered = allowedCourses && allowedCourses.length > 0
+      const filtered = allowedCourses
         ? data.filter(c => allowedCourses.includes(c.id))
         : data;
       setCourses(filtered);

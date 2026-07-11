@@ -193,6 +193,26 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
     }
   };
 
+  const handleEditDiscipline = async (isEditMode: boolean = false) => {
+    const targetId = isEditMode ? editDisciplineId : selectedDisciplineId;
+    if (!targetId) return;
+    const disc = disciplines.find(d => d.id === targetId);
+    if (!disc) return;
+    const name = window.prompt("Editar nome da Disciplina:", disc.name);
+    if (!name || !name.trim() || name.trim() === disc.name) return;
+
+    const { error } = await supabase
+      .from('global_disciplines')
+      .update({ name: name.trim() })
+      .eq('id', targetId);
+
+    if (error) alert("Erro ao editar disciplina");
+    else {
+      await fetchDisciplines();
+      await fetchMaterias();
+    }
+  };
+
   const handleAddArea = async (isEditMode: boolean = false) => {
     const targetDisciplineId = isEditMode ? editDisciplineId : selectedDisciplineId;
     if (!targetDisciplineId) {
@@ -235,6 +255,26 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
         setSelectedAreaId('');
       }
       await fetchAreas();
+    }
+  };
+
+  const handleEditArea = async (isEditMode: boolean = false) => {
+    const targetAreaId = isEditMode ? editAreaId : selectedAreaId;
+    if (!targetAreaId) return;
+    const area = areas.find(a => a.id === targetAreaId);
+    if (!area) return;
+    const name = window.prompt("Editar nome do Eixo:", area.name);
+    if (!name || !name.trim() || name.trim() === area.name) return;
+
+    const { error } = await supabase
+      .from('global_areas')
+      .update({ name: name.trim() })
+      .eq('id', targetAreaId);
+
+    if (error) alert("Erro ao editar eixo");
+    else {
+      await fetchAreas();
+      await fetchMaterias();
     }
   };
 
@@ -1160,8 +1200,7 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
       </>
     );
   }
-
-  return (
+  return (
     <div className="max-w-7xl mx-auto space-y-6">
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1221,28 +1260,101 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
             />
           </div>
           
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <select
-              value={filterDiscipline}
-              onChange={(e) => { setFilterDiscipline(e.target.value); setFilterArea(''); }}
-              className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white flex-1 sm:flex-none"
-            >
-              <option value="">Todas Disciplinas</option>
-              {disciplines.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-            </select>
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-1">
+              <select
+                value={filterDiscipline}
+                onChange={(e) => { setFilterDiscipline(e.target.value); setFilterArea(''); }}
+                className="py-1 px-2 text-sm focus:outline-none bg-transparent border-none font-medium text-slate-700 max-w-[200px]"
+              >
+                <option value="">Todas Disciplinas</option>
+                {disciplines.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+              </select>
+              {filterDiscipline && (
+                <>
+                  <button
+                    onClick={async () => {
+                      const discId = disciplines.find(d => d.name === filterDiscipline)?.id;
+                      if (discId) {
+                        setEditDisciplineId(discId);
+                        await handleEditDiscipline(true);
+                        const updated = disciplines.find(d => d.id === discId);
+                        if (updated) setFilterDiscipline(updated.name);
+                      }
+                    }}
+                    className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded transition-all cursor-pointer bg-transparent border-none"
+                    title="Editar Disciplina"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const discId = disciplines.find(d => d.name === filterDiscipline)?.id;
+                      if (discId) {
+                        setEditDisciplineId(discId);
+                        await handleDeleteDiscipline(true);
+                        setFilterDiscipline('');
+                        setFilterArea('');
+                      }
+                    }}
+                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-all cursor-pointer bg-transparent border-none"
+                    title="Excluir Disciplina"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
             
             {filterDiscipline && (
-              <select
-                value={filterArea}
-                onChange={(e) => setFilterArea(e.target.value)}
-                className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white flex-1 sm:flex-none"
-              >
-                <option value="">Todos Eixos</option>
-                {areas.filter(a => {
-                  const d = disciplines.find(disc => disc.name === filterDiscipline);
-                  return d && a.discipline_id === d.id;
-                }).map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
-              </select>
+              <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-lg p-1">
+                <select
+                  value={filterArea}
+                  onChange={(e) => setFilterArea(e.target.value)}
+                  className="py-1 px-2 text-sm focus:outline-none bg-transparent border-none font-medium text-slate-700 max-w-[200px]"
+                >
+                  <option value="">Todos Eixos</option>
+                  {areas.filter(a => {
+                    const d = disciplines.find(disc => disc.name === filterDiscipline);
+                    return d && a.discipline_id === d.id;
+                  }).map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+                </select>
+                {filterArea && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        const disc = disciplines.find(d => d.name === filterDiscipline);
+                        const areaId = areas.find(a => a.name === filterArea && a.discipline_id === disc?.id)?.id;
+                        if (areaId) {
+                          setEditAreaId(areaId);
+                          await handleEditArea(true);
+                          const updated = areas.find(a => a.id === areaId);
+                          if (updated) setFilterArea(updated.name);
+                        }
+                      }}
+                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded transition-all cursor-pointer bg-transparent border-none"
+                      title="Editar Eixo"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const disc = disciplines.find(d => d.name === filterDiscipline);
+                        const areaId = areas.find(a => a.name === filterArea && a.discipline_id === disc?.id)?.id;
+                        if (areaId) {
+                          setEditAreaId(areaId);
+                          await handleDeleteArea(true);
+                          setFilterArea('');
+                        }
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-all cursor-pointer bg-transparent border-none"
+                      title="Excluir Eixo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1362,10 +1474,13 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
-                  <button onClick={handleAddDiscipline} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={handleAddDiscipline} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Nova Disciplina">
                     <PlusCircle className="w-4 h-4" />
                   </button>
-                  <button onClick={handleDeleteDiscipline} disabled={!selectedDisciplineId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleEditDiscipline(false)} disabled={!selectedDisciplineId} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all duration-200 border border-slate-200 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Editar Disciplina">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleDeleteDiscipline} disabled={!selectedDisciplineId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Excluir Disciplina">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1387,10 +1502,13 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
-                  <button onClick={handleAddArea} disabled={!selectedDisciplineId} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleAddArea(false)} disabled={!selectedDisciplineId} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Novo Eixo">
                     <PlusCircle className="w-4 h-4" />
                   </button>
-                  <button onClick={handleDeleteArea} disabled={!selectedAreaId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleEditArea(false)} disabled={!selectedAreaId} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all duration-200 border border-slate-200 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Editar Eixo">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteArea(false)} disabled={!selectedAreaId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Excluir Eixo">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1464,10 +1582,13 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
-                  <button onClick={() => handleAddDiscipline(true)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleAddDiscipline(true)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Nova Disciplina">
                     <PlusCircle className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDeleteDiscipline(true)} disabled={!editDisciplineId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleEditDiscipline(true)} disabled={!editDisciplineId} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all duration-200 border border-slate-200 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Editar Disciplina">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteDiscipline(true)} disabled={!editDisciplineId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Excluir Disciplina">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1489,10 +1610,13 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
-                  <button onClick={() => handleAddArea(true)} disabled={!editDisciplineId} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleAddArea(true)} disabled={!editDisciplineId} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-200 border border-indigo-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Novo Eixo">
                     <PlusCircle className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDeleteArea(true)} disabled={!editAreaId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow">
+                  <button onClick={() => handleEditArea(true)} disabled={!editAreaId} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all duration-200 border border-slate-200 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Editar Eixo">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteArea(true)} disabled={!editAreaId} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all duration-200 border border-rose-100 cursor-pointer disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow" title="Excluir Eixo">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1637,7 +1761,7 @@ export function MateriasManager({ onActiveMateriaChange }: MateriasManagerProps)
               </button>
               <button 
                 onClick={handleSaveAreaFromMain}
-                className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer uppercase shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.4)]"
+                className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 rounded-xl transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer uppercase shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.45)]"
               >
                 Salvar Eixo
               </button>

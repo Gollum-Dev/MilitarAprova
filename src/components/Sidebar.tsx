@@ -171,14 +171,14 @@ export default function Sidebar({
                                         setCourseActiveTab(subItem.id as any);
                                         onChangeTab("cursos");
                                       }}
-                                      className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs uppercase hover:text-sm hover:font-bold ${
+                                      className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs hover:text-sm hover:font-bold ${
                                         isSubActive
                                           ? "text-indigo-700 font-bold bg-indigo-50/50"
                                           : "text-slate-400 hover:text-slate-700"
                                       }`}
                                     >
                                       <SubIcon className="w-3 h-3 shrink-0" />
-                                      <span>{subItem.label.toUpperCase()}</span>
+                                      <span>{subItem.label}</span>
                                     </button>
 
                                     {/* Subject Modules Accordion Level 3 */}

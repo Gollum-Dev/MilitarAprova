@@ -695,21 +695,28 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
               <div className="absolute top-0 right-0 left-0 h-16 bg-transparent cursor-default" />
             </div>
 
-            {videos.length > 1 && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-indigo-600 shrink-0">
-                  <Video className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs font-bold font-sans uppercase">Aulas Disponíveis nesta Matéria:</span>
+            {videos.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
+                <div className="flex items-center space-x-2 text-indigo-600 min-w-0">
+                  <Video className="w-4 h-4 animate-pulse shrink-0" />
+                  <span className="text-xs font-bold font-sans uppercase truncate">
+                    {videos.length > 1 ? "Aulas Disponíveis nesta Matéria:" : videos[0].title}
+                  </span>
                 </div>
-                <select
-                  value={activeVideoIndex}
-                  onChange={(e) => setActiveVideoIndex(Number(e.target.value))}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-bold focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[240px] truncate"
-                >
-                  {videos.map((v, idx) => (
-                    <option key={v.id} value={idx}>{v.title}</option>
-                  ))}
-                </select>
+                <div className="flex items-center space-x-3 shrink-0">
+                  {videos[activeVideoIndex]?.id && renderStatusIndicator(videos[activeVideoIndex].id.toString())}
+                  {videos.length > 1 && (
+                    <select
+                      value={activeVideoIndex}
+                      onChange={(e) => setActiveVideoIndex(Number(e.target.value))}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-700 font-bold focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[240px] truncate"
+                    >
+                      {videos.map((v, idx) => (
+                        <option key={v.id} value={idx}>{v.title}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -719,7 +726,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
         <div className="bg-slate-50/80 backdrop-blur-md border border-slate-200/80 rounded-xl p-1.5 flex space-x-1 shadow-inner relative z-10">
           <button
             onClick={() => setActiveTab("resumo")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "resumo" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -727,7 +734,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
           </button>
           <button
             onClick={() => setActiveTab("pdf")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "pdf" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -735,7 +742,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
           </button>
           <button
             onClick={() => setActiveTab("questoes")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "questoes" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -743,7 +750,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
           </button>
           <button
             onClick={() => setActiveTab("flashcards")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "flashcards" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -751,7 +758,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
           </button>
           <button
             onClick={() => setActiveTab("audios")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "audios" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -759,7 +766,7 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
           </button>
           <button
             onClick={() => setActiveTab("slides")}
-            className={`flex-1 py-2 text-[11px] font-sans font-bold uppercase tracking-wide rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 text-[11px] font-sans font-bold tracking-wide rounded-lg transition-all cursor-pointer ${
               activeTab === "slides" ? "bg-white text-indigo-700 shadow-md ring-1 ring-indigo-100" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
             }`}
           >
@@ -1374,6 +1381,59 @@ export default function AulasScreen({ onAskTutor, disciplineName, rawDiscipline,
                       </div>
                       <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">{statusTitle}</span>
                     </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : activeTab === "audios" ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500">
+                Playlist de Áudios
+              </h3>
+              <span className="text-xs font-mono text-indigo-600 font-bold">
+                {audios.length > 0 ? `${audios.findIndex(a => a.url === viewingAudioUrl) + 1 || 1} / ${audios.length} Áudio(s)` : "Nenhum Áudio"}
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+              {audios.length === 0 ? (
+                <div className="text-xs text-slate-400 italic py-2 text-center">Nenhum áudio disponível.</div>
+              ) : (
+                audios.map((audio, idx) => {
+                  const isActive = viewingAudioUrl === audio.url;
+                  return (
+                    <div
+                      key={audio.id || idx}
+                      className={`p-3 rounded-lg flex items-center border transition-all ${
+                        isActive
+                          ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold"
+                          : "bg-slate-50 border-slate-100 hover:bg-slate-100/85 text-slate-600"
+                      }`}
+                    >
+                      {/* Left: status selector */}
+                      <div className="flex items-center pr-2 shrink-0 z-20">
+                        {renderStatusIndicator(audio.id.toString())}
+                      </div>
+
+                      {/* Right: clickable audio selection area */}
+                      <div
+                        onClick={() => {
+                          setViewingAudioUrl(audio.url);
+                          setViewingAudioTitle(audio.title);
+                        }}
+                        className="flex-1 flex items-center justify-between cursor-pointer overflow-hidden min-w-0"
+                      >
+                        <div className="flex items-center space-x-2 truncate">
+                          <Headphones className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600 animate-pulse" : "text-slate-400"}`} />
+                          <span className="text-xs font-sans truncate pr-2">{audio.title}</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-indigo-600 hover:text-indigo-700 uppercase font-bold shrink-0">
+                          {isActive ? "Ouvindo" : "Ouvir"}
+                        </span>
+                      </div>
+                    </div>
                   );
                 })
               )}
