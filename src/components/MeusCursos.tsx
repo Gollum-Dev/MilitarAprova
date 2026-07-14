@@ -131,6 +131,11 @@ export default function MeusCursos({
   const [loading, setLoading] = useState(true);
   const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
 
+  const capitalizeFirstOnly = (text: string) => {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
   useEffect(() => {
     setResourceStatuses(getResourceStatuses());
   }, []);
@@ -393,7 +398,7 @@ export default function MeusCursos({
                   id: res.id?.toString() || Math.random().toString(),
                   q: res.flashcardQuestion || res.title || "Pergunta do Cartão",
                   a: res.flashcardAnswer || res.description || "Resposta",
-                  discipline: content.materiaName || selectedModule.title.replace(/^Módulo \d+:\s*/, ""),
+                  discipline: content.materiaName || (selectedModule.title || "").replace(/^Módulo \d+:\s*/, ""),
                   subject: content.name || "Geral"
                 });
               }
@@ -498,99 +503,251 @@ export default function MeusCursos({
     );
   }
 
-  // View 2: Course Dashboard (Matérias, Simuladores, Leis, Tutor IA, Desempenho)
-  if (selectedCourse && !selectedModuleId) {
+  const renderCourseDetailViewContent = () => {
     return (
-      <div className="space-y-6" id="meus-cursos-detail-view">
-        {/* Render course content based on active sidebar tab */}
-        <div className="mt-2">
-          {courseActiveTab === "materias" && (
-            <div className="space-y-6">
-
-
-              {/* Modules list grouped by Eixos Temáticos */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-8">
-                {selectedCourse.modules.map((mod) => {
-                  const rawDisc = mod.rawDiscipline;
-                  if (rawDisc && Array.isArray(rawDisc.areas)) {
-                    return (
-                      <div key={mod.id} className="space-y-6">
-                        <div className="border-b border-slate-200 pb-2">
-                          <h3 className="text-base font-display font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                            <Layers className="w-5 h-5 text-indigo-600" />
-                            <span>{mod.title}</span>
+      <div className="mt-2">
+        {courseActiveTab === "materias" && (
+          <div className="space-y-6">
+            {/* Modules list grouped by Eixos Temáticos */}
+            <div className="space-y-8">
+              {selectedCourse.modules.map((mod) => {
+                const rawDisc = mod.rawDiscipline;
+                if (rawDisc && Array.isArray(rawDisc.areas)) {
+                  return (
+                    <div key={mod.id} className="bg-slate-50/50 border border-slate-200/80 rounded-2xl p-6 space-y-6">
+                      <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
+                          <h3 className="text-sm font-sans font-black text-slate-800">
+                             {(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}
                           </h3>
                         </div>
-                        
-                        <div className="space-y-6">
-                          {rawDisc.areas.map((area: any) => (
-                            <div key={area.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                              {/* Eixo Temático Header */}
-                              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
-                                <h4 className="text-xs font-mono font-bold text-slate-600 uppercase tracking-wider">
-                                  {area.name}
-                                </h4>
-                              </div>
-                              
-                              {/* Matérias Grid */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {Array.isArray(area.contents) && area.contents.map((content: any) => {
-                                  let videos = 0;
-                                  let pdfs = 0;
-                                  let questions = 0;
-                                  if (Array.isArray(content.resources)) {
-                                    content.resources.forEach((r: any) => {
-                                      if (r.type === 'video') videos++;
-                                      else if (r.type === 'pdf') pdfs++;
-                                      else if (r.type === 'question' || r.type === 'questoes') questions++;
-                                    });
+                      </div>
+
+                      <div className="space-y-6">
+                        {rawDisc.areas.map((area: any) => (
+                          <div key={area.id} className="space-y-4">
+                            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                              <h4 className="text-xs font-mono font-bold text-slate-600 tracking-wider">
+                                {capitalizeFirstOnly(area.name)}
+                              </h4>
+                            </div>
+                            
+                            {/* Matérias Grid (3 por linha) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {Array.isArray(area.contents) && area.contents.map((content: any) => {
+                                let videoCount = 0, videoCompleted = 0;
+                                let audioCount = 0, audioCompleted = 0;
+                                let pdfCount = 0, pdfCompleted = 0;
+                                let slidesCount = 0, slidesCompleted = 0;
+                                let questionsCount = 0, questionsCompleted = 0;
+                                let flashcardsCount = 0, flashcardsCompleted = 0;
+
+                                if (Array.isArray(content.resources)) {
+                                  content.resources.forEach((r: any) => {
+                                    const isCompleted = completedResources.includes(r.id?.toString());
+                                    if (r.type === 'video') {
+                                      videoCount++;
+                                      if (isCompleted) videoCompleted++;
+                                    } else if (r.type === 'audio') {
+                                      audioCount++;
+                                      if (isCompleted) audioCompleted++;
+                                    } else if (r.type === 'pdf') {
+                                      pdfCount++;
+                                      if (isCompleted) pdfCompleted++;
+                                    } else if (r.type === 'slides') {
+                                      slidesCount++;
+                                      if (isCompleted) slidesCompleted++;
+                                    } else if (r.type === 'question' || r.type === 'questoes') {
+                                      questionsCount++;
+                                      if (isCompleted) questionsCompleted++;
+                                    } else if (r.type === 'flashcard' || r.type === 'flashcards' || r.type === 'award') {
+                                      flashcardsCount++;
+                                      if (isCompleted) flashcardsCompleted++;
+                                    }
+                                  });
+                                }
+
+                                const totalResources = videoCount + audioCount + pdfCount + slidesCount + questionsCount + flashcardsCount;
+                                const completedCount = videoCompleted + audioCompleted + pdfCompleted + slidesCompleted + questionsCompleted + flashcardsCompleted;
+                                const percent = totalResources > 0 ? Math.round((completedCount / totalResources) * 100) : 0;
+
+                                let barColor = "bg-slate-200";
+                                let textColor = "text-slate-400";
+                                let bgTagColor = "bg-slate-100 text-slate-600";
+                                if (percent > 0) {
+                                  if (percent < 30) {
+                                    barColor = "bg-rose-500";
+                                    textColor = "text-rose-600";
+                                    bgTagColor = "bg-rose-50 text-rose-700 border-rose-100";
+                                  } else if (percent < 80) {
+                                    barColor = "bg-amber-500";
+                                    textColor = "text-amber-600";
+                                    bgTagColor = "bg-amber-50 text-amber-700 border-amber-100";
+                                  } else {
+                                    barColor = "bg-emerald-500";
+                                    textColor = "text-emerald-600";
+                                    bgTagColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
                                   }
-                                  
-                                  return (
-                                    <div 
-                                      key={content.id}
-                                      className="bg-slate-50 hover:bg-slate-100/50 border border-slate-200 hover:border-indigo-200 rounded-xl p-4 flex flex-col justify-between transition-all group cursor-pointer"
-                                      onClick={() => {
-                                        setSelectedModuleId(mod.id);
-                                        setSelectedContentId(content.id);
-                                        setSubjectActiveTab("aulas");
-                                      }}
-                                    >
-                                      <div>
-                                        <h5 className="text-xs font-sans font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
-                                          {content.name}
+                                }
+
+                                const handleAccessResource = (tab: "aulas" | "audio" | "materiais" | "slides" | "questoes" | "flashcards") => {
+                                  setSelectedModuleId(mod.id);
+                                  setSelectedContentId(content.id);
+                                  setSubjectActiveTab(tab);
+                                };
+
+                                return (
+                                  <div 
+                                    key={content.id}
+                                    className="p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 hover:shadow shadow-sm transition-all duration-300 flex flex-col justify-between space-y-4"
+                                  >
+                                    {/* Subject Info */}
+                                    <div className="flex justify-between items-start gap-3">
+                                      <div 
+                                        className="space-y-1 min-w-0 cursor-pointer flex-1"
+                                        onClick={() => handleAccessResource("aulas")}
+                                      >
+                                        <h5 className="text-xs font-sans font-bold text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                                          <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                          <span>{content.name}</span>
                                         </h5>
                                       </div>
+                                      <span className={`text-[10px] font-mono font-bold border px-2 py-0.5 rounded-full shrink-0 ${bgTagColor}`}>
+                                        {percent}%
+                                      </span>
+                                    </div>
+
+                                    {/* Custom progress bar */}
+                                    <div className="space-y-2">
+                                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/50">
+                                        <div 
+                                          className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`} 
+                                          style={{ width: `${percent}%` }}
+                                        />
+                                      </div>
                                       
-                                      <div className="flex items-center justify-between mt-4 pt-2 border-t border-slate-100/60">
-                                        <div className="flex space-x-3 text-[9px] font-mono text-slate-400">
-                                          <span>{videos} Aulas</span>
-                                          <span>{pdfs} PDFs</span>
-                                          <span>{questions} Qs</span>
-                                        </div>
-                                        <span className="text-[9px] font-mono text-indigo-600 font-bold uppercase tracking-wider flex items-center space-x-1">
-                                          <span>Estudar</span>
-                                          <ChevronRight className="w-3 h-3" />
-                                        </span>
+                                      <div className="flex justify-between items-center text-[9px] font-mono text-slate-400">
+                                        <span>Progresso Geral</span>
+                                        <span className="font-bold text-slate-600">{completedCount} de {totalResources} concluídos</span>
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
 
-                  // Fallback para o caso de o módulo não ter a estrutura de disciplinas_json carregada
-                  return (
-                    <div 
-                      key={mod.id}
-                      className="glass-panel hover:border-blue-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
-                    >
+                                    {/* Access Buttons (Row 1: Video, Audio, PDF | Row 2: Slides, Questões, Cards) */}
+                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 w-full">
+                                      {/* Videos */}
+                                      <button
+                                        onClick={() => handleAccessResource("aulas")}
+                                        disabled={videoCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          videoCount > 0
+                                            ? "bg-indigo-50 border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={videoCount > 0 ? `Ver Video Aulas (${videoCompleted}/${videoCount})` : "Sem vídeo aulas"}
+                                      >
+                                        <Video className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Vídeo</span>
+                                        {videoCount > 0 && <span className="ml-0.5 px-1 bg-indigo-100 text-indigo-700 rounded text-[8px] font-mono">{videoCompleted}/{videoCount}</span>}
+                                      </button>
+
+                                      {/* Audios */}
+                                      <button
+                                        onClick={() => handleAccessResource("audio")}
+                                        disabled={audioCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          audioCount > 0
+                                            ? "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={audioCount > 0 ? `Ouvir Áudio Aula (${audioCompleted}/${audioCount})` : "Sem áudio aula"}
+                                      >
+                                        <Headphones className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Áudio</span>
+                                        {audioCount > 0 && <span className="ml-0.5 px-1 bg-emerald-100 text-emerald-700 rounded text-[8px] font-mono">{audioCompleted}/{audioCount}</span>}
+                                      </button>
+
+                                      {/* PDFs */}
+                                      <button
+                                        onClick={() => handleAccessResource("materiais")}
+                                        disabled={pdfCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          pdfCount > 0
+                                            ? "bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={pdfCount > 0 ? `Ler Materiais PDF (${pdfCompleted}/${pdfCount})` : "Sem materiais PDF"}
+                                      >
+                                        <FileText className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">PDF</span>
+                                        {pdfCount > 0 && <span className="ml-0.5 px-1 bg-blue-100 text-blue-700 rounded text-[8px] font-mono">{pdfCompleted}/{pdfCount}</span>}
+                                      </button>
+
+                                      {/* Slides */}
+                                      <button
+                                        onClick={() => handleAccessResource("slides")}
+                                        disabled={slidesCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          slidesCount > 0
+                                            ? "bg-amber-50 border-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={slidesCount > 0 ? `Ver Slides (${slidesCompleted}/${slidesCount})` : "Sem slides"}
+                                      >
+                                        <Presentation className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Slides</span>
+                                        {slidesCount > 0 && <span className="ml-0.5 px-1 bg-amber-100 text-amber-700 rounded text-[8px] font-mono">{slidesCompleted}/{slidesCount}</span>}
+                                      </button>
+
+                                      {/* Questões */}
+                                      <button
+                                        onClick={() => handleAccessResource("questoes")}
+                                        disabled={questionsCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          questionsCount > 0
+                                            ? "bg-violet-50 border-violet-100 text-violet-600 hover:bg-violet-600 hover:text-white hover:border-violet-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={questionsCount > 0 ? `Resolver Questões (${questionsCompleted}/${questionsCount})` : "Sem questões"}
+                                      >
+                                        <HelpCircle className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Questões</span>
+                                        {questionsCount > 0 && <span className="ml-0.5 px-1 bg-violet-100 text-violet-700 rounded text-[8px] font-mono">{questionsCompleted}/{questionsCount}</span>}
+                                      </button>
+
+                                      {/* Flashcards */}
+                                      <button
+                                        onClick={() => handleAccessResource("flashcards")}
+                                        disabled={flashcardsCount === 0}
+                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
+                                          flashcardsCount > 0
+                                            ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 active:scale-95"
+                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
+                                        }`}
+                                        title={flashcardsCount > 0 ? `Estudar Flashcards (${flashcardsCompleted}/${flashcardsCount})` : "Sem flashcards"}
+                                      >
+                                        <Award className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Cards</span>
+                                        {flashcardsCount > 0 && <span className="ml-0.5 px-1 bg-rose-100 text-rose-700 rounded text-[8px] font-mono">{flashcardsCompleted}/{flashcardsCount}</span>}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Fallback para o caso de o módulo não ter a estrutura de disciplinas_json carregada
+                return (
+                  <div 
+                    key={mod.id}
+                    className="glass-panel hover:border-blue-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
+                  >
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 pb-3 border-b border-slate-100 mb-3">
                         <div>
                           <h4 className="text-sm font-sans font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
@@ -637,99 +794,6 @@ export default function MeusCursos({
                     </div>
                   );
                 })}
-                </div>
-
-                {/* Right sidebar stats */}
-                <div className="space-y-6">
-                  {/* Course Overview */}
-                  <div className="glass-panel rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-1.5">
-                      <BookOpen className="w-4 h-4 text-blue-500" />
-                      <span>Visão Geral do Curso</span>
-                    </h3>
-                    
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium mb-4">
-                      {selectedCourse.description || selectedCourse.subtitle}
-                    </p>
-
-                    {(() => {
-                      const progress = calculateCourseProgress(selectedCourse);
-                      return (
-                        <div className="space-y-2 mb-4 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                          <div className="flex justify-between items-center text-[10px] font-mono">
-                            <span className="text-slate-500 font-semibold uppercase tracking-wider">Progresso</span>
-                            <span className="text-blue-700 font-extrabold text-xs">{progress}%</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm" style={{ width: `${progress}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-4 text-center text-[10px] font-mono text-slate-500">
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.hours}h</span>
-                        <span className="uppercase tracking-wider">Carga</span>
-                      </div>
-                      <div className="flex flex-col border-x border-slate-100">
-                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.lessons}</span>
-                        <span className="uppercase tracking-wider">Aulas</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-800 text-sm mb-0.5">{selectedCourse.modules.length}</span>
-                        <span className="uppercase tracking-wider">Matérias</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="glass-panel rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-4 flex items-center space-x-1.5">
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                      <span>Estatísticas de Liderança</span>
-                    </h3>
-
-                    <div className="space-y-3 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Horas acumuladas:</span>
-                        <span className="text-slate-800 font-mono font-bold">{selectedCourse.hours} horas</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Aulas recomendadas:</span>
-                        <span className="text-slate-800 font-mono font-bold">{selectedCourse.lessons}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Disciplinas integradas:</span>
-                        <span className="text-slate-800 font-mono font-bold">{selectedCourse.disciplinesCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick AI Tutor */}
-                  <div className="glass-panel rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
-                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 flex items-center space-x-1.5">
-                      <Bot className="w-4 h-4 text-blue-600" />
-                      <span>Rádio Cabo Véio</span>
-                    </h3>
-                    <form onSubmit={handleAskQuick} className="space-y-3">
-                      <input
-                        id="quick-ask-input"
-                        type="text"
-                        value={quickQuestion}
-                        onChange={(e) => setQuickQuestion(e.target.value)}
-                        placeholder="Perguntar sobre ética ou regulamentos..."
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600"
-                      />
-                      <button
-                        type="submit"
-                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-sans font-bold uppercase rounded-lg transition-colors cursor-pointer border-none shadow-sm"
-                      >
-                        Consultar IA
-                      </button>
-                    </form>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -738,9 +802,7 @@ export default function MeusCursos({
             <SimuladoresScreen onAskTutor={onAskTutor} />
           )}
 
-          {courseActiveTab === "leis" && (
-            <LeisInteligentesScreen />
-          )}
+
 
           {courseActiveTab === "tutor" && (
             <TutorIAScreen 
@@ -755,6 +817,14 @@ export default function MeusCursos({
           {courseActiveTab === "desempenho" && (
             <DesempenhoScreen 
               userName={userName}
+              allowedCourses={allowedCourses}
+              onNavigateToSubject={(courseId, moduleId, contentId) => {
+                setSelectedCourseId(courseId);
+                setSelectedModuleId(moduleId);
+                setSelectedContentId(contentId);
+                setCourseActiveTab("materias");
+                setSubjectActiveTab("aulas");
+              }}
               onStartRecoveryTraining={(subject) => {
                 setCourseActiveTab("materias");
                 // Pre-select first module
@@ -765,13 +835,33 @@ export default function MeusCursos({
             />
           )}
         </div>
+      );
+    }
+
+  // View 2: Course Dashboard (Matérias, Simuladores, Leis, Tutor IA, Desempenho)
+  if (selectedCourse && !selectedModuleId) {
+    return (
+      <div className="space-y-6" id="meus-cursos-detail-view">
+        {renderCourseDetailViewContent()}
       </div>
     );
   }
 
   // View 3: Subject/Module Study Dashboard (Aulas, Materiais, Questões, Flashcards)
   if (selectedCourse && selectedModule) {
-    const cleanDisciplineName = selectedModule.title.replace(/^Módulo \d+:\s*/, "");
+    const cleanDisciplineName = (selectedModule.title || "").replace(/^Módulo \d+:\s*/, "");
+
+    // Automatically default to the first materia if selectedContentId is null
+    let activeContentId = selectedContentId;
+    if (activeContentId === null) {
+      const rawDisc = selectedModule.rawDiscipline;
+      if (rawDisc && Array.isArray(rawDisc.areas) && rawDisc.areas.length > 0) {
+        const firstArea = rawDisc.areas[0];
+        if (Array.isArray(firstArea.contents) && firstArea.contents.length > 0) {
+          activeContentId = firstArea.contents[0].id;
+        }
+      }
+    }
 
     const rawDisc = selectedModule.rawDiscipline;
     const courseAudios: any[] = [];
@@ -782,7 +872,7 @@ export default function MeusCursos({
       rawDisc.areas.forEach((area: any) => {
         if (Array.isArray(area.contents)) {
           area.contents.forEach((content: any) => {
-            if (selectedContentId !== null && content.id !== selectedContentId) {
+            if (activeContentId !== null && content.id !== activeContentId) {
               return;
             }
             if (Array.isArray(content.resources)) {
@@ -803,14 +893,102 @@ export default function MeusCursos({
 
     return (
       <div className="space-y-6" id="meus-cursos-subject-dashboard">
-        {/* Tab Content rendering directly controlled by Sidebar subjectActiveTab */}
+        {/* Header containing back button, discipline title, and tab selector */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => {
+                setSelectedModuleId(null);
+                setSelectedContentId(null);
+              }}
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border-none flex items-center justify-center bg-transparent"
+              title="Voltar ao Painel do Curso"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h4 className="text-sm font-sans font-extrabold text-slate-800 uppercase tracking-wide">
+                {cleanDisciplineName}
+              </h4>
+              <p className="text-[10px] font-mono text-slate-500">
+                Ambiente de Estudos Integrado
+              </p>
+            </div>
+          </div>
+
+          {/* Tab Selector Inside Header */}
+          <div className="flex flex-wrap items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 gap-0.5">
+            <button
+              onClick={() => setSubjectActiveTab("aulas")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "aulas" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Vídeos/Aulas
+            </button>
+            <button
+              onClick={() => setSubjectActiveTab("audio")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "audio" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Áudios
+            </button>
+            <button
+              onClick={() => setSubjectActiveTab("materiais")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "materiais" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              PDFs
+            </button>
+            <button
+              onClick={() => setSubjectActiveTab("slides")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "slides" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Slides
+            </button>
+            <button
+              onClick={() => setSubjectActiveTab("questoes")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "questoes" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Questões
+            </button>
+            <button
+              onClick={() => setSubjectActiveTab("flashcards")}
+              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
+                subjectActiveTab === "flashcards" 
+                  ? "bg-white text-indigo-600 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Cards
+            </button>
+          </div>
+        </div>
+
+        {/* Content area replacing the dashboard view */}
         <div className="mt-2">
           {subjectActiveTab === "aulas" && (
             <AulasScreen 
               onAskTutor={onAskTutor} 
               disciplineName={cleanDisciplineName}
               rawDiscipline={selectedModule.rawDiscipline}
-              selectedContentId={selectedContentId}
+              selectedContentId={activeContentId}
             />
           )}
 

@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface SidebarProps {
   currentTab: string;
@@ -33,7 +33,38 @@ export default function Sidebar({
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
+  interface HoveredModuleInfo {
+    id: string;
+    top: number;
+    title: string;
+    rawDiscipline: any;
+  }
+
+  const [hoveredModule, setHoveredModule] = useState<HoveredModuleInfo | null>(null);
+  const timeoutRef = useRef<any>(null);
+
+  const handleMouseEnter = (module: any, e: React.MouseEvent) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredModule({
+      id: module.id,
+      top: rect.top,
+      title: module.title,
+      rawDiscipline: module.rawDiscipline
+    });
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setHoveredModule(null);
+    }, 150);
+  };
   
+  const capitalizeFirstOnly = (text: string) => {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  };
+
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
   }, []);
@@ -48,9 +79,7 @@ export default function Sidebar({
   const courseSubItems = [
     { id: "materias", label: "Painel do Curso", icon: BookOpen },
     { id: "simuladores", label: "Simuladores", icon: GraduationCap },
-    { id: "leis", label: "Leis Inteligentes", icon: Scale },
     { id: "tutor", label: "Tutor IA", icon: MessageSquare },
-    { id: "desempenho", label: "Desempenho", icon: LineChart },
   ];
 
   const subjectSubItems = [
@@ -76,8 +105,11 @@ export default function Sidebar({
     return currentTab === id;
   };
 
+  const activeCourse = courses.find(c => c.id === selectedCourseId);
+  const isMateriasTabActive = currentTab === "cursos" && selectedCourseId !== null && courseActiveTab === "materias";
+
   return (
-    <aside className="w-64 glass-panel border-r border-slate-200/50 flex flex-col h-screen shrink-0 relative z-50 shadow-sm">
+    <aside className="w-64 glass-panel border-r border-slate-200/50 flex flex-col h-screen shrink-0 relative z-50 shadow-sm bg-white">
       {/* Brand Header */}
       <div 
         onClick={() => handleItemClick("cursos")}
@@ -145,154 +177,77 @@ export default function Sidebar({
                               }
                               onChangeTab("cursos");
                             }}
-                            className={`group w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs uppercase hover:text-sm hover:font-bold ${
+                            className={`group w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs hover:text-sm hover:font-bold ${
                               isCourseSelected
                                 ? "bg-slate-200/60 text-slate-900 font-bold shadow-sm"
                                 : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                             }`}
                           >
                             <BookOpen className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                            <span className="line-clamp-2 leading-tight">{course.title.replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, "").toUpperCase()}</span>
+                            <span className="line-clamp-2 leading-tight">{capitalizeFirstOnly((course.title || "").replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, ""))}</span>
                           </button>
 
                           {/* Course Tabs Accordion Level 2 */}
                           {isCourseSelected && (
                             <div className="pl-1.5 py-1 space-y-1 border-l border-slate-200 ml-1.5 animate-smooth-fade">
-                              {courseSubItems.map(subItem => {
-                                const SubIcon = subItem.icon;
-                                const isSubActive = courseActiveTab === subItem.id;
-                                const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias";
-                                return (
-                                  <div key={subItem.id} className="space-y-1">
-                                    <button
-                                      onClick={() => {
-                                        setSelectedModuleId(null);
-                                        setSelectedContentId(null);
-                                        setCourseActiveTab(subItem.id as any);
-                                        onChangeTab("cursos");
-                                      }}
-                                      className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs hover:text-sm hover:font-bold ${
-                                        isSubActive
-                                          ? "text-indigo-700 font-bold bg-indigo-50/50"
-                                          : "text-slate-400 hover:text-slate-700"
-                                      }`}
-                                    >
-                                      <SubIcon className="w-3 h-3 shrink-0" />
-                                      <span>{subItem.label}</span>
-                                    </button>
+                               {courseSubItems.map(subItem => {
+                                 const SubIcon = subItem.icon;
+                                 const isSubActive = courseActiveTab === subItem.id;
+                                 const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias";
+                                 return (
+                                    <div key={subItem.id} className="space-y-1">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedModuleId(null);
+                                          setSelectedContentId(null);
+                                          setCourseActiveTab(subItem.id as any);
+                                          onChangeTab("cursos");
+                                        }}
+                                        className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs hover:text-sm hover:font-bold ${
+                                          isSubActive
+                                            ? "text-indigo-700 font-bold bg-indigo-50/50"
+                                            : "text-slate-400 hover:text-slate-700"
+                                        }`}
+                                      >
+                                        <SubIcon className="w-3 h-3 shrink-0" />
+                                        <span>{subItem.label}</span>
+                                      </button>
 
-                                    {/* Subject Modules Accordion Level 3 */}
-                                    {showModulesAccordion && course.modules && course.modules.length > 0 && (
-                                      <div className="pl-1 py-1 space-y-1.5 border-l border-slate-200 ml-1 animate-smooth-fade">
-                                        {course.modules.map(module => {
-                                          const isModuleSelected = selectedModuleId === module.id;
-                                          return (
-                                            <div key={module.id} className="space-y-1">
-                                              <button
-                                                onClick={() => {
-                                                  if (isModuleSelected) {
-                                                    setSelectedModuleId(null);
-                                                    setSelectedContentId(null);
-                                                  } else {
+                                      {/* Subject Modules Accordion Level 3 (with Hover Flyout) */}
+                                      {showModulesAccordion && course.modules && course.modules.length > 0 && (
+                                        <div className="pl-2.5 py-1 space-y-1 border-l border-slate-200 ml-2 animate-smooth-fade">
+                                          {course.modules.map(module => {
+                                            const isModuleSelected = selectedModuleId === module.id;
+                                            return (
+                                              <div 
+                                                key={module.id} 
+                                                className="relative"
+                                                onMouseEnter={(e) => handleMouseEnter(module, e)}
+                                                onMouseLeave={handleMouseLeave}
+                                              >
+                                                <button
+                                                  onClick={() => {
                                                     setSelectedModuleId(module.id);
                                                     setSelectedContentId(null);
-                                                  }
-                                                  onChangeTab("cursos");
-                                                }}
-                                                className={`group w-full flex items-center space-x-1.5 px-2 py-1.5 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left uppercase hover:text-sm hover:font-bold ${
-                                                  isModuleSelected
-                                                    ? "text-slate-800 font-bold bg-slate-100"
-                                                    : "text-slate-500 hover:text-slate-700"
-                                                }`}
-                                              >
-                                                <BookOpen className="w-2.5 h-2.5 shrink-0 opacity-60" />
-                                                <span className="line-clamp-2 leading-tight">{module.title.replace(/^Módulo \d+:\s*/, "").toUpperCase()}</span>
-                                              </button>
-
-                                              {/* Matérias List (Level 4) */}
-                                              {isModuleSelected && (
-                                                <div className="pl-1.5 py-1 space-y-1 border-l border-slate-200 ml-1.5 animate-smooth-fade">
-                                                  {(() => {
-                                                    const materiasList: any[] = [];
-                                                    if (module.rawDiscipline && Array.isArray(module.rawDiscipline.areas)) {
-                                                      module.rawDiscipline.areas.forEach((area: any) => {
-                                                        if (Array.isArray(area.contents)) {
-                                                          area.contents.forEach((content: any) => {
-                                                            materiasList.push(content);
-                                                          });
-                                                        }
-                                                      });
-                                                    }
-                                                    
-                                                    if (materiasList.length === 0) {
-                                                      return (
-                                                        <div className="text-[10px] text-slate-400 italic pl-2">Nenhuma matéria disponível</div>
-                                                      );
-                                                    }
-                                                    
-                                                    return materiasList.map(materia => {
-                                                      const isMateriaSelected = selectedContentId === materia.id;
-                                                      return (
-                                                        <div key={materia.id} className="space-y-1">
-                                                          <button
-                                                            onClick={() => {
-                                                              if (isMateriaSelected) {
-                                                                setSelectedContentId(null);
-                                                              } else {
-                                                                setSelectedContentId(materia.id);
-                                                              }
-                                                              onChangeTab("cursos");
-                                                            }}
-                                                            className={`group w-full flex items-center space-x-1.5 px-1.5 py-1 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left hover:text-sm hover:font-bold ${
-                                                              isMateriaSelected
-                                                                ? "text-indigo-700 font-bold bg-indigo-50/50"
-                                                                : "text-slate-500 hover:text-slate-700"
-                                                            }`}
-                                                          >
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                                                            <span className="truncate group-hover:whitespace-nowrap group-hover:overflow-visible group-hover:w-max group-hover:relative group-hover:z-50 block">{materia.name}</span>
-                                                          </button>
-                                                          
-                                                          {/* Study Tabs Accordion (Level 5) */}
-                                                          {isMateriaSelected && (
-                                                            <div className="pl-1 py-0.5 space-y-0.5 border-l border-slate-200 ml-1 animate-smooth-fade">
-                                                              {subjectSubItems.map(subjectItem => {
-                                                                const SubjectIcon = subjectItem.icon;
-                                                                const isSubjectActive = subjectActiveTab === subjectItem.id;
-                                                                return (
-                                                                  <button
-                                                                    key={subjectItem.id}
-                                                                    onClick={() => {
-                                                                      setSubjectActiveTab(subjectItem.id as any);
-                                                                      onChangeTab("cursos");
-                                                                    }}
-                                                                    className={`group w-full flex items-center space-x-1.5 px-1.5 py-1 rounded font-sans font-medium transition-all duration-150 cursor-pointer text-left text-[10px] hover:text-sm hover:font-bold ${
-                                                                      isSubjectActive
-                                                                        ? "text-indigo-700 font-bold bg-indigo-50/50"
-                                                                        : "text-slate-400 hover:text-slate-600"
-                                                                    }`}
-                                                                  >
-                                                                    <SubjectIcon className="w-2.5 h-2.5 shrink-0" />
-                                                                    <span className="truncate group-hover:whitespace-nowrap group-hover:overflow-visible group-hover:w-max group-hover:relative group-hover:z-50 block">{subjectItem.label}</span>
-                                                                  </button>
-                                                                );
-                                                              })}
-                                                            </div>
-                                                          )}
-                                                        </div>
-                                                      );
-                                                    });
-                                                  })()}
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                                    onChangeTab("cursos");
+                                                  }}
+                                                  className={`group w-full flex items-center space-x-1.5 px-2 py-1.5 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left hover:bg-slate-100/50 hover:font-bold ${
+                                                    isModuleSelected
+                                                      ? "text-slate-800 font-bold bg-slate-100"
+                                                      : "text-slate-500 hover:text-slate-700"
+                                                  }`}
+                                                >
+                                                  <BookOpen className="w-2.5 h-2.5 shrink-0 opacity-60" />
+                                                  <span className="line-clamp-2 leading-tight">{capitalizeFirstOnly((module.title || "").replace(/^Módulo \d+:\s*/, ""))}</span>
+                                                </button>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                 );
+                               })}
                             </div>
                           )}
                         </div>
@@ -342,6 +297,58 @@ export default function Sidebar({
           </button>
         </div>
       </div>
+
+      {/* Flyout Menu showing subjects (materias) on hover (rendered using fixed position to prevent parent overflow clipping) */}
+      {hoveredModule && (
+        <div 
+          className="fixed w-72 bg-white border border-slate-200 shadow-xl rounded-xl py-2 z-[9999] pl-1 pr-1 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-left-1 duration-150"
+          style={{ 
+            top: Math.min(hoveredModule.top, window.innerHeight - 310), 
+            left: 210 
+          }}
+          onMouseEnter={() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          }}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400">Matérias da Disciplina</span>
+          </div>
+          {(() => {
+            const materiasList: any[] = [];
+            if (hoveredModule.rawDiscipline && Array.isArray(hoveredModule.rawDiscipline.areas)) {
+              hoveredModule.rawDiscipline.areas.forEach((area: any) => {
+                if (Array.isArray(area.contents)) {
+                  area.contents.forEach((content: any) => {
+                    materiasList.push(content);
+                  });
+                }
+              });
+            }
+
+            if (materiasList.length === 0) {
+              return <div className="text-[10px] text-slate-400 italic px-3 py-1">Nenhuma matéria disponível</div>;
+            }
+
+            return materiasList.map(materia => (
+              <button
+                key={materia.id}
+                onClick={() => {
+                  setSelectedModuleId(hoveredModule.id);
+                  setSelectedContentId(materia.id);
+                  setSubjectActiveTab("aulas");
+                  onChangeTab("cursos");
+                  setHoveredModule(null); // Close flyout on select
+                }}
+                className="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 rounded-lg text-xs font-sans transition-colors cursor-pointer border-none bg-transparent block truncate"
+                title={materia.name}
+              >
+                {materia.name}
+              </button>
+            ));
+          })()}
+        </div>
+      )}
     </aside>
   );
 }

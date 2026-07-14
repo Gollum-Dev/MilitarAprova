@@ -85,7 +85,7 @@ export default function DashboardHome({
         const progressPercent = total === 0 ? 35 : Math.max(5, Math.round((completedCount / total) * 100));
         return {
           id: course.id,
-          title: course.title.replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*|PREPARATÓRIO ELITE\s*/gi, "").trim(),
+          title: (course.title || "").replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*|PREPARATÓRIO ELITE\s*/gi, "").trim(),
           progress: progressPercent
         };
       });

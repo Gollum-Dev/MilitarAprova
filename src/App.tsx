@@ -252,6 +252,11 @@ export default function App() {
           <DashboardHome 
             onChangeTab={setCurrentTab} 
             onGenerateCustomSimulator={handleGenerateCustomSimulator} 
+            userName={userName}
+            allowedCourses={allowedCourses}
+            setSelectedCourseId={setSelectedCourseId}
+            setSelectedModuleId={setSelectedModuleId}
+            setSelectedContentId={setSelectedContentId}
           />
         );
     }
