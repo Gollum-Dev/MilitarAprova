@@ -184,7 +184,7 @@ export default function Sidebar({
                             }`}
                           >
                             <BookOpen className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                            <span className="line-clamp-2 leading-tight">{capitalizeFirstOnly((course.title || "").replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, ""))}</span>
+                            <span className="line-clamp-2 leading-tight">{(course.title || "").replace(/CURSO PREPARATÓRIO\s*|CURSO OFICIAL\s*/i, "").toUpperCase()}</span>
                           </button>
 
                           {/* Course Tabs Accordion Level 2 */}

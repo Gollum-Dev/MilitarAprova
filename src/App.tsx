@@ -299,30 +299,7 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto h-screen p-6 md:p-8 scrollbar-thin scrollbar-thumb-slate-200">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header context info bar */}
-          <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-            <div>
-              <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
-                {currentTab === "inicio" && "Painel de Comando"}
-                {currentTab === "cursos" && !selectedCourseId && "Meus Cursos"}
-                {currentTab === "cursos" && selectedCourseId && !selectedModuleId && "Painel do Curso"}
-                {currentTab === "cursos" && selectedModuleId && "Ambiente de Aprendizado"}
-                {currentTab === "configuracoes" && "Configurações"}
-              </h2>
-            </div>
-            
-            {currentTab === "cursos" && (selectedCourseId || selectedModuleId) && (
-              <button
-                onClick={() => selectedModuleId ? (selectedContentId ? setSelectedContentId(null) : setSelectedModuleId(null)) : setSelectedCourseId(null)}
-                className="group h-8 px-2 flex items-center bg-white border border-slate-200 shadow-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300 rounded-full cursor-pointer overflow-hidden"
-              >
-                <ArrowLeft className="w-4 h-4 shrink-0" />
-                <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[150px] group-hover:ml-1.5 transition-all duration-500 font-sans font-bold text-[10px] uppercase">
-                  {selectedContentId ? "Voltar à Matéria" : selectedModuleId ? "Voltar ao Curso" : "Voltar aos Cursos"}
-                </span>
-              </button>
-            )}
-          </div>
+
 
           {/* Dynamic screen content */}
           <div className="animate-smooth-fade">

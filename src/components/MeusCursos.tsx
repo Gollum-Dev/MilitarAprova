@@ -101,6 +101,70 @@ const StatusSelector = ({
   );
 };
 
+// Custom Premium Video Selector Dropdown
+const VideoSelector = ({
+  videos,
+  activeVideoIndex,
+  onSelectVideo
+}: {
+  videos: any[];
+  activeVideoIndex: number;
+  onSelectVideo: (index: number) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClose);
+    return () => document.removeEventListener("click", handleClose);
+  }, [isOpen]);
+
+  const activeVideo = videos[activeVideoIndex];
+
+  return (
+    <div ref={containerRef} className="relative inline-block text-left shrink-0 z-30">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between space-x-2 text-xs font-sans font-bold text-slate-700 bg-white border border-slate-200 rounded-xl px-4 py-2 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm cursor-pointer min-w-[180px] max-w-[280px]"
+      >
+        <span className="truncate pr-1 text-left">{activeVideo?.title || "Selecione a Aula"}</span>
+        <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-72 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] py-2 z-50 animate-smooth-fade max-h-64 overflow-y-auto">
+          {videos.map((v, idx) => {
+            const isActive = idx === activeVideoIndex;
+            return (
+              <button
+                key={v.id || idx}
+                onClick={() => {
+                  onSelectVideo(idx);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2.5 text-xs font-sans flex items-center space-x-2 border-none bg-transparent cursor-pointer transition-colors ${
+                  isActive 
+                    ? "bg-indigo-50/60 text-indigo-700 font-extrabold" 
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-indigo-600" : "bg-transparent"}`} />
+                <span className="truncate">{v.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface MeusCursosProps {
   onChangeTab: (tab: string) => void;
   onAskTutor: (question: string) => void;
@@ -130,6 +194,7 @@ export default function MeusCursos({
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
 
   const capitalizeFirstOnly = (text: string) => {
     if (!text) return "";
@@ -139,6 +204,10 @@ export default function MeusCursos({
   useEffect(() => {
     setResourceStatuses(getResourceStatuses());
   }, []);
+
+  useEffect(() => {
+    setActiveVideoIndex(0);
+  }, [selectedContentId]);
 
   const renderStatusIndicator = (resourceId: string) => {
     const currentStatus = resourceStatuses[resourceId] || 'a-estudar';
@@ -339,6 +408,201 @@ export default function MeusCursos({
     return Math.round((completedCount / total) * 100);
   };
 
+  const renderMateriaCard = (content: any, mod: any) => {
+    let videoCount = 0, videoCompleted = 0;
+    let audioCount = 0, audioCompleted = 0;
+    let pdfCount = 0, pdfCompleted = 0;
+    let slidesCount = 0, slidesCompleted = 0;
+    let questionsCount = 0, questionsCompleted = 0;
+    let flashcardsCount = 0, flashcardsCompleted = 0;
+
+    if (Array.isArray(content.resources)) {
+      content.resources.forEach((r: any) => {
+        const isCompleted = completedResources.includes(r.id?.toString());
+        if (r.type === 'video') {
+          videoCount++;
+          if (isCompleted) videoCompleted++;
+        } else if (r.type === 'audio') {
+          audioCount++;
+          if (isCompleted) audioCompleted++;
+        } else if (r.type === 'pdf') {
+          pdfCount++;
+          if (isCompleted) pdfCompleted++;
+        } else if (r.type === 'slides') {
+          slidesCount++;
+          if (isCompleted) slidesCompleted++;
+        } else if (r.type === 'question' || r.type === 'questoes') {
+          questionsCount++;
+          if (isCompleted) questionsCompleted++;
+        } else if (r.type === 'flashcard' || r.type === 'flashcards' || r.type === 'award') {
+          flashcardsCount++;
+          if (isCompleted) flashcardsCompleted++;
+        }
+      });
+    }
+
+    const totalResources = videoCount + audioCount + pdfCount + slidesCount + questionsCount + flashcardsCount;
+    const completedCount = videoCompleted + audioCompleted + pdfCompleted + slidesCompleted + questionsCompleted + flashcardsCompleted;
+    const percent = totalResources > 0 ? Math.round((completedCount / totalResources) * 100) : 0;
+
+    let barColor = "bg-slate-200";
+    let bgTagColor = "bg-slate-100 text-slate-600";
+    if (percent > 0) {
+      if (percent < 30) {
+        barColor = "bg-gradient-to-r from-rose-400 to-rose-600";
+        bgTagColor = "bg-rose-50 text-rose-700 border-rose-100/50 shadow-xs shadow-rose-500/5";
+      } else if (percent < 80) {
+        barColor = "bg-gradient-to-r from-amber-400 to-amber-600";
+        bgTagColor = "bg-amber-50 text-amber-700 border-amber-100/50 shadow-xs shadow-amber-500/5";
+      } else {
+        barColor = "bg-gradient-to-r from-emerald-400 to-emerald-600";
+        bgTagColor = "bg-emerald-50 text-emerald-700 border-emerald-100/50 shadow-xs shadow-emerald-500/5";
+      }
+    }
+
+    const handleAccess = (tab: "aulas" | "audio" | "materiais" | "slides" | "questoes" | "flashcards") => {
+      setSelectedModuleId(mod.id);
+      setSelectedContentId(content.id);
+      setSubjectActiveTab(tab);
+    };
+
+    return (
+      <div 
+        key={content.id}
+        className="p-5 bg-slate-50/70 hover:bg-white border border-slate-200/80 rounded-2xl hover:border-indigo-400/30 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between space-y-4 relative group overflow-hidden"
+      >
+        {/* Soft Background Gradient Glow on Hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/0 to-indigo-50/0 group-hover:from-indigo-50/10 group-hover:to-violet-50/5 pointer-events-none transition-all duration-300" />
+
+        {/* Subject Info */}
+        <div className="flex justify-between items-start gap-3 relative z-10">
+          <div 
+            className="space-y-1.5 min-w-0 cursor-pointer flex-1"
+            onClick={() => handleAccess("aulas")}
+          >
+            <h5 className="text-xs font-sans font-bold text-slate-800 hover:text-indigo-600 transition-colors flex items-start gap-2 leading-snug">
+              <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center border border-indigo-100/50 shrink-0 mt-0.5 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-300">
+                <BookOpen className="w-3.5 h-3.5" />
+              </div>
+              <span className="truncate-2-lines">{content.name}</span>
+            </h5>
+          </div>
+          <span className={`text-[10px] font-mono font-black border px-2.5 py-0.5 rounded-full shrink-0 ${bgTagColor}`}>
+            {percent}%
+          </span>
+        </div>
+
+        {/* Custom progress bar */}
+        <div className="space-y-2 relative z-10">
+          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/50">
+            <div 
+              className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`} 
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          
+          <div className="flex justify-between items-center text-[9px] font-mono text-slate-400">
+            <span className="font-bold">Progresso Geral</span>
+            <span className="font-bold text-slate-600">{completedCount} de {totalResources} concluídos</span>
+          </div>
+        </div>
+
+        {/* Access Buttons */}
+        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 w-full relative z-10">
+          <button
+            onClick={() => handleAccess("aulas")}
+            disabled={videoCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              videoCount > 0
+                ? "bg-indigo-50/50 border-indigo-100/60 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={videoCount > 0 ? `Ver Video Aulas (${videoCompleted}/${videoCount})` : "Sem vídeo aulas"}
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Vídeo</span>
+            {videoCount > 0 && <span className="ml-1 px-1 bg-indigo-100/80 text-indigo-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{videoCompleted}/{videoCount}</span>}
+          </button>
+
+          <button
+            onClick={() => handleAccess("audio")}
+            disabled={audioCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              audioCount > 0
+                ? "bg-emerald-50/50 border-emerald-100/60 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={audioCount > 0 ? `Ouvir Áudio Aula (${audioCompleted}/${audioCount})` : "Sem áudio aula"}
+          >
+            <Headphones className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Áudio</span>
+            {audioCount > 0 && <span className="ml-1 px-1 bg-emerald-100/80 text-emerald-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{audioCompleted}/{audioCount}</span>}
+          </button>
+
+          <button
+            onClick={() => handleAccess("materiais")}
+            disabled={pdfCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              pdfCount > 0
+                ? "bg-blue-50/50 border-blue-100/60 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={pdfCount > 0 ? `Ler Materiais PDF (${pdfCompleted}/${pdfCount})` : "Sem materiais PDF"}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">PDF</span>
+            {pdfCount > 0 && <span className="ml-1 px-1 bg-blue-100/80 text-blue-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{pdfCompleted}/{pdfCount}</span>}
+          </button>
+
+          <button
+            onClick={() => handleAccess("slides")}
+            disabled={slidesCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              slidesCount > 0
+                ? "bg-amber-50/50 border-amber-100/60 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={slidesCount > 0 ? `Ver Slides (${slidesCompleted}/${slidesCount})` : "Sem slides"}
+          >
+            <Presentation className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Slides</span>
+            {slidesCount > 0 && <span className="ml-1 px-1 bg-amber-100/80 text-amber-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{slidesCompleted}/{slidesCount}</span>}
+          </button>
+
+          <button
+            onClick={() => handleAccess("questoes")}
+            disabled={questionsCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              questionsCount > 0
+                ? "bg-violet-50/50 border-violet-100/60 text-violet-600 hover:bg-violet-600 hover:text-white hover:border-violet-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={questionsCount > 0 ? `Resolver Questões (${questionsCompleted}/${questionsCount})` : "Sem questões"}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Questões</span>
+            {questionsCount > 0 && <span className="ml-1 px-1 bg-violet-100/80 text-violet-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{questionsCompleted}/{questionsCount}</span>}
+          </button>
+
+          <button
+            onClick={() => handleAccess("flashcards")}
+            disabled={flashcardsCount === 0}
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
+              flashcardsCount > 0
+                ? "bg-rose-50/50 border-rose-100/60 text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 active:scale-95"
+                : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
+            }`}
+            title={flashcardsCount > 0 ? `Estudar Flashcards (${flashcardsCompleted}/${flashcardsCount})` : "Sem flashcards"}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Cards</span>
+            {flashcardsCount > 0 && <span className="ml-1 px-1 bg-rose-100/80 text-rose-700 rounded text-[8px] font-mono group-hover:bg-white/20 group-hover:text-white">{flashcardsCompleted}/{flashcardsCount}</span>}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
 
@@ -514,7 +778,7 @@ export default function MeusCursos({
                 const rawDisc = mod.rawDiscipline;
                 if (rawDisc && Array.isArray(rawDisc.areas)) {
                   return (
-                    <div key={mod.id} className="bg-slate-50/50 border border-slate-200/80 rounded-2xl p-6 space-y-6">
+                    <div key={mod.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-6 shadow-xs">
                       <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
                         <div className="space-y-1">
                           <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
@@ -535,205 +799,7 @@ export default function MeusCursos({
                             
                             {/* Matérias Grid (3 por linha) */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {Array.isArray(area.contents) && area.contents.map((content: any) => {
-                                let videoCount = 0, videoCompleted = 0;
-                                let audioCount = 0, audioCompleted = 0;
-                                let pdfCount = 0, pdfCompleted = 0;
-                                let slidesCount = 0, slidesCompleted = 0;
-                                let questionsCount = 0, questionsCompleted = 0;
-                                let flashcardsCount = 0, flashcardsCompleted = 0;
-
-                                if (Array.isArray(content.resources)) {
-                                  content.resources.forEach((r: any) => {
-                                    const isCompleted = completedResources.includes(r.id?.toString());
-                                    if (r.type === 'video') {
-                                      videoCount++;
-                                      if (isCompleted) videoCompleted++;
-                                    } else if (r.type === 'audio') {
-                                      audioCount++;
-                                      if (isCompleted) audioCompleted++;
-                                    } else if (r.type === 'pdf') {
-                                      pdfCount++;
-                                      if (isCompleted) pdfCompleted++;
-                                    } else if (r.type === 'slides') {
-                                      slidesCount++;
-                                      if (isCompleted) slidesCompleted++;
-                                    } else if (r.type === 'question' || r.type === 'questoes') {
-                                      questionsCount++;
-                                      if (isCompleted) questionsCompleted++;
-                                    } else if (r.type === 'flashcard' || r.type === 'flashcards' || r.type === 'award') {
-                                      flashcardsCount++;
-                                      if (isCompleted) flashcardsCompleted++;
-                                    }
-                                  });
-                                }
-
-                                const totalResources = videoCount + audioCount + pdfCount + slidesCount + questionsCount + flashcardsCount;
-                                const completedCount = videoCompleted + audioCompleted + pdfCompleted + slidesCompleted + questionsCompleted + flashcardsCompleted;
-                                const percent = totalResources > 0 ? Math.round((completedCount / totalResources) * 100) : 0;
-
-                                let barColor = "bg-slate-200";
-                                let textColor = "text-slate-400";
-                                let bgTagColor = "bg-slate-100 text-slate-600";
-                                if (percent > 0) {
-                                  if (percent < 30) {
-                                    barColor = "bg-rose-500";
-                                    textColor = "text-rose-600";
-                                    bgTagColor = "bg-rose-50 text-rose-700 border-rose-100";
-                                  } else if (percent < 80) {
-                                    barColor = "bg-amber-500";
-                                    textColor = "text-amber-600";
-                                    bgTagColor = "bg-amber-50 text-amber-700 border-amber-100";
-                                  } else {
-                                    barColor = "bg-emerald-500";
-                                    textColor = "text-emerald-600";
-                                    bgTagColor = "bg-emerald-50 text-emerald-700 border-emerald-100";
-                                  }
-                                }
-
-                                const handleAccessResource = (tab: "aulas" | "audio" | "materiais" | "slides" | "questoes" | "flashcards") => {
-                                  setSelectedModuleId(mod.id);
-                                  setSelectedContentId(content.id);
-                                  setSubjectActiveTab(tab);
-                                };
-
-                                return (
-                                  <div 
-                                    key={content.id}
-                                    className="p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 hover:shadow shadow-sm transition-all duration-300 flex flex-col justify-between space-y-4"
-                                  >
-                                    {/* Subject Info */}
-                                    <div className="flex justify-between items-start gap-3">
-                                      <div 
-                                        className="space-y-1 min-w-0 cursor-pointer flex-1"
-                                        onClick={() => handleAccessResource("aulas")}
-                                      >
-                                        <h5 className="text-xs font-sans font-bold text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5">
-                                          <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                          <span>{content.name}</span>
-                                        </h5>
-                                      </div>
-                                      <span className={`text-[10px] font-mono font-bold border px-2 py-0.5 rounded-full shrink-0 ${bgTagColor}`}>
-                                        {percent}%
-                                      </span>
-                                    </div>
-
-                                    {/* Custom progress bar */}
-                                    <div className="space-y-2">
-                                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/50">
-                                        <div 
-                                          className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`} 
-                                          style={{ width: `${percent}%` }}
-                                        />
-                                      </div>
-                                      
-                                      <div className="flex justify-between items-center text-[9px] font-mono text-slate-400">
-                                        <span>Progresso Geral</span>
-                                        <span className="font-bold text-slate-600">{completedCount} de {totalResources} concluídos</span>
-                                      </div>
-                                    </div>
-
-                                    {/* Access Buttons (Row 1: Video, Audio, PDF | Row 2: Slides, Questões, Cards) */}
-                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 w-full">
-                                      {/* Videos */}
-                                      <button
-                                        onClick={() => handleAccessResource("aulas")}
-                                        disabled={videoCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          videoCount > 0
-                                            ? "bg-indigo-50 border-indigo-100 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={videoCount > 0 ? `Ver Video Aulas (${videoCompleted}/${videoCount})` : "Sem vídeo aulas"}
-                                      >
-                                        <Video className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Vídeo</span>
-                                        {videoCount > 0 && <span className="ml-0.5 px-1 bg-indigo-100 text-indigo-700 rounded text-[8px] font-mono">{videoCompleted}/{videoCount}</span>}
-                                      </button>
-
-                                      {/* Audios */}
-                                      <button
-                                        onClick={() => handleAccessResource("audio")}
-                                        disabled={audioCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          audioCount > 0
-                                            ? "bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={audioCount > 0 ? `Ouvir Áudio Aula (${audioCompleted}/${audioCount})` : "Sem áudio aula"}
-                                      >
-                                        <Headphones className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Áudio</span>
-                                        {audioCount > 0 && <span className="ml-0.5 px-1 bg-emerald-100 text-emerald-700 rounded text-[8px] font-mono">{audioCompleted}/{audioCount}</span>}
-                                      </button>
-
-                                      {/* PDFs */}
-                                      <button
-                                        onClick={() => handleAccessResource("materiais")}
-                                        disabled={pdfCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          pdfCount > 0
-                                            ? "bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={pdfCount > 0 ? `Ler Materiais PDF (${pdfCompleted}/${pdfCount})` : "Sem materiais PDF"}
-                                      >
-                                        <FileText className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">PDF</span>
-                                        {pdfCount > 0 && <span className="ml-0.5 px-1 bg-blue-100 text-blue-700 rounded text-[8px] font-mono">{pdfCompleted}/{pdfCount}</span>}
-                                      </button>
-
-                                      {/* Slides */}
-                                      <button
-                                        onClick={() => handleAccessResource("slides")}
-                                        disabled={slidesCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          slidesCount > 0
-                                            ? "bg-amber-50 border-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={slidesCount > 0 ? `Ver Slides (${slidesCompleted}/${slidesCount})` : "Sem slides"}
-                                      >
-                                        <Presentation className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Slides</span>
-                                        {slidesCount > 0 && <span className="ml-0.5 px-1 bg-amber-100 text-amber-700 rounded text-[8px] font-mono">{slidesCompleted}/{slidesCount}</span>}
-                                      </button>
-
-                                      {/* Questões */}
-                                      <button
-                                        onClick={() => handleAccessResource("questoes")}
-                                        disabled={questionsCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          questionsCount > 0
-                                            ? "bg-violet-50 border-violet-100 text-violet-600 hover:bg-violet-600 hover:text-white hover:border-violet-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={questionsCount > 0 ? `Resolver Questões (${questionsCompleted}/${questionsCount})` : "Sem questões"}
-                                      >
-                                        <HelpCircle className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Questões</span>
-                                        {questionsCount > 0 && <span className="ml-0.5 px-1 bg-violet-100 text-violet-700 rounded text-[8px] font-mono">{questionsCompleted}/{questionsCount}</span>}
-                                      </button>
-
-                                      {/* Flashcards */}
-                                      <button
-                                        onClick={() => handleAccessResource("flashcards")}
-                                        disabled={flashcardsCount === 0}
-                                        className={`flex items-center justify-center space-x-1 px-1 py-1.5 rounded-lg border text-[10px] font-sans font-bold transition-all duration-200 cursor-pointer shadow-sm w-full ${
-                                          flashcardsCount > 0
-                                            ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 active:scale-95"
-                                            : "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-40"
-                                        }`}
-                                        title={flashcardsCount > 0 ? `Estudar Flashcards (${flashcardsCompleted}/${flashcardsCount})` : "Sem flashcards"}
-                                      >
-                                        <Award className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Cards</span>
-                                        {flashcardsCount > 0 && <span className="ml-0.5 px-1 bg-rose-100 text-rose-700 rounded text-[8px] font-mono">{flashcardsCompleted}/{flashcardsCount}</span>}
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              {Array.isArray(area.contents) && area.contents.map((content: any) => renderMateriaCard(content, mod))}
                             </div>
                           </div>
                         ))}
@@ -851,19 +917,64 @@ export default function MeusCursos({
   if (selectedCourse && selectedModule) {
     const cleanDisciplineName = (selectedModule.title || "").replace(/^Módulo \d+:\s*/, "");
 
-    // Automatically default to the first materia if selectedContentId is null
-    let activeContentId = selectedContentId;
-    if (activeContentId === null) {
-      const rawDisc = selectedModule.rawDiscipline;
-      if (rawDisc && Array.isArray(rawDisc.areas) && rawDisc.areas.length > 0) {
-        const firstArea = rawDisc.areas[0];
-        if (Array.isArray(firstArea.contents) && firstArea.contents.length > 0) {
-          activeContentId = firstArea.contents[0].id;
-        }
-      }
+    // If no specific materia/content is selected, show list of Eixos and Materias
+    if (selectedContentId === null) {
+      return (
+        <div className="space-y-6 animate-smooth-fade" id="meus-cursos-materia-selection">
+          {/* Header with Back button */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex items-center justify-between shadow-sm">
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={() => {
+                  setSelectedModuleId(null);
+                  setSelectedContentId(null);
+                }}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border-none flex items-center justify-center bg-transparent"
+                title="Voltar ao Painel do Curso"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h4 className="text-sm font-sans font-extrabold text-slate-800 uppercase tracking-wide">
+                  {cleanDisciplineName}
+                </h4>
+                <p className="text-[10px] font-mono text-slate-500">
+                  Selecione um Eixo Temático e uma Matéria para Iniciar os Estudos
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Eixos Temáticos & Materias Grid */}
+          <div className="space-y-6">
+            {selectedModule.rawDiscipline && Array.isArray(selectedModule.rawDiscipline.areas) && selectedModule.rawDiscipline.areas.length > 0 ? (
+              selectedModule.rawDiscipline.areas.map((area: any) => (
+                <div key={area.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-xs">
+                  <div className="border-b border-slate-100 pb-2.5">
+                    <h3 className="text-xs font-mono font-extrabold text-indigo-600 uppercase tracking-wider">
+                      {area.name}
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.isArray(area.contents) && area.contents.map((content: any) => renderMateriaCard(content, selectedModule))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-400 italic">
+                Nenhuma matéria cadastrada para esta disciplina.
+              </div>
+            )}
+          </div>
+        </div>
+      );
     }
 
+    let activeContentId = selectedContentId;
+
     const rawDisc = selectedModule.rawDiscipline;
+    const courseVideos: any[] = [];
     const courseAudios: any[] = [];
     const coursePdfs: any[] = [];
     const courseSlides: any[] = [];
@@ -883,6 +994,8 @@ export default function MeusCursos({
                   coursePdfs.push({ ...res, materiaName: content.name });
                 } else if (res.type === 'slides') {
                   courseSlides.push({ ...res, materiaName: content.name });
+                } else if (res.type === 'video') {
+                  courseVideos.push({ ...res, materiaName: content.name });
                 }
               });
             }
@@ -891,93 +1004,140 @@ export default function MeusCursos({
       });
     }
 
+    let activeEixoName = "";
+    let activeMateriaName = "";
+    if (selectedModule.rawDiscipline && Array.isArray(selectedModule.rawDiscipline.areas)) {
+      for (const area of selectedModule.rawDiscipline.areas) {
+        if (Array.isArray(area.contents)) {
+          const matchingMateria = area.contents.find((c: any) => c.id === selectedContentId);
+          if (matchingMateria) {
+            activeEixoName = area.name || "";
+            activeMateriaName = matchingMateria.name || "";
+            break;
+          }
+        }
+      }
+    }
+
     return (
       <div className="space-y-6" id="meus-cursos-subject-dashboard">
         {/* Header containing back button, discipline title, and tab selector */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col items-start gap-5 shadow-sm">
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => {
-                setSelectedModuleId(null);
                 setSelectedContentId(null);
               }}
               className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border-none flex items-center justify-center bg-transparent"
-              title="Voltar ao Painel do Curso"
+              title="Voltar para a Lista de Matérias"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h4 className="text-sm font-sans font-extrabold text-slate-800 uppercase tracking-wide">
-                {cleanDisciplineName}
+              <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">
+                <span>{cleanDisciplineName}</span>
+                {activeEixoName && (
+                  <>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-slate-500">{activeEixoName}</span>
+                  </>
+                )}
+              </div>
+              <h4 className="text-sm font-sans font-black text-slate-800 uppercase tracking-wide">
+                {activeMateriaName || cleanDisciplineName}
               </h4>
-              <p className="text-[10px] font-mono text-slate-500">
-                Ambiente de Estudos Integrado
-              </p>
             </div>
           </div>
 
-          {/* Tab Selector Inside Header */}
-          <div className="flex flex-wrap items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 gap-0.5">
-            <button
-              onClick={() => setSubjectActiveTab("aulas")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "aulas" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              Vídeos/Aulas
-            </button>
-            <button
-              onClick={() => setSubjectActiveTab("audio")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "audio" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              Áudios
-            </button>
-            <button
-              onClick={() => setSubjectActiveTab("materiais")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "materiais" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              PDFs
-            </button>
-            <button
-              onClick={() => setSubjectActiveTab("slides")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "slides" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              Slides
-            </button>
-            <button
-              onClick={() => setSubjectActiveTab("questoes")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "questoes" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              Questões
-            </button>
-            <button
-              onClick={() => setSubjectActiveTab("flashcards")}
-              className={`px-3 py-1 text-[10px] font-sans font-bold uppercase rounded-md transition-all cursor-pointer border-none ${
-                subjectActiveTab === "flashcards" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-slate-800 bg-transparent"
-              }`}
-            >
-              Cards
-            </button>
+          <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-slate-100 pt-4">
+            {/* Tab Selector Inside Header */}
+            <div className="flex flex-wrap items-center bg-slate-100/80 p-1 rounded-xl border border-slate-200/50 gap-1.5 shadow-inner">
+              <button
+                onClick={() => setSubjectActiveTab("aulas")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "aulas" 
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Vídeos/Aulas</span>
+              </button>
+
+              <button
+                onClick={() => setSubjectActiveTab("audio")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "audio" 
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <Headphones className="w-3.5 h-3.5" />
+                <span>Áudios</span>
+              </button>
+
+              <button
+                onClick={() => setSubjectActiveTab("materiais")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "materiais" 
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>PDFs</span>
+              </button>
+
+              <button
+                onClick={() => setSubjectActiveTab("slides")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "slides" 
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <Presentation className="w-3.5 h-3.5" />
+                <span>Slides</span>
+              </button>
+
+              <button
+                onClick={() => setSubjectActiveTab("questoes")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "questoes" 
+                    ? "bg-violet-600 text-white shadow-md shadow-violet-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>Questões</span>
+              </button>
+
+              <button
+                onClick={() => setSubjectActiveTab("flashcards")}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
+                  subjectActiveTab === "flashcards" 
+                    ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-105" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Cards</span>
+              </button>
+            </div>
+
+            {/* Video Selector Dropdown & Status Selector if tab is 'aulas' */}
+            {subjectActiveTab === "aulas" && courseVideos.length > 0 && (
+              <div className="flex items-center space-x-3 bg-slate-50 p-1.5 px-3 rounded-xl border border-slate-200/60 shadow-xs shrink-0 self-start sm:self-center">
+                {courseVideos[activeVideoIndex]?.id && renderStatusIndicator(courseVideos[activeVideoIndex].id.toString())}
+                {courseVideos.length > 1 && (
+                  <VideoSelector
+                    videos={courseVideos}
+                    activeVideoIndex={activeVideoIndex}
+                    onSelectVideo={(idx) => setActiveVideoIndex(idx)}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -989,6 +1149,9 @@ export default function MeusCursos({
               disciplineName={cleanDisciplineName}
               rawDiscipline={selectedModule.rawDiscipline}
               selectedContentId={activeContentId}
+              videos={courseVideos}
+              activeVideoIndex={activeVideoIndex}
+              setActiveVideoIndex={setActiveVideoIndex}
             />
           )}
 
