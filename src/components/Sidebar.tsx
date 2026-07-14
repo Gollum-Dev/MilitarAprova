@@ -80,7 +80,7 @@ export default function Sidebar({
   const courseSubItems = [
     { id: "materias", label: "Painel do Curso", icon: BookOpen },
     { id: "gestao", label: "Gestão de Estudo", icon: Compass },
-    { id: "simuladores", label: "Simuladores", icon: GraduationCap },
+    { id: "simuladores", label: "Simulados", icon: GraduationCap },
     { id: "tutor", label: "Tutor IA", icon: MessageSquare },
   ];
 

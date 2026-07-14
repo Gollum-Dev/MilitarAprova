@@ -111,6 +111,7 @@ export default function DashboardHome({
   const [trendTimeRange, setTrendTimeRange] = useState<"7d" | "30d" | "6m" | "1y">("7d");
   const [trendData, setTrendData] = useState<any[]>([]);
   const [loadedCourses, setLoadedCourses] = useState<any[]>([]);
+  const [subjectRanking, setSubjectRanking] = useState<{title: string, percent: number, completed: number, total: number}[]>([]);
 
   useEffect(() => {
     console.log("DashboardHome: Carregando cursos e histórico...");
@@ -126,6 +127,12 @@ export default function DashboardHome({
 
       // Calculate progress individually per course
       const completedResources = getCompletedResourceIds();
+      const completionDates = getResourceCompletionDates();
+      const today = new Date().toISOString().split('T')[0];
+      
+      let videoCount = 0, audioCount = 0, pdfCount = 0, slidesCount = 0, questionsCount = 0, flashcardsCount = 0;
+      const sStats: Record<string, { total: number, completed: number }> = {};
+      
       const progressList = filtered.map(course => {
         let total = 0;
         let completedCount = 0;
@@ -141,6 +148,25 @@ export default function DashboardHome({
                       total++;
                       if (res.id && completedResources.includes(res.id.toString())) {
                         completedCount++;
+                        
+                        // For Daily Stats
+                        if (completionDates[res.id.toString()] === today) {
+                          if (res.type === 'video') videoCount++;
+                          else if (res.type === 'audio') audioCount++;
+                          else if (res.type === 'pdf') pdfCount++;
+                          else if (res.type === 'slides') slidesCount++;
+                          else if (res.type === 'questoes' || res.type === 'question') questionsCount++;
+                          else if (res.type === 'cards' || res.type === 'flashcard' || res.type === 'flashcards') flashcardsCount++;
+                        }
+                      }
+                      
+                      // For Subject Ranking
+                      if (!sStats[m.title]) {
+                        sStats[m.title] = { total: 0, completed: 0 };
+                      }
+                      sStats[m.title].total++;
+                      if (res.id && completedResources.includes(res.id.toString())) {
+                        sStats[m.title].completed++;
                       }
                     });
                   }
@@ -161,11 +187,15 @@ export default function DashboardHome({
       });
       setCoursesProgress(progressList);
 
-      // Calcular produtividade diária por tipo de matéria e tendência de 7 dias
-      const today = new Date().toISOString().split('T')[0];
-      const completionDates = getResourceCompletionDates();
-      let videoCount = 0, audioCount = 0, pdfCount = 0, slidesCount = 0, questionsCount = 0, flashcardsCount = 0;
+      const ranking = Object.keys(sStats).map(title => ({
+        title,
+        percent: sStats[title].total > 0 ? Math.round((sStats[title].completed / sStats[title].total) * 100) : 0,
+        completed: sStats[title].completed,
+        total: sStats[title].total
+      })).filter(r => r.total > 0).sort((a, b) => b.completed - a.completed);
+      setSubjectRanking(ranking);
 
+      // Calcular produtividade diária por tipo de matéria e tendência de 7 dias
       setDailyStats([
         { label: "VÍDEO", count: videoCount, highlighted: videoCount > 0, from: "from-indigo-400", to: "to-indigo-500", text: "text-indigo-400" },
         { label: "ÁUDIO", count: audioCount, highlighted: audioCount > 0, from: "from-emerald-400", to: "to-emerald-500", text: "text-emerald-400" },
@@ -421,32 +451,16 @@ export default function DashboardHome({
   return (
     <div className="space-y-6" id="dashboard-home-view">
       {/* Welcome Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
         <div>
-          <div className="flex items-center space-x-2.5 mb-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-            </span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-white font-bold bg-white/10 border border-white/20 px-2.5 py-0.5 rounded-full">
-              Missão em andamento
-            </span>
-          </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
-            Bem-vindo de volta, <span className="text-amber-300">{userName}</span>.
+            Bem-vindo de volta, <span className="text-amber-300">{userName.split(' ')[0]}</span>.
           </h2>
-          <p className="text-sm text-indigo-200 mt-1 max-w-xl">
-            Sua preparação para o <strong className="text-white">CHO CBMMG</strong> está em ritmo acelerado. Mantenha a disciplina tática.
+          <p className="text-sm text-indigo-200 mt-1 max-w-3xl truncate md:whitespace-nowrap">
+            Acompanhe abaixo o resumo detalhado da progressão dos seus cursos e a evolução da sua produtividade.
           </p>
         </div>
-        <button
-          onClick={() => onChangeTab("cursos")}
-          className="px-5 py-2.5 bg-white hover:bg-slate-50 text-indigo-950 rounded-lg text-xs font-sans font-bold uppercase transition-colors flex items-center space-x-2 active:scale-95 cursor-pointer shadow-sm border-none"
-        >
-          <span>Ir para Meus Cursos</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Bento Grid layout */}
@@ -479,38 +493,37 @@ export default function DashboardHome({
               )}
             </div>
 
-            {/* Quick Metrics */}
-            <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-5">
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 text-slate-500 mb-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] font-mono uppercase">Estudado</span>
+            {/* Ranking de Matérias */}
+            {subjectRanking.length > 0 && (
+              <div className="border-t border-slate-100 pt-5 mt-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Mais Estudadas */}
+                  <div>
+                    <h4 className="text-[10px] font-mono text-emerald-600 font-bold uppercase mb-2">Mais Estudadas (Atividades)</h4>
+                    <div className="space-y-2">
+                      {subjectRanking.slice(0, 3).map((sub, idx) => (
+                        <div key={`most-${idx}`} className="flex justify-between items-center text-xs">
+                          <span className="truncate max-w-[70%] text-slate-600" title={sub.title}>{idx + 1}. {sub.title}</span>
+                          <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">{sub.completed}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Menos Estudadas */}
+                  <div>
+                    <h4 className="text-[10px] font-mono text-rose-500 font-bold uppercase mb-2">Menos Estudadas</h4>
+                    <div className="space-y-2">
+                      {subjectRanking.slice().reverse().slice(0, 3).map((sub, idx) => (
+                        <div key={`least-${idx}`} className="flex justify-between items-center text-xs">
+                          <span className="truncate max-w-[70%] text-slate-600" title={sub.title}>{idx + 1}. {sub.title}</span>
+                          <span className="font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded text-[10px]">{sub.completed}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-lg font-sans font-bold text-slate-800">{stats.studyHours}h</p>
               </div>
-              <div className="text-center border-x border-slate-100 px-2">
-                <div className="flex items-center justify-center space-x-1 text-slate-500 mb-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] font-mono uppercase">Questões</span>
-                </div>
-                <p className="text-lg font-sans font-bold text-slate-800">{stats.questionsAnswered}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1 text-amber-700 mb-1">
-                  <Award className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[10px] font-mono uppercase font-bold">Acertos</span>
-                </div>
-                <p className="text-lg font-sans font-bold text-amber-600 bg-amber-50 rounded px-1.5 py-0.5 inline-block">{stats.precision}%</p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-6">
-            <button
-              onClick={() => onChangeTab("cursos")}
-              className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-sans text-slate-700 rounded-lg transition-colors cursor-pointer uppercase font-bold"
-            >
-              Ver Grade Curricular Completa
-            </button>
+            )}
           </div>
         </div>
 
