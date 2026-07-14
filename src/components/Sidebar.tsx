@@ -1,7 +1,7 @@
 import { 
   Home, BookOpen, Tv, HelpCircle, GraduationCap, Scale, 
   MessageSquare, LineChart, Settings, LogOut, ShieldAlert, 
-  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation, Compass
+  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation, Compass, Map
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
@@ -19,8 +19,8 @@ interface SidebarProps {
   setSelectedModuleId: (id: string | null) => void;
   selectedContentId: number | null;
   setSelectedContentId: (id: number | null) => void;
-  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao";
-  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao") => void;
+  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao" | "trilha";
+  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao" | "trilha") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
   allowedCourses: string[];
@@ -73,6 +73,7 @@ export default function Sidebar({
   // Base navigation menu items (ALWAYS visible)
   const menuItems = [
     { id: "inicio", label: "Início", icon: Home },
+    { id: "trilha", label: "Trilha Inteligente", icon: Map },
     { id: "cursos", label: "Meus Cursos", icon: BookOpen },
     { id: "configuracoes", label: "Configurações", icon: Settings },
   ];

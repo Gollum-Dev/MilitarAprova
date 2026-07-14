@@ -1,4 +1,4 @@
-// Progress tracking helpers using localStorage
+import { supabase } from './supabase';
 
 export interface StudentStats {
   studyHours: number;
@@ -11,44 +11,83 @@ export interface StudentStats {
 
 export type StudyStatus = 'a-estudar' | 'estudando' | 'estudado';
 
-export function getResourceStatuses(): Record<string, StudyStatus> {
+// In-memory cache for the student's progress
+const progressCache = {
+  email: "",
+  resource_statuses: {} as Record<string, StudyStatus>,
+  completed_resources: [] as string[],
+  completed_dates: {} as Record<string, string>,
+  study_hours: 12.5,
+  questions_answered: 18,
+  questions_correct: 14
+};
+
+// Initialize progress from the database loaded student profile
+export function initializeProgress(student: any) {
+  if (!student) return;
+  progressCache.email = student.email || "";
+  progressCache.resource_statuses = student.resource_statuses || {};
+  progressCache.completed_resources = student.completed_resources || [];
+  progressCache.completed_dates = student.completed_dates || {};
+  progressCache.study_hours = student.study_hours !== null && student.study_hours !== undefined ? Number(student.study_hours) : 12.5;
+  progressCache.questions_answered = student.questions_answered !== null && student.questions_answered !== undefined ? Number(student.questions_answered) : 18;
+  progressCache.questions_correct = student.questions_correct !== null && student.questions_correct !== undefined ? Number(student.questions_correct) : 14;
+}
+
+// Asynchronously save in-memory progress cache to Supabase
+async function saveProgressToSupabase() {
   try {
-    return JSON.parse(localStorage.getItem("militar_resource_statuses") || "{}");
-  } catch {
-    return {};
+    const email = progressCache.email;
+    if (!email) return;
+
+    await supabase
+      .from('students')
+      .update({
+        resource_statuses: progressCache.resource_statuses,
+        completed_resources: progressCache.completed_resources,
+        completed_dates: progressCache.completed_dates,
+        study_hours: progressCache.study_hours,
+        questions_answered: progressCache.questions_answered,
+        questions_correct: progressCache.questions_correct
+      })
+      .eq('email', email);
+  } catch (err) {
+    console.error("Erro ao salvar progresso no Supabase:", err);
   }
+}
+
+export function getResourceStatuses(): Record<string, StudyStatus> {
+  return { ...progressCache.resource_statuses };
 }
 
 export function getResourceCompletionDates(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem("militar_completed_dates") || "{}");
-  } catch {
-    return {};
-  }
+  return { ...progressCache.completed_dates };
 }
 
 function setResourceCompletionDate(resourceId: string, dateStr: string | null) {
-  const dates = getResourceCompletionDates();
   if (dateStr) {
-    dates[resourceId] = dateStr;
+    progressCache.completed_dates = {
+      ...progressCache.completed_dates,
+      [resourceId]: dateStr
+    };
   } else {
-    delete dates[resourceId];
+    const nextDates = { ...progressCache.completed_dates };
+    delete nextDates[resourceId];
+    progressCache.completed_dates = nextDates;
   }
-  localStorage.setItem("militar_completed_dates", JSON.stringify(dates));
 }
 
 export function setResourceStatus(resourceId: string, status: StudyStatus) {
-  const statuses = getResourceStatuses();
-  statuses[resourceId] = status;
-  localStorage.setItem("militar_resource_statuses", JSON.stringify(statuses));
+  progressCache.resource_statuses = {
+    ...progressCache.resource_statuses,
+    [resourceId]: status
+  };
   
-  // Sincronizar com completedResources para manter compatibilidade com as barras de progresso
-  const completed = getCompletedResourceIds();
+  const completed = [...progressCache.completed_resources];
   if (status === 'estudado') {
     if (!completed.includes(resourceId)) {
       completed.push(resourceId);
-      localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
-      
+      progressCache.completed_resources = completed;
       const today = new Date().toISOString().split('T')[0];
       setResourceCompletionDate(resourceId, today);
     }
@@ -56,58 +95,60 @@ export function setResourceStatus(resourceId: string, status: StudyStatus) {
     const idx = completed.indexOf(resourceId);
     if (idx > -1) {
       completed.splice(idx, 1);
-      localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+      progressCache.completed_resources = completed;
       setResourceCompletionDate(resourceId, null);
     }
   }
+  
+  saveProgressToSupabase();
 }
 
 export function getCompletedResourceIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem("militar_completed_resources") || "[]");
-  } catch {
-    return [];
-  }
+  return [...progressCache.completed_resources];
 }
 
 export function markResourceComplete(resourceId: string) {
-  const completed = getCompletedResourceIds();
+  const completed = [...progressCache.completed_resources];
   if (!completed.includes(resourceId)) {
     completed.push(resourceId);
-    localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
-    
+    progressCache.completed_resources = completed;
     const today = new Date().toISOString().split('T')[0];
     setResourceCompletionDate(resourceId, today);
   }
   
-  // Também marca o status como estudado
-  const statuses = getResourceStatuses();
-  if (statuses[resourceId] !== 'estudado') {
-    statuses[resourceId] = 'estudado';
-    localStorage.setItem("militar_resource_statuses", JSON.stringify(statuses));
+  if (progressCache.resource_statuses[resourceId] !== 'estudado') {
+    progressCache.resource_statuses = {
+      ...progressCache.resource_statuses,
+      [resourceId]: 'estudado'
+    };
   }
+
+  saveProgressToSupabase();
 }
 
 export function recordQuestionAnswer(isCorrect: boolean) {
-  const answered = parseInt(localStorage.getItem("militar_questions_answered") || "18");
-  const correct = parseInt(localStorage.getItem("militar_questions_correct") || "14");
-  
-  localStorage.setItem("militar_questions_answered", (answered + 1).toString());
+  progressCache.questions_answered += 1;
   if (isCorrect) {
-    localStorage.setItem("militar_questions_correct", (correct + 1).toString());
+    progressCache.questions_correct += 1;
   }
+  saveProgressToSupabase();
+}
+
+export function incrementStudyHours(amount: number) {
+  progressCache.study_hours = Number((progressCache.study_hours + amount).toFixed(4));
+  saveProgressToSupabase();
 }
 
 export function getStudentStats(totalResourcesCount: number): StudentStats {
-  const studyHours = parseFloat(localStorage.getItem("militar_study_hours") || "12.5");
-  const questionsAnswered = parseInt(localStorage.getItem("militar_questions_answered") || "18");
-  const questionsCorrect = parseInt(localStorage.getItem("militar_questions_correct") || "14");
+  const studyHours = progressCache.study_hours;
+  const questionsAnswered = progressCache.questions_answered;
+  const questionsCorrect = progressCache.questions_correct;
   
   const precision = questionsAnswered > 0 
     ? Math.round((questionsCorrect / questionsAnswered) * 100) 
     : 0;
      
-  const completedCount = getCompletedResourceIds().length;
+  const completedCount = progressCache.completed_resources.length;
   const progressPercent = totalResourcesCount > 0 
     ? Math.min(100, Math.round((completedCount / totalResourcesCount) * 100)) 
     : 0;

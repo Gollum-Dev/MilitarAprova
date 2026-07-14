@@ -175,8 +175,8 @@ interface MeusCursosProps {
   setSelectedModuleId: (id: string | null) => void;
   selectedContentId: number | null;
   setSelectedContentId: (id: number | null) => void;
-  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao";
-  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao") => void;
+  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao" | "trilha";
+  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao" | "trilha") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
   tutorInitialPrompt: string;

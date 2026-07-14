@@ -8,8 +8,10 @@ import MeusCursos from "./components/MeusCursos";
 import AdminDashboard from "./components/AdminDashboard";
 import ConfiguracoesScreen from "./components/ConfiguracoesScreen";
 import DesempenhoScreen from "./components/DesempenhoScreen";
+import TrilhaGuiadaScreen from "./components/TrilhaGuiadaScreen";
 import { fetchCourses } from "./lib/api";
-import { getStudentStats, StudentStats } from "./lib/progress";
+import { getStudentStats, StudentStats, initializeProgress, incrementStudyHours } from "./lib/progress";
+import { initializePlanner } from "./lib/studyPlanner";
 import { supabase } from "./lib/supabase";
 
 export default function App() {
@@ -24,12 +26,12 @@ export default function App() {
   useEffect(() => {
     if (authView === "app" && userRole === "aluno") {
       const timer = setInterval(() => {
-        const currentHours = parseFloat(localStorage.getItem("militar_study_hours") || "12.5");
-        localStorage.setItem("militar_study_hours", (currentHours + 10 / 3600).toFixed(4));
+        incrementStudyHours(10 / 3600);
       }, 10000);
 
       const rankTimer = setInterval(() => {
-        const questionsAnswered = parseInt(localStorage.getItem("militar_questions_answered") || "18");
+        const stats = getStudentStats(0);
+        const questionsAnswered = stats.questionsAnswered;
         let patent = "SOLDADO";
         if (questionsAnswered >= 50) patent = "CABO";
         if (questionsAnswered >= 100) patent = "SARGENTO";
@@ -51,7 +53,7 @@ export default function App() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
-  const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao">("materias");
+  const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao" | "trilha">("materias");
   const [subjectActiveTab, setSubjectActiveTab] = useState<"aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides">("aulas");
 
   // Check health and offline status of Gemini API on load
@@ -115,9 +117,13 @@ export default function App() {
           .single();
 
         if (!insertError && inserted) {
+          initializeProgress(inserted);
+          initializePlanner(inserted);
           handleLoginSuccess(inserted.name, "aluno", inserted.allowed_courses || []);
         } else {
           console.error("Erro ao criar estudante via Google Auth:", insertError);
+          initializeProgress(newStudent);
+          initializePlanner(newStudent);
           handleLoginSuccess(newStudent.name, "aluno", newStudent.allowed_courses);
         }
       } else {
@@ -126,6 +132,8 @@ export default function App() {
           await supabase.auth.signOut();
           return;
         }
+        initializeProgress(student);
+        initializePlanner(student);
         handleLoginSuccess(student.name, "aluno", student.allowed_courses || []);
       }
     } catch (err) {
@@ -224,6 +232,19 @@ export default function App() {
             onClearTutorPrompt={() => setTutorInitialPrompt("")}
             allowedCourses={allowedCourses}
             userName={userName}
+          />
+        );
+      case "trilha":
+        return (
+          <TrilhaGuiadaScreen 
+            userName={userName}
+            allowedCourses={allowedCourses}
+            onChangeTab={setCurrentTab}
+            setSelectedCourseId={setSelectedCourseId}
+            setSelectedModuleId={setSelectedModuleId}
+            setSelectedContentId={setSelectedContentId}
+            setCourseActiveTab={setCourseActiveTab}
+            setSubjectActiveTab={setSubjectActiveTab}
           />
         );
       case "configuracoes":

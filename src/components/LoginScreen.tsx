@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft } from "lucide-react";
 import { validateStudentLogin } from "../lib/student";
 import { supabase } from "../lib/supabase";
+import { initializeProgress } from "../lib/progress";
+import { initializePlanner } from "../lib/studyPlanner";
 
 interface LoginScreenProps {
   onLoginSuccess: (name: string, role: "aluno" | "admin", allowedCourses: string[]) => void;
@@ -51,6 +53,8 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
         const student = await validateStudentLogin(email, password);
         setIsLoading(false);
         if (student) {
+          initializeProgress(student);
+          initializePlanner(student);
           onLoginSuccess(student.name, "aluno", student.allowed_courses || []);
         } else {
           alert("Credenciais de aluno inválidas ou conta inativa. Use a senha definida pelo administrador.");

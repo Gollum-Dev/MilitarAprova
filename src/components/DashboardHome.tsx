@@ -112,6 +112,7 @@ export default function DashboardHome({
   const [trendData, setTrendData] = useState<any[]>([]);
   const [loadedCourses, setLoadedCourses] = useState<any[]>([]);
   const [subjectRanking, setSubjectRanking] = useState<{title: string, percent: number, completed: number, total: number}[]>([]);
+  const [recentStudies, setRecentStudies] = useState<any[]>([]);
 
   useEffect(() => {
     console.log("DashboardHome: Carregando cursos e histórico...");
@@ -186,6 +187,40 @@ export default function DashboardHome({
         };
       });
       setCoursesProgress(progressList);
+
+      // Extract recently completed resources (last studied subjects)
+      const completedList: { title: string; type: string; date: string; materiaName: string }[] = [];
+      filtered.forEach(course => {
+        course.modules.forEach(m => {
+          const rawDisc = m.rawDiscipline;
+          if (rawDisc && Array.isArray(rawDisc.areas)) {
+            rawDisc.areas.forEach((area: any) => {
+              if (Array.isArray(area.contents)) {
+                area.contents.forEach((content: any) => {
+                  if (Array.isArray(content.resources)) {
+                    content.resources.forEach((res: any) => {
+                      const resId = res.id?.toString();
+                      if (resId && completionDates[resId]) {
+                        completedList.push({
+                          title: res.title || "Material",
+                          type: res.type || "pdf",
+                          date: completionDates[resId],
+                          materiaName: content.name || m.title || ""
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+      });
+
+      const latestCompleted = completedList
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3);
+      setRecentStudies(latestCompleted);
 
       const ranking = Object.keys(sStats).map(title => ({
         title,
@@ -465,245 +500,333 @@ export default function DashboardHome({
 
       {/* Bento Grid layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: Progresso do Curso */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:border-slate-300 transition-all">
-          <div>
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                Progresso dos Cursos Matriculados
-              </h3>
-            </div>
-            
-            {/* Custom Progress Bar per Course */}
-            <div className="space-y-4 mb-6">
-              {coursesProgress.length === 0 ? (
-                <div className="text-xs text-slate-400 italic">Carregando progresso dos cursos...</div>
-              ) : (
-                coursesProgress.map(cProgress => (
-                  <div key={cProgress.id} className="space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100/80">
-                    <div className="flex justify-between items-center text-[11px] font-sans font-bold text-slate-700">
-                      <span className="truncate max-w-[80%] uppercase tracking-wide">{cProgress.title}</span>
-                      <span className="text-indigo-600 font-extrabold text-xs">{cProgress.progress}%</span>
+        {/* Left Column Stack */}
+        <div className="space-y-6 flex flex-col">
+          {/* Card 1: Progresso do Curso */}
+          <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:border-slate-300 transition-all h-[310px]">
+            <div>
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
+                  Progresso dos Cursos Matriculados
+                </h3>
+              </div>
+              
+              {/* Custom Progress Bar per Course */}
+              <div className="space-y-4 mb-6">
+                {coursesProgress.length === 0 ? (
+                  <div className="text-xs text-slate-400 italic">Carregando progresso dos cursos...</div>
+                ) : (
+                  coursesProgress.map(cProgress => (
+                    <div key={cProgress.id} className="space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100/80">
+                      <div className="flex justify-between items-center text-[11px] font-sans font-bold text-slate-700">
+                        <span className="truncate max-w-[80%] uppercase tracking-wide">{cProgress.title}</span>
+                        <span className="text-indigo-600 font-extrabold text-xs">{cProgress.progress}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200/50 rounded-full overflow-hidden shadow-inner">
+                        <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-sm" style={{ width: `${cProgress.progress}%` }}></div>
+                      </div>
                     </div>
-                    <div className="w-full h-2 bg-slate-200/50 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-sm" style={{ width: `${cProgress.progress}%` }}></div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
 
-            {/* Ranking de Matérias */}
-            {subjectRanking.length > 0 && (
-              <div className="border-t border-slate-100 pt-5 mt-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Mais Estudadas */}
-                  <div>
-                    <h4 className="text-[10px] font-mono text-emerald-600 font-bold uppercase mb-2">Mais Estudadas (Atividades)</h4>
-                    <div className="space-y-2">
-                      {subjectRanking.slice(0, 3).map((sub, idx) => (
-                        <div key={`most-${idx}`} className="flex justify-between items-center text-xs">
-                          <span className="truncate max-w-[70%] text-slate-600" title={sub.title}>{idx + 1}. {sub.title}</span>
-                          <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">{sub.completed}</span>
-                        </div>
-                      ))}
+              {/* Ranking de Matérias */}
+              {subjectRanking.length > 0 && (
+                <div className="border-t border-slate-100 pt-5 mt-auto">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Mais Estudadas */}
+                    <div>
+                      <h4 className="text-[10px] font-mono text-emerald-600 font-bold uppercase mb-2">Mais Estudadas (Atividades)</h4>
+                      <div className="space-y-2.5">
+                        {subjectRanking.slice(0, 3).map((sub, idx) => (
+                          <div key={`most-${idx}`} className="flex flex-col space-y-1 text-[11px]">
+                            <div className="flex justify-between items-center">
+                              <span className="truncate max-w-[80%] text-slate-600 font-medium" title={sub.title}>{idx + 1}. {sub.title}</span>
+                              <span className="font-mono font-bold text-emerald-600 text-[10px]">{sub.percent}%</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${sub.percent}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  {/* Menos Estudadas */}
-                  <div>
-                    <h4 className="text-[10px] font-mono text-rose-500 font-bold uppercase mb-2">Menos Estudadas</h4>
-                    <div className="space-y-2">
-                      {subjectRanking.slice().reverse().slice(0, 3).map((sub, idx) => (
-                        <div key={`least-${idx}`} className="flex justify-between items-center text-xs">
-                          <span className="truncate max-w-[70%] text-slate-600" title={sub.title}>{idx + 1}. {sub.title}</span>
-                          <span className="font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded text-[10px]">{sub.completed}</span>
-                        </div>
-                      ))}
+                    {/* Menos Estudadas */}
+                    <div>
+                      <h4 className="text-[10px] font-mono text-rose-500 font-bold uppercase mb-2">Menos Estudadas</h4>
+                      <div className="space-y-2.5">
+                        {subjectRanking.slice().reverse().slice(0, 3).map((sub, idx) => (
+                          <div key={`least-${idx}`} className="flex flex-col space-y-1 text-[11px]">
+                            <div className="flex justify-between items-center">
+                              <span className="truncate max-w-[80%] text-slate-600 font-medium" title={sub.title}>{idx + 1}. {sub.title}</span>
+                              <span className="font-mono font-bold text-rose-500 text-[10px]">{sub.percent}%</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-rose-400 rounded-full" style={{ width: `${sub.percent}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          </div>
+
+          {/* Card 5: Últimas Matérias Concluídas (Recent Studies) */}
+          <div className="glass-panel rounded-2xl p-5 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between overflow-hidden">
+            <div>
+              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 mb-3">
+                Últimas Matérias Concluídas
+              </h3>
+              {recentStudies.length === 0 ? (
+                <div className="text-slate-400 text-xs italic py-8 text-center bg-slate-50/50 border border-slate-100 rounded-xl">
+                  Nenhuma matéria concluída recentemente.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {recentStudies.map((study, idx) => {
+                    let typeColor = "bg-blue-50 text-blue-600 border-blue-100";
+                    let typeLabel = "PDF";
+                    if (study.type === 'video') {
+                      typeColor = "bg-indigo-50 text-indigo-600 border-indigo-100";
+                      typeLabel = "VÍDEO";
+                    } else if (study.type === 'audio') {
+                      typeColor = "bg-emerald-50 text-emerald-600 border-emerald-100";
+                      typeLabel = "ÁUDIO";
+                    } else if (study.type === 'slides') {
+                      typeColor = "bg-amber-50 text-amber-600 border-amber-100";
+                      typeLabel = "SLIDE";
+                    } else if (study.type === 'questoes' || study.type === 'question') {
+                      typeColor = "bg-violet-50 text-violet-600 border-violet-100";
+                      typeLabel = "QUESTÃO";
+                    } else if (study.type === 'cards' || study.type === 'flashcard') {
+                      typeColor = "bg-rose-50 text-rose-600 border-rose-100";
+                      typeLabel = "CARD";
+                    }
+
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-2 px-3 border border-slate-100 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-mono font-extrabold uppercase border ${typeColor}`}>
+                            {typeLabel}
+                          </span>
+                          <div className="truncate text-left">
+                            <h4 className="text-[11px] font-sans font-bold text-slate-700 truncate" title={study.title}>
+                              {study.title}
+                            </h4>
+                            <p className="text-[9px] text-slate-400 font-mono truncate">
+                              {study.materiaName}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <span className="text-[8px] font-mono font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                            {study.date.split('-').reverse().join('/')}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Card 3: Evolução de Desempenho (Bespoke Chart) */}
-        <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex justify-between items-center mb-5">
-            <div>
-              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                Produtividade Diária
-              </h3>
-              <p className="text-[10px] text-slate-400 font-mono">Matérias estudadas hoje por tipo</p>
+        {/* Right Column Stack */}
+        <div className="space-y-6 flex flex-col">
+          {/* Card 3: Produtividade Diária */}
+          <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
+                  Produtividade Diária
+                </h3>
+                <p className="text-[10px] text-slate-400 font-mono">Matérias estudadas hoje por tipo</p>
+              </div>
+              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                <button className="px-2.5 py-1 text-[9px] font-mono bg-white text-indigo-600 rounded-md font-bold uppercase shadow-sm border-none">
+                  Hoje
+                </button>
+              </div>
             </div>
-            <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
-              <button className="px-2.5 py-1 text-[9px] font-mono bg-white text-indigo-600 rounded-md font-bold uppercase shadow-sm border-none">
-                Hoje
-              </button>
-            </div>
-          </div>
 
-          {/* Styled Bars */}
-          <div className="flex items-end justify-between h-40 pt-4 px-2 bg-slate-50 rounded-xl border border-slate-100 relative">
-            {/* Grid background lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-2 px-1 text-[8px] font-mono text-slate-300">
+            {/* Styled Bars */}
+            <div className="flex items-end justify-between h-36 pt-4 px-2 bg-slate-50 rounded-xl border border-slate-100 relative">
+              {/* Grid background lines */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-2 px-1 text-[8px] font-mono text-slate-300">
+                {(() => {
+                  const maxCount = Math.max(...dailyStats.map(d => d.count), 4);
+                  return (
+                    <>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-1">{maxCount}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.75)}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.5)}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.25)}</div>
+                    </>
+                  );
+                })()}
+              </div>
+
               {(() => {
                 const maxCount = Math.max(...dailyStats.map(d => d.count), 4);
-                return (
-                  <>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-1">{maxCount}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.75)}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.5)}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-1">{Math.ceil(maxCount * 0.25)}</div>
-                  </>
-                );
+                return dailyStats.map((d, index) => {
+                  const heightPercent = `${(d.count / maxCount) * 100}%`;
+                  return (
+                    <div key={index} className="flex flex-col items-center w-12 z-10 group relative">
+                      {/* Tooltip on hover */}
+                      <div className={`absolute top-[-30px] bg-slate-900 ${d.text || "text-emerald-400"} text-[10px] font-mono py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-sm whitespace-nowrap`}>
+                        {d.count} concluídos
+                      </div>
+                      
+                      {/* Bar */}
+                      <div className="w-5 rounded-t-sm transition-all duration-300 relative overflow-hidden" style={{ height: heightPercent, minHeight: d.count > 0 ? '4px' : '0' }}>
+                        <div className={`absolute inset-0 ${
+                          d.highlighted 
+                            ? `bg-gradient-to-t ${d.from} ${d.to} shadow-sm` 
+                            : "bg-slate-200"
+                        }`} />
+                      </div>
+                      {/* Label */}
+                      <span className="text-[9px] font-mono mt-2 text-slate-400 uppercase tracking-tighter">{d.label}</span>
+                    </div>
+                  );
+                });
               })()}
             </div>
 
-            {(() => {
-              const maxCount = Math.max(...dailyStats.map(d => d.count), 4);
-              return dailyStats.map((d, index) => {
-                const heightPercent = `${(d.count / maxCount) * 100}%`;
+            <div className="flex justify-between items-center mt-4 text-[11px] font-mono">
+              <span className="text-slate-500">Total Estudado Hoje:</span>
+              <span className="text-emerald-600 font-bold uppercase">
+                {dailyStats.reduce((sum, item) => sum + item.count, 0)} materiais
+              </span>
+            </div>
+          </div>
+
+          {/* Card 4: Tendência de Produtividade */}
+          <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 space-y-4 md:space-y-0">
+              <div>
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
+                  Tendência de Produtividade
+                </h3>
+                <p className="text-[10px] text-slate-400 font-mono">Acompanhe seu ritmo de estudos</p>
+              </div>
+              <div className="flex space-x-3 relative z-30">
+                <CustomDropdown
+                  value={trendTimeRange}
+                  options={timeRangeOptions}
+                  onChange={(val) => setTrendTimeRange(val as any)}
+                  colorClasses={{ bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200", hoverBorder: "hover:border-slate-300", activeBg: "bg-slate-100", activeDot: "bg-slate-600" }}
+                />
+                <CustomDropdown
+                  value={trendFilter}
+                  options={filterOptions}
+                  onChange={(val) => setTrendFilter(val as any)}
+                  colorClasses={activeColor}
+                />
+              </div>
+            </div>
+
+            <div className="h-44 pt-4 pb-8 relative w-full bg-slate-50 rounded-xl border border-slate-100 overflow-hidden px-4">
+              {(() => {
+                if (trendData.length === 0) return null;
+                
+                const values = trendData.map(d => d[trendFilter]);
+                const maxVal = Math.max(...values, 4);
+                const paddingY = 20; // top padding for chart
+                
+                // Define function to map data to coordinates
+                // Height of drawing area is e.g. 120
+                const H = 120;
+                const W = 1000; // viewBox width
+                const step = W / (trendData.length - 1);
+                
+                const points = trendData.map((d, i) => {
+                  const x = i * step;
+                  const y = H - ((d[trendFilter] / maxVal) * H) + paddingY;
+                  return `${x},${y}`;
+                }).join(" ");
+                
                 return (
-                  <div key={index} className="flex flex-col items-center w-12 z-10 group relative">
-                    {/* Tooltip on hover */}
-                    <div className={`absolute top-[-30px] bg-slate-900 ${d.text || "text-emerald-400"} text-[10px] font-mono py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-sm whitespace-nowrap`}>
-                      {d.count} concluídos
+                  <div className="w-full h-full relative">
+                    {/* Grid Lines */}
+                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-4 px-1 text-[9px] font-mono text-slate-300">
+                      <div className="border-b border-slate-200/50 w-full text-right pr-2">{maxVal}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.75)}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.5)}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.25)}</div>
+                      <div className="border-b border-slate-200/50 w-full text-right pr-2">0</div>
                     </div>
                     
-                    {/* Bar */}
-                    <div className="w-5 rounded-t-sm transition-all duration-300 relative overflow-hidden" style={{ height: heightPercent, minHeight: d.count > 0 ? '4px' : '0' }}>
-                      <div className={`absolute inset-0 ${
-                        d.highlighted 
-                          ? `bg-gradient-to-t ${d.from} ${d.to} shadow-sm` 
-                          : "bg-slate-200"
-                      }`} />
+                    {/* SVG Chart */}
+                    <svg viewBox={`0 0 ${W} ${H + paddingY + 10}`} className="w-full h-[88%] -translate-y-2 overflow-visible relative z-10" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={activeColor.stop} stopOpacity="0.5" />
+                          <stop offset="100%" stopColor={activeColor.stop} stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      <polyline
+                        fill="none"
+                        stroke={activeColor.stroke}
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={points}
+                        className="drop-shadow-md transition-all duration-500"
+                      />
+                      <polyline
+                        fill="url(#lineGrad)"
+                        className="transition-all duration-500"
+                        points={`0,${H + paddingY} ${points} ${W},${H + paddingY}`}
+                      />
+                      {trendData.map((d, i) => {
+                         const x = i * step;
+                         const y = H - ((d[trendFilter] / maxVal) * H) + paddingY;
+                         return (
+                           <g key={i} className="group cursor-pointer">
+                             <circle cx={x} cy={y} r="5" fill="#fff" stroke={activeColor.stroke} strokeWidth="2.5" className="transition-all duration-500 group-hover:r-[7px]" />
+                             <text x={x} y={y - 12} fontSize="12" fill="#475569" textAnchor="middle" className="font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                               {d[trendFilter]}
+                             </text>
+                           </g>
+                         );
+                      })}
+                    </svg>
+                    
+                    {/* X-Axis Labels */}
+                    <div className="absolute bottom-2 left-0 w-full px-4 h-4 relative">
+                      {trendData.map((d, i) => {
+                        // Hide some labels if there are too many (e.g. 30 days) to prevent crowding
+                        const showLabel = trendData.length <= 12 || (i % Math.ceil(trendData.length / 8)) === 0 || i === trendData.length - 1;
+                        if (!showLabel) return <span key={i} className="w-0 overflow-hidden"></span>;
+                        
+                        let transformVal = 'translateX(-50%)';
+                        if (i === 0) transformVal = 'none';
+                        else if (i === trendData.length - 1) transformVal = 'translateX(-100%)';
+  
+                        return (
+                          <span 
+                            key={i} 
+                            className="text-[9px] font-mono text-slate-400 uppercase" 
+                            style={{ 
+                              left: `${(i / (trendData.length - 1)) * 100}%`, 
+                              position: 'absolute', 
+                              transform: transformVal 
+                            }}
+                          >
+                            {d.label}
+                          </span>
+                        );
+                      })}
                     </div>
-                    {/* Label */}
-                    <span className="text-[9px] font-mono mt-2 text-slate-400 uppercase tracking-tighter">{d.label}</span>
                   </div>
                 );
-              });
-            })()}
-          </div>
-
-          <div className="flex justify-between items-center mt-4 text-[11px] font-mono">
-            <span className="text-slate-500">Total Estudado Hoje:</span>
-            <span className="text-emerald-600 font-bold uppercase">
-              {dailyStats.reduce((sum, item) => sum + item.count, 0)} materiais
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: Tendência de Produtividade */}
-        <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all col-span-1 lg:col-span-2">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 space-y-4 md:space-y-0">
-            <div>
-              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                Tendência de Produtividade
-              </h3>
-              <p className="text-[10px] text-slate-400 font-mono">Acompanhe seu ritmo de estudos</p>
+              })()}
             </div>
-            <div className="flex space-x-3 relative z-30">
-              <CustomDropdown
-                value={trendTimeRange}
-                options={timeRangeOptions}
-                onChange={(val) => setTrendTimeRange(val as any)}
-                colorClasses={{ bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200", hoverBorder: "hover:border-slate-300", activeBg: "bg-slate-100", activeDot: "bg-slate-600" }}
-              />
-              <CustomDropdown
-                value={trendFilter}
-                options={filterOptions}
-                onChange={(val) => setTrendFilter(val as any)}
-                colorClasses={activeColor}
-              />
-            </div>
-          </div>
-
-          <div className="h-64 pt-4 relative w-full bg-slate-50 rounded-xl border border-slate-100 overflow-hidden px-4">
-            {(() => {
-              if (trendData.length === 0) return null;
-              
-              const values = trendData.map(d => d[trendFilter]);
-              const maxVal = Math.max(...values, 4);
-              const paddingY = 20; // top padding for chart
-              
-              // Define function to map data to coordinates
-              // Height of drawing area is e.g. 200
-              const H = 200;
-              const W = 1000; // viewBox width
-              const step = W / (trendData.length - 1);
-              
-              const points = trendData.map((d, i) => {
-                const x = i * step;
-                const y = H - ((d[trendFilter] / maxVal) * H) + paddingY;
-                return `${x},${y}`;
-              }).join(" ");
-              
-              return (
-                <div className="w-full h-full relative">
-                  {/* Grid Lines */}
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-4 px-1 text-[9px] font-mono text-slate-300">
-                    <div className="border-b border-slate-200/50 w-full text-right pr-2">{maxVal}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.75)}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.5)}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-2">{Math.ceil(maxVal * 0.25)}</div>
-                    <div className="border-b border-slate-200/50 w-full text-right pr-2">0</div>
-                  </div>
-                  
-                  {/* SVG Chart */}
-                  <svg viewBox={`0 0 ${W} ${H + paddingY + 10}`} className="w-full h-full overflow-visible relative z-10" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={activeColor.stop} stopOpacity="0.5" />
-                        <stop offset="100%" stopColor={activeColor.stop} stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-                    <polyline
-                      fill="none"
-                      stroke={activeColor.stroke}
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={points}
-                      className="drop-shadow-md transition-all duration-500"
-                    />
-                    <polyline
-                      fill="url(#lineGrad)"
-                      className="transition-all duration-500"
-                      points={`0,${H + paddingY} ${points} ${W},${H + paddingY}`}
-                    />
-                    {trendData.map((d, i) => {
-                       const x = i * step;
-                       const y = H - ((d[trendFilter] / maxVal) * H) + paddingY;
-                       return (
-                         <g key={i} className="group cursor-pointer">
-                           <circle cx={x} cy={y} r="5" fill="#fff" stroke={activeColor.stroke} strokeWidth="2.5" className="transition-all duration-500 group-hover:r-[7px]" />
-                           <text x={x} y={y - 12} fontSize="12" fill="#475569" textAnchor="middle" className="font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                             {d[trendFilter]}
-                           </text>
-                         </g>
-                       );
-                    })}
-                  </svg>
-                  
-                  {/* X-Axis Labels */}
-                  <div className="absolute bottom-1 left-0 w-full flex justify-between px-2">
-                    {trendData.map((d, i) => {
-                      // Hide some labels if there are too many (e.g. 30 days) to prevent crowding
-                      const showLabel = trendData.length <= 12 || (i % Math.ceil(trendData.length / 8)) === 0 || i === trendData.length - 1;
-                      if (!showLabel) return <span key={i} className="w-0 overflow-hidden"></span>;
-                      
-                      return (
-                        <span key={i} className="text-[9px] font-mono text-slate-400 uppercase relative" style={{ left: `${(i / (trendData.length - 1)) * 100}%`, position: 'absolute', transform: 'translateX(-50%)' }}>
-                          {d.label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         </div>
       </div>
