@@ -13,6 +13,7 @@ interface PdfSlidesViewerProps {
   initialMode?: "slides" | "scroll";
   hideModeToggle?: boolean;
   inline?: boolean;
+  hideHeader?: boolean;
 }
 
 declare global {
@@ -29,7 +30,8 @@ export default function PdfSlidesViewer({
   onToggleMaximize = () => {},
   initialMode = "slides",
   hideModeToggle = false,
-  inline = false
+  inline = false,
+  hideHeader = false
 }: PdfSlidesViewerProps) {
   const [localFullscreen, setLocalFullscreen] = useState(false);
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -254,18 +256,18 @@ export default function PdfSlidesViewer({
     
     // Se for URL externa, passa pelo proxy para evitar bloqueio do Cloudflare / CORS
     if (pdfUrl.startsWith("http") && !pdfUrl.includes("localhost") && !pdfUrl.includes("127.0.0.1")) {
-      return `/api/proxy/pdf?url=${encodeURIComponent(pdfUrl)}`;
+      return `/api/proxy/pdf?url=${encodeURIComponent(pdfUrl)}#toolbar=0&navpanes=0&scrollbar=0`;
     }
     
     // Retorna o PDF com parâmetros para ocultar a barra de ferramentas (bloqueando download/impressão) mas permitindo rolagem de páginas
-    return `${pdfUrl}#toolbar=0&navpanes=0`;
+    return `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`;
   };
 
   const isCurrentlyFullscreen = inline ? localFullscreen : isMaximized;
 
   const wrapperClass = inline && !localFullscreen
-    ? "w-full h-full bg-slate-900 border border-slate-800 shadow-lg overflow-hidden flex flex-col rounded-2xl relative"
-    : `bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${
+    ? "w-full h-full bg-white border border-slate-200 shadow-lg overflow-hidden flex flex-col rounded-2xl relative"
+    : `bg-white border border-slate-200 shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ${
         isCurrentlyFullscreen 
           ? 'w-screen h-screen rounded-none' 
           : pdfUrl.includes('docs.google.com/presentation')
@@ -277,97 +279,109 @@ export default function PdfSlidesViewer({
     <div className={wrapperClass}>
       
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40 shrink-0">
-        <div className="flex items-center space-x-3 overflow-hidden">
-          <Presentation className="w-5 h-5 text-indigo-400 shrink-0" />
-          <div className="truncate">
-            <h3 className="font-display font-bold text-slate-100 text-sm md:text-base truncate">
-              {title}
-            </h3>
-            <p className="text-[10px] text-indigo-300/80 font-mono">
-              {viewMode === "slides" ? "Modo Apresentação (Slides)" : "Modo de Leitura Padrão"}
-            </p>
+      {!hideHeader && (
+        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <Presentation className="w-5 h-5 text-blue-600 shrink-0" />
+            <div className="truncate">
+              <h3 className="font-display font-bold text-slate-800 text-sm md:text-base truncate">
+                {title}
+              </h3>
+              <p className="text-[10px] text-slate-500 font-mono">
+                {viewMode === "slides" ? "Modo Apresentação (Slides)" : "Modo de Leitura Padrão"}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* View Mode Toggle */}
+            {!hideModeToggle && !isGoogleLink && (
+              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setViewMode("slides");
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-sans font-bold flex items-center space-x-1 transition-colors cursor-pointer border-none ${
+                    viewMode === "slides"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 bg-transparent"
+                  }`}
+                  title="Modo Apresentação de Slides"
+                >
+                  <Presentation className="w-3 h-3" />
+                  <span className="hidden sm:inline">Apresentação</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("scroll")}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-sans font-bold flex items-center space-x-1 transition-colors cursor-pointer border-none ${
+                    viewMode === "scroll"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 bg-transparent"
+                  }`}
+                  title="Modo Rolo / PDF Original"
+                >
+                  <ScrollText className="w-3 h-3" />
+                  <span className="hidden sm:inline">Modo Leitura</span>
+                </button>
+              </div>
+            )}
+
+            {/* Maximize / Fullscreen Toggle */}
+            <button 
+              onClick={() => {
+                if (inline) {
+                  setLocalFullscreen(!localFullscreen);
+                } else {
+                  onToggleMaximize();
+                }
+              }}
+              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+              title={isCurrentlyFullscreen ? "Restaurar" : "Tela Cheia"}
+            >
+              {isCurrentlyFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
+
+            {/* Close Button for Inline Fullscreen */}
+            {inline && localFullscreen && (
+              <button 
+                onClick={() => setLocalFullscreen(false)}
+                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                title="Fechar Tela Cheia"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Close Button for Overlay Modal */}
+            {!inline && (
+              <button 
+                onClick={onClose}
+                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
+                title="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* View Mode Toggle */}
-          {!hideModeToggle && !isGoogleLink && (
-            <div className="flex bg-slate-800/80 rounded-lg p-0.5 border border-slate-700 shrink-0">
-              <button
-                onClick={() => {
-                  setError(null);
-                  setViewMode("slides");
-                }}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-sans font-bold flex items-center space-x-1 transition-colors cursor-pointer border-none ${
-                  viewMode === "slides"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200 bg-transparent"
-                }`}
-                title="Modo Apresentação de Slides"
-              >
-                <Presentation className="w-3 h-3" />
-                <span className="hidden sm:inline">Apresentação</span>
-              </button>
-              <button
-                onClick={() => setViewMode("scroll")}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-sans font-bold flex items-center space-x-1 transition-colors cursor-pointer border-none ${
-                  viewMode === "scroll"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200 bg-transparent"
-                }`}
-                title="Modo Rolo / PDF Original"
-              >
-                <ScrollText className="w-3 h-3" />
-                <span className="hidden sm:inline">Modo Leitura</span>
-              </button>
-            </div>
-          )}
-
-          {/* Maximize / Fullscreen Toggle */}
-          <button 
-            onClick={() => {
-              if (inline) {
-                setLocalFullscreen(!localFullscreen);
-              } else {
-                onToggleMaximize();
-              }
-            }}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
-            title={isCurrentlyFullscreen ? "Restaurar" : "Tela Cheia"}
-          >
-            {isCurrentlyFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-          </button>
-
-          {/* Close Button for Inline Fullscreen */}
-          {inline && localFullscreen && (
-            <button 
-              onClick={() => setLocalFullscreen(false)}
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
-              title="Fechar Tela Cheia"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Close Button for Overlay Modal */}
-          {!inline && (
-            <button 
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer border-none bg-transparent"
-              title="Fechar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
         {/* Content Area */}
         <div 
           ref={containerRef}
-          className="flex-1 overflow-auto bg-slate-950 flex items-center justify-center relative p-4 focus:outline-none select-none"
+          className="flex-1 overflow-auto bg-blue-50 flex items-center justify-center relative p-0 focus:outline-none select-none"
         >
+          {hideHeader && inline && (
+            <button
+              onClick={() => setLocalFullscreen(!localFullscreen)}
+              className="absolute top-4 right-6 p-2 bg-slate-900/70 hover:bg-indigo-600 text-white rounded-lg shadow-xl z-50 backdrop-blur-md transition-all border border-slate-700 hover:border-indigo-500 flex items-center gap-2 cursor-pointer"
+              title={isCurrentlyFullscreen ? "Restaurar" : "Tela Cheia"}
+            >
+              {isCurrentlyFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">{isCurrentlyFullscreen ? "Restaurar" : "Tela Cheia"}</span>
+            </button>
+          )}
           {viewMode === "slides" ? (
             <>
               {loading && (
@@ -406,7 +420,7 @@ export default function PdfSlidesViewer({
               {!loading && pageNumber > 1 && (
                 <button
                   onClick={handlePrevPage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-900/60 hover:bg-indigo-600/90 text-slate-300 hover:text-white border border-slate-800 hover:border-indigo-500 transition-all cursor-pointer backdrop-blur-sm shadow-lg hidden md:block"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 hover:bg-blue-600 text-slate-600 hover:text-white border border-slate-200 hover:border-blue-500 transition-all cursor-pointer backdrop-blur-sm shadow-lg hidden md:block"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -416,7 +430,7 @@ export default function PdfSlidesViewer({
               {!loading && numPages && pageNumber < numPages && (
                 <button
                   onClick={handleNextPage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-slate-900/60 hover:bg-indigo-600/90 text-slate-300 hover:text-white border border-slate-800 hover:border-indigo-500 transition-all cursor-pointer backdrop-blur-sm shadow-lg hidden md:block"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 hover:bg-blue-600 text-slate-600 hover:text-white border border-slate-200 hover:border-blue-500 transition-all cursor-pointer backdrop-blur-sm shadow-lg hidden md:block"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>
@@ -448,27 +462,27 @@ export default function PdfSlidesViewer({
 
         {/* Footer / Control Bar */}
         {viewMode === "slides" && !loading && numPages && (
-          <div className="p-3 border-t border-slate-800 bg-slate-950/60 shrink-0 flex flex-col md:flex-row items-center justify-between gap-3 text-slate-400">
+          <div className="p-3 border-t border-slate-200 bg-slate-50 shrink-0 flex flex-col md:flex-row items-center justify-between gap-3 text-slate-600">
             
             {/* Slide Navigation and Indicators */}
             <div className="flex items-center space-x-3">
               <button
                 onClick={handlePrevPage}
                 disabled={pageNumber <= 1}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-slate-300"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:text-blue-600 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-slate-600"
                 title="Slide Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               
-              <span className="text-xs font-mono font-medium text-slate-300">
+              <span className="text-xs font-mono font-medium text-slate-600">
                 Slide {pageNumber} de {numPages}
               </span>
 
               <button
                 onClick={handleNextPage}
                 disabled={pageNumber >= numPages}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-slate-300"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:text-blue-600 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-slate-600"
                 title="Próximo Slide"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -477,9 +491,9 @@ export default function PdfSlidesViewer({
 
             {/* Progress Bar */}
             <div className="hidden sm:block flex-1 max-w-xs mx-6">
-              <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
                 <div 
-                  className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+                  className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${(pageNumber / numPages) * 100}%` }}
                 />
               </div>
@@ -490,20 +504,20 @@ export default function PdfSlidesViewer({
               <button
                 onClick={handleZoomOut}
                 disabled={scale <= 0.6}
-                className="p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-blue-600 transition-colors cursor-pointer border-none bg-transparent text-slate-500"
                 title="Afastar Zoom"
               >
                 <ZoomIn className="w-4 h-4 scale-x-[-1]" />
               </button>
               
-              <span className="text-[10px] font-mono min-w-[40px] text-center text-slate-300 font-bold">
+              <span className="text-[10px] font-mono min-w-[40px] text-center text-slate-600 font-bold">
                 {Math.round(scale * 100)}%
               </span>
 
               <button
                 onClick={handleZoomIn}
                 disabled={scale >= 3.0}
-                className="p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-blue-600 transition-colors cursor-pointer border-none bg-transparent text-slate-500"
                 title="Aproximar Zoom"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -511,7 +525,7 @@ export default function PdfSlidesViewer({
 
               <button
                 onClick={handleZoomReset}
-                className="p-1.5 rounded-lg hover:bg-slate-800 hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-blue-600 transition-colors cursor-pointer border-none bg-transparent text-slate-500"
                 title="Tamanho Padrão"
               >
                 <RotateCcw className="w-3.5 h-3.5" />

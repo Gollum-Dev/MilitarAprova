@@ -6,6 +6,8 @@ import Sidebar from "./components/Sidebar";
 import DashboardHome from "./components/DashboardHome";
 import MeusCursos from "./components/MeusCursos";
 import AdminDashboard from "./components/AdminDashboard";
+import ConfiguracoesScreen from "./components/ConfiguracoesScreen";
+import DesempenhoScreen from "./components/DesempenhoScreen";
 import { fetchCourses } from "./lib/api";
 import { getStudentStats, StudentStats } from "./lib/progress";
 import { supabase } from "./lib/supabase";
@@ -49,7 +51,7 @@ export default function App() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
-  const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho">("materias");
+  const [courseActiveTab, setCourseActiveTab] = useState<"materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao">("materias");
   const [subjectActiveTab, setSubjectActiveTab] = useState<"aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides">("aulas");
 
   // Check health and offline status of Gemini API on load
@@ -225,28 +227,7 @@ export default function App() {
           />
         );
       case "configuracoes":
-        return (
-          <div className="glass-panel rounded-2xl p-8 space-y-6 shadow-sm animate-smooth-fade">
-            <h3 className="text-base font-display font-bold uppercase tracking-wider text-[var(--ink)] border-b border-[var(--line)] pb-3">Configurações da Conta e Plataforma</h3>
-            
-            <div className="space-y-4 max-w-xl">
-              <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                <span className="text-xs font-sans text-slate-600">Identificação Militar</span>
-                <span className="text-xs font-mono text-slate-500 font-bold">SOLDADO SILVA • CBMMG</span>
-              </div>
-              <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                <span className="text-xs font-sans text-slate-600">Fuso Horário Militar</span>
-                <span className="text-xs font-mono text-slate-500 font-bold">UTC-3 (Brasília)</span>
-              </div>
-              <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                <span className="text-xs font-sans text-slate-600">Nível do Modelo de IA</span>
-                <span className="text-xs font-mono text-indigo-600 font-bold">GEMINI 3.5 FLASH (MÁXIMA VELOCIDADE)</span>
-              </div>
-            </div>
-            
-            <p className="text-[10px] text-slate-400 font-mono">Plataforma Cabo Véio homologada • Versão 1.4.0</p>
-          </div>
-        );
+        return <ConfiguracoesScreen />;
       default:
         return (
           <DashboardHome 

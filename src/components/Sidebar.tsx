@@ -1,7 +1,7 @@
 import { 
   Home, BookOpen, Tv, HelpCircle, GraduationCap, Scale, 
   MessageSquare, LineChart, Settings, LogOut, ShieldAlert, 
-  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation
+  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation, Compass
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
@@ -19,8 +19,8 @@ interface SidebarProps {
   setSelectedModuleId: (id: string | null) => void;
   selectedContentId: number | null;
   setSelectedContentId: (id: number | null) => void;
-  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
-  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
+  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao";
+  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
   allowedCourses: string[];
@@ -41,6 +41,7 @@ export default function Sidebar({
   }
 
   const [hoveredModule, setHoveredModule] = useState<HoveredModuleInfo | null>(null);
+  const [sidebarModulesExpanded, setSidebarModulesExpanded] = useState(true);
   const timeoutRef = useRef<any>(null);
 
   const handleMouseEnter = (module: any, e: React.MouseEvent) => {
@@ -78,6 +79,7 @@ export default function Sidebar({
 
   const courseSubItems = [
     { id: "materias", label: "Painel do Curso", icon: BookOpen },
+    { id: "gestao", label: "Gestão de Estudo", icon: Compass },
     { id: "simuladores", label: "Simuladores", icon: GraduationCap },
     { id: "tutor", label: "Tutor IA", icon: MessageSquare },
   ];
@@ -193,18 +195,25 @@ export default function Sidebar({
                                {courseSubItems.map(subItem => {
                                  const SubIcon = subItem.icon;
                                  const isSubActive = courseActiveTab === subItem.id;
-                                 const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias";
+                                 const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias" && sidebarModulesExpanded;
                                  return (
                                     <div key={subItem.id} className="space-y-1">
                                       <button
                                         onClick={() => {
-                                          setSelectedModuleId(null);
-                                          setSelectedContentId(null);
-                                          setCourseActiveTab(subItem.id as any);
-                                          onChangeTab("cursos");
+                                          if (subItem.id === "materias" && isSubActive && selectedModuleId === null) {
+                                            setSidebarModulesExpanded(!sidebarModulesExpanded);
+                                          } else {
+                                            if (subItem.id === "materias") {
+                                              setSidebarModulesExpanded(true);
+                                            }
+                                            setSelectedModuleId(null);
+                                            setSelectedContentId(null);
+                                            setCourseActiveTab(subItem.id as any);
+                                            onChangeTab("cursos");
+                                          }
                                         }}
                                         className={`w-full flex items-center space-x-2 px-2 py-1.5 rounded-md font-sans font-medium transition-all duration-150 cursor-pointer text-left text-xs hover:text-sm hover:font-bold ${
-                                          isSubActive
+                                          isSubActive && selectedModuleId === null
                                             ? "text-indigo-700 font-bold bg-indigo-50/50"
                                             : "text-slate-400 hover:text-slate-700"
                                         }`}

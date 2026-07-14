@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Filter, HelpCircle, ArrowLeft, ArrowRight, CheckCircle2, XCircle, 
-  Sparkles, RefreshCw, BookOpen, ThumbsUp, HelpCircle as HintIcon, ShieldCheck 
+  Sparkles, RefreshCw, BookOpen, ThumbsUp, HelpCircle as HintIcon, ShieldCheck, ChevronDown 
 } from "lucide-react";
 import { Question } from "../data";
 import { fetchQuestions } from "../lib/api";
@@ -11,6 +11,93 @@ interface QuestoesScreenProps {
   discipline?: string;
   rawDiscipline?: any;
 }
+
+// Custom Premium Status Selector
+const StatusSelector = ({ 
+  resourceId, 
+  currentStatus, 
+  onStatusChange 
+}: { 
+  resourceId: string; 
+  currentStatus: 'a-estudar' | 'estudando' | 'estudado'; 
+  onStatusChange: (status: 'a-estudar' | 'estudando' | 'estudado') => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClose);
+    return () => document.removeEventListener("click", handleClose);
+  }, [isOpen]);
+
+  let colorClass = "bg-rose-50/70 border-rose-200/50 text-rose-700 hover:bg-rose-50";
+  let dotColor = "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]";
+  let label = "A Estudar";
+
+  if (currentStatus === 'estudando') {
+    colorClass = "bg-amber-50/70 border-amber-200/50 text-amber-700 hover:bg-amber-50";
+    dotColor = "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]";
+    label = "Estudando";
+  } else if (currentStatus === 'estudado') {
+    colorClass = "bg-emerald-50/70 border-emerald-200/50 text-emerald-700 hover:bg-emerald-50";
+    dotColor = "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]";
+    label = "Estudado";
+  }
+
+  const handleSelect = (status: 'a-estudar' | 'estudando' | 'estudado', e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStatusChange(status);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className={`relative inline-block shrink-0 ${isOpen ? 'z-50' : 'z-10'}`}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className={`flex items-center space-x-1.5 text-[9.5px] font-sans font-extrabold uppercase rounded-full px-3 py-1.5 border cursor-pointer transition-all duration-200 shadow-sm ${colorClass}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        <span className="tracking-wider">{label}</span>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-28 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] py-1.5 z-50 animate-smooth-fade">
+          <button
+            onClick={(e) => handleSelect('a-estudar', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">A Estudar</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudando', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudando</span>
+          </button>
+          <button
+            onClick={(e) => handleSelect('estudado', e)}
+            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="font-bold uppercase tracking-wider text-[9px]">Estudado</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesScreenProps = {}) {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -99,6 +186,22 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
       aiComment?: string;
     }
   }>({});
+
+  const [resourceStatuses, setResourceStatuses] = useState(getResourceStatuses());
+
+  const renderStatusIndicator = (resourceId: string) => {
+    const status = resourceStatuses[resourceId] || 'a-estudar';
+    return (
+      <StatusSelector
+        resourceId={resourceId}
+        currentStatus={status}
+        onStatusChange={(nextStatus) => {
+          setResourceStatus(resourceId, nextStatus);
+          setResourceStatuses(getResourceStatuses());
+        }}
+      />
+    );
+  };
 
   // Filters
   const [disciplineFilter, setDisciplineFilter] = useState(discipline || "Todas");
@@ -260,57 +363,6 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
 
   return (
     <div className="space-y-6" id="questoes-view-container">
-      {/* Filtering Toolbar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-2 text-slate-700">
-          <Filter className="w-4 h-4 text-indigo-600" />
-          <span className="text-xs font-mono uppercase tracking-wider font-bold">Painel de Filtragem</span>
-        </div>
-
-        <div className="flex flex-wrap gap-3 items-center">
-          {/* Discipline Selector */}
-          {!discipline && (
-            <div className="flex flex-col space-y-1">
-              <label className="text-[10px] font-mono uppercase text-slate-500 font-semibold">Disciplina</label>
-              <select
-                value={disciplineFilter}
-                onChange={(e) => {
-                  setDisciplineFilter(e.target.value);
-                  setCurrentIndex(0);
-                  setSelectedAnswer(null);
-                  setIsAnswered(false);
-                  setAiComment("");
-                }}
-                className="bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded px-3 py-1.5 focus:outline-none focus:border-indigo-600"
-              >
-                {uniqueDisciplines.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Subject Selector */}
-          <div className="flex flex-col space-y-1">
-            <label className="text-[10px] font-mono uppercase text-slate-500 font-semibold">Assunto</label>
-            <select
-              value={subjectFilter}
-              onChange={(e) => {
-                setSubjectFilter(e.target.value);
-                setCurrentIndex(0);
-                setSelectedAnswer(null);
-                setIsAnswered(false);
-                setAiComment("");
-              }}
-              className="bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded px-3 py-1.5 focus:outline-none focus:border-indigo-600"
-            >
-              {uniqueSubjects.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Main Column */}
       {/* Main Grid Layout (Question Card on left, Playlist on right) */}
@@ -320,19 +372,6 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
           <div className="lg:col-span-2 space-y-6">
             {/* Question Card */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-              {/* Metadata bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-slate-500 border-b border-slate-200 pb-3">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-[10px]">ID: {activeQuestion.id}</span>
-                  <span>•</span>
-                  <span>Banca: <span className="font-semibold text-slate-700">{activeQuestion.banca}</span></span>
-                  <span>•</span>
-                  <span>Ano: <span className="font-semibold text-slate-700">{activeQuestion.year}</span></span>
-                </div>
-                <span className="text-indigo-600 font-bold uppercase tracking-wider text-[10px]">
-                  {activeQuestion.discipline} • {activeQuestion.subject}
-                </span>
-              </div>
 
               {/* Statement text */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -410,7 +449,7 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
                     id="answer-now-btn"
                     disabled={!selectedAnswer}
                     onClick={handleAnswerQuestion}
-                    className="py-3 px-8 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 disabled:from-slate-200 disabled:to-slate-200 text-white disabled:text-slate-400 disabled:shadow-none font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-[0_4px_12px_rgba(79,70,229,0.3)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.45)] cursor-pointer border-none hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                    className="py-2 px-5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none text-white font-sans font-bold text-xs uppercase rounded-xl transition-all shadow-md cursor-pointer border-none disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                   >
                     Responder Agora
                   </button>
@@ -473,7 +512,7 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
                 </span>
               </div>
 
-              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 pb-32">
                 {filteredQuestions.map((q, idx) => {
                   const isActive = idx === currentIndex;
                   const qId = q.id?.toString() || idx.toString();
@@ -498,21 +537,24 @@ export default function QuestoesScreen({ discipline, rawDiscipline }: QuestoesSc
                   }
 
                   return (
-                    <button
+                    <div
                       key={q.id || idx}
-                      onClick={() => handleSelectQuestion(idx)}
-                      className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                      className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center ${
                         isActive
-                          ? "bg-indigo-50 border-indigo-200/50 text-indigo-700 font-bold"
+                          ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                           : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5 truncate">
-                        {statusIcon}
-                        <span className="truncate">Questão {idx + 1}</span>
+                      <div className="flex items-center pr-2 shrink-0">
+                        {renderStatusIndicator(qId)}
                       </div>
-                      <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">{statusTitle}</span>
-                    </button>
+                      <div 
+                        onClick={() => handleSelectQuestion(idx)}
+                        className="flex-1 flex items-center min-w-0 cursor-pointer"
+                      >
+                        <span className="truncate flex-1">Questão {idx + 1}</span>
+                      </div>
+                    </div>
                   );
                 })}
               </div>

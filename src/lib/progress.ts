@@ -19,6 +19,24 @@ export function getResourceStatuses(): Record<string, StudyStatus> {
   }
 }
 
+export function getResourceCompletionDates(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem("militar_completed_dates") || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function setResourceCompletionDate(resourceId: string, dateStr: string | null) {
+  const dates = getResourceCompletionDates();
+  if (dateStr) {
+    dates[resourceId] = dateStr;
+  } else {
+    delete dates[resourceId];
+  }
+  localStorage.setItem("militar_completed_dates", JSON.stringify(dates));
+}
+
 export function setResourceStatus(resourceId: string, status: StudyStatus) {
   const statuses = getResourceStatuses();
   statuses[resourceId] = status;
@@ -30,12 +48,16 @@ export function setResourceStatus(resourceId: string, status: StudyStatus) {
     if (!completed.includes(resourceId)) {
       completed.push(resourceId);
       localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+      
+      const today = new Date().toISOString().split('T')[0];
+      setResourceCompletionDate(resourceId, today);
     }
   } else {
     const idx = completed.indexOf(resourceId);
     if (idx > -1) {
       completed.splice(idx, 1);
       localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+      setResourceCompletionDate(resourceId, null);
     }
   }
 }
@@ -53,6 +75,9 @@ export function markResourceComplete(resourceId: string) {
   if (!completed.includes(resourceId)) {
     completed.push(resourceId);
     localStorage.setItem("militar_completed_resources", JSON.stringify(completed));
+    
+    const today = new Date().toISOString().split('T')[0];
+    setResourceCompletionDate(resourceId, today);
   }
   
   // Também marca o status como estudado

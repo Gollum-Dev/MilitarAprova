@@ -12,6 +12,7 @@ import SimuladoresScreen from "./SimuladoresScreen";
 import LeisInteligentesScreen from "./LeisInteligentesScreen";
 import TutorIAScreen from "./TutorIAScreen";
 import DesempenhoScreen from "./DesempenhoScreen";
+import GestaoEstudoScreen from "./GestaoEstudoScreen";
 import PdfSlidesViewer from "./PdfSlidesViewer";
 
 // Custom Premium Status Selector
@@ -59,7 +60,7 @@ const StatusSelector = ({
   };
 
   return (
-    <div ref={containerRef} className="relative inline-block shrink-0 z-30">
+    <div ref={containerRef} className={`relative inline-block shrink-0 ${isOpen ? 'z-50' : 'z-10'}`}>
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -73,7 +74,7 @@ const StatusSelector = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-28 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] py-1.5 z-50 animate-smooth-fade">
+        <div className="absolute left-0 mt-1.5 w-28 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] py-1.5 z-50 animate-smooth-fade">
           <button
             onClick={(e) => handleSelect('a-estudar', e)}
             className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 text-[10px] font-sans text-slate-700 flex items-center space-x-2 border-none bg-transparent cursor-pointer"
@@ -128,7 +129,7 @@ const VideoSelector = ({
   const activeVideo = videos[activeVideoIndex];
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left shrink-0 z-30">
+    <div ref={containerRef} className={`relative inline-block text-left shrink-0 ${isOpen ? 'z-50' : 'z-10'}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between space-x-2 text-xs font-sans font-bold text-slate-700 bg-white border border-slate-200 rounded-xl px-4 py-2 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 shadow-sm cursor-pointer min-w-[180px] max-w-[280px]"
@@ -174,8 +175,8 @@ interface MeusCursosProps {
   setSelectedModuleId: (id: string | null) => void;
   selectedContentId: number | null;
   setSelectedContentId: (id: number | null) => void;
-  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho";
-  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho") => void;
+  courseActiveTab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao";
+  setCourseActiveTab: (tab: "materias" | "simuladores" | "leis" | "tutor" | "desempenho" | "gestao") => void;
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
   tutorInitialPrompt: string;
@@ -195,6 +196,7 @@ export default function MeusCursos({
   const [loading, setLoading] = useState(true);
   const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [activePdfIndex, setActivePdfIndex] = useState(0);
 
   const capitalizeFirstOnly = (text: string) => {
     if (!text) return "";
@@ -207,6 +209,7 @@ export default function MeusCursos({
 
   useEffect(() => {
     setActiveVideoIndex(0);
+    setActivePdfIndex(0);
   }, [selectedContentId]);
 
   const renderStatusIndicator = (resourceId: string) => {
@@ -249,6 +252,7 @@ export default function MeusCursos({
   const [viewingPdfTitle, setViewingPdfTitle] = useState<string>("");
   const [isPdfMaximized, setIsPdfMaximized] = useState(false);
   const [viewingPdfType, setViewingPdfType] = useState<"pdf" | "slides" | null>(null);
+  const [expandedDisciplines, setExpandedDisciplines] = useState<Record<string, boolean>>({});
 
   const formatTime = (timeInSeconds: number) => {
     if (isNaN(timeInSeconds)) return "00:00";
@@ -777,33 +781,42 @@ export default function MeusCursos({
               {selectedCourse.modules.map((mod) => {
                 const rawDisc = mod.rawDiscipline;
                 if (rawDisc && Array.isArray(rawDisc.areas)) {
+                  const isExpanded = !!expandedDisciplines[mod.id];
                   return (
-                    <div key={mod.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-6 shadow-xs">
-                      <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+                    <div key={mod.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-6 shadow-xs transition-all">
+                      <div 
+                        className="flex justify-between items-center pb-3 border-b border-slate-200/60 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setExpandedDisciplines(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
+                      >
                         <div className="space-y-1">
                           <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
-                          <h3 className="text-sm font-sans font-black text-slate-800">
-                             {(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}
+                          <h3 className="text-sm font-sans font-black text-slate-800 flex items-center space-x-2">
+                             <span>{(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}</span>
                           </h3>
+                        </div>
+                        <div className="text-slate-400">
+                          {isExpanded ? <ChevronDown className="w-5 h-5 transition-transform" /> : <ChevronRight className="w-5 h-5 transition-transform" />}
                         </div>
                       </div>
 
-                      <div className="space-y-6">
-                        {rawDisc.areas.map((area: any) => (
-                          <div key={area.id} className="space-y-4">
-                            <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
-                              <h4 className="text-xs font-mono font-bold text-slate-600 tracking-wider">
-                                {capitalizeFirstOnly(area.name)}
-                              </h4>
+                      {isExpanded && (
+                        <div className="space-y-6 animate-smooth-fade">
+                          {rawDisc.areas.map((area: any) => (
+                            <div key={area.id} className="space-y-4">
+                              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                                <h4 className="text-xs font-mono font-bold text-slate-600 tracking-wider">
+                                  {capitalizeFirstOnly(area.name)}
+                                </h4>
+                              </div>
+                              
+                              {/* Matérias Grid (3 por linha) */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {Array.isArray(area.contents) && area.contents.map((content: any) => renderMateriaCard(content, mod))}
+                              </div>
                             </div>
-                            
-                            {/* Matérias Grid (3 por linha) */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {Array.isArray(area.contents) && area.contents.map((content: any) => renderMateriaCard(content, mod))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 }
@@ -868,7 +881,9 @@ export default function MeusCursos({
             <SimuladoresScreen onAskTutor={onAskTutor} />
           )}
 
-
+          {courseActiveTab === "leis" && (
+            <LeisInteligentesScreen />
+          )}
 
           {courseActiveTab === "tutor" && (
             <TutorIAScreen 
@@ -897,6 +912,18 @@ export default function MeusCursos({
                 if (selectedCourse.modules.length > 0) {
                   setSelectedModuleId(selectedCourse.modules[0].id);
                 }
+              }}
+            />
+          )}
+
+          {courseActiveTab === "gestao" && (
+            <GestaoEstudoScreen 
+              selectedCourse={selectedCourse}
+              onNavigateToSubject={(moduleId, contentId) => {
+                setSelectedModuleId(moduleId);
+                setSelectedContentId(contentId);
+                setCourseActiveTab("materias");
+                setSubjectActiveTab("aulas");
               }}
             />
           )}
@@ -1022,7 +1049,7 @@ export default function MeusCursos({
     return (
       <div className="space-y-6" id="meus-cursos-subject-dashboard">
         {/* Header containing back button, discipline title, and tab selector */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col items-start gap-5 shadow-sm">
+        <div className="bg-white border border-slate-200/80 rounded-2xl py-3 px-6 flex flex-col items-start gap-3 shadow-sm">
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => {
@@ -1033,15 +1060,16 @@ export default function MeusCursos({
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500 uppercase tracking-wider">
                 <span>{cleanDisciplineName}</span>
                 {activeEixoName && (
                   <>
                     <span className="text-slate-300">/</span>
-                    <span className="text-slate-500">{activeEixoName}</span>
+                    <span className="text-slate-600 font-bold">{activeEixoName}</span>
                   </>
                 )}
+                <span className="text-slate-300 ml-1 mr-1">|</span>
               </div>
               <h4 className="text-sm font-sans font-black text-slate-800 uppercase tracking-wide">
                 {activeMateriaName || cleanDisciplineName}
@@ -1049,7 +1077,7 @@ export default function MeusCursos({
             </div>
           </div>
 
-          <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-slate-100 pt-4">
+          <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 pt-3">
             {/* Tab Selector Inside Header */}
             <div className="flex flex-wrap items-center bg-slate-100/80 p-1 rounded-xl border border-slate-200/50 gap-1.5 shadow-inner">
               <button
@@ -1138,6 +1166,34 @@ export default function MeusCursos({
                 )}
               </div>
             )}
+
+            {/* PDF Selector Dropdown & Status Selector if tab is 'materiais' */}
+            {subjectActiveTab === "materiais" && coursePdfs.length > 0 && (
+              <div className="flex items-center space-x-3 bg-slate-50 p-1.5 px-3 rounded-xl border border-slate-200/60 shadow-xs shrink-0 self-start sm:self-center">
+                {coursePdfs[activePdfIndex]?.id && renderStatusIndicator(coursePdfs[activePdfIndex].id.toString())}
+                {coursePdfs.length > 1 && (
+                  <VideoSelector
+                    videos={coursePdfs}
+                    activeVideoIndex={activePdfIndex}
+                    onSelectVideo={(idx) => setActivePdfIndex(idx)}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Slides Selector Dropdown & Status Selector if tab is 'slides' */}
+            {subjectActiveTab === "slides" && courseSlides.length > 0 && (
+              <div className="flex items-center space-x-3 bg-slate-50 p-1.5 px-3 rounded-xl border border-slate-200/60 shadow-xs shrink-0 self-start sm:self-center">
+                {courseSlides[activeSlideIndex]?.id && renderStatusIndicator(courseSlides[activeSlideIndex].id.toString())}
+                {courseSlides.length > 1 && (
+                  <VideoSelector
+                    videos={courseSlides}
+                    activeVideoIndex={activeSlideIndex}
+                    onSelectVideo={(idx) => setActiveSlideIndex(idx)}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1157,12 +1213,9 @@ export default function MeusCursos({
 
           {subjectActiveTab === "audio" && (
             <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-6 animate-smooth-fade">
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2 flex items-center space-x-1.5">
-                <Headphones className="w-4.5 h-4.5 text-blue-600" />
-                <span>Áudio Aulas - {cleanDisciplineName}</span>
-              </h3>
+
               <div className="flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-1/3 bg-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
+                <div className="w-full md:w-1/3 bg-blue-50 border border-blue-100 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden group">
                   <div className="absolute inset-0 bg-blue-500/10 blur-xl pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
                   <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-500 to-blue-700 flex items-center justify-center shadow-2xl mb-4 relative z-10">
                     {isAudioPlaying ? (
@@ -1171,10 +1224,10 @@ export default function MeusCursos({
                       <Headphones className="w-10 h-10 text-white" />
                     )}
                   </div>
-                  <h4 className="text-sm font-display font-bold text-white z-10 truncate w-full px-2">
+                  <h4 className="text-sm font-display font-bold text-blue-900 z-10 truncate w-full px-2">
                     {currentPlayingAudio ? currentPlayingAudio.title : "Nenhum áudio em execução"}
                   </h4>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1 z-10">
+                  <p className="text-[10px] font-mono text-blue-600 mt-1 z-10">
                     {currentPlayingAudio ? (currentPlayingAudio.materiaName || "Áudio Aula") : "Selecione uma faixa ao lado"}
                   </p>
                   
@@ -1207,11 +1260,11 @@ export default function MeusCursos({
                       </div>
                       
                       <div className="w-full mt-4 flex items-center space-x-2 z-10">
-                        <span className="text-[10px] text-slate-400 font-mono">{audioCurrentTime}</span>
-                        <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden relative">
+                        <span className="text-[10px] text-blue-700 font-mono">{audioCurrentTime}</span>
+                        <div className="h-1 flex-1 bg-blue-200 rounded-full overflow-hidden relative">
                           <div className="absolute left-0 top-0 h-full bg-blue-500" style={{ width: `${audioProgress}%` }}></div>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">{audioDuration}</span>
+                        <span className="text-[10px] text-blue-700 font-mono">{audioDuration}</span>
                       </div>
                     </>
                   )}
@@ -1230,14 +1283,15 @@ export default function MeusCursos({
                       return (
                         <div 
                           key={audio.id || index} 
-                          className={`p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors group ${
+                          className={`relative p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors group ${
                             isCurrent 
                               ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' 
                               : 'bg-slate-50 border-slate-200/60 text-slate-600'
                           }`}
+                          style={{ zIndex: 50 - index }}
                         >
                           {/* Left: status indicator */}
-                          <div className="flex items-center pr-2 shrink-0 z-20">
+                          <div className="flex items-center pr-2 shrink-0">
                             {renderStatusIndicator(audio.id?.toString() || `audio-${index}`)}
                           </div>
 
@@ -1284,54 +1338,37 @@ export default function MeusCursos({
           )}
 
           {subjectActiveTab === "materiais" && (
-            <div className="glass-panel rounded-2xl p-6 shadow-sm space-y-4">
-              <h3 className="text-sm font-display font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2 flex items-center space-x-1.5">
-                <FileText className="w-4.5 h-4.5 text-blue-600" />
-                <span>Biblioteca de Materiais de {cleanDisciplineName}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="w-full" id="materiais-view-container">
+              <div className="w-full space-y-4">
                 {coursePdfs.length === 0 ? (
-                  <div className="col-span-2 text-slate-400 text-xs italic py-4 text-center">Nenhum PDF cadastrado para esta matéria.</div>
+                  <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 text-xs italic">
+                    Nenhum PDF cadastrado para esta matéria.
+                  </div>
                 ) : (
-                  coursePdfs.map((pdf, index) => (
-                    <div key={pdf.id || index} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {renderStatusIndicator(pdf.id?.toString() || `pdf-${index}`)}
-                        <FileText className="w-8 h-8 text-blue-500 shrink-0" />
-                        <div>
-                          <h5 className="text-xs font-sans font-bold text-slate-800">{pdf.title}</h5>
-                          <p className="text-[10px] text-slate-500 font-mono">{pdf.materiaName || "PDF"}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setViewingPdfUrl(pdf.url);
-                          setViewingPdfTitle(pdf.title);
-                          setViewingPdfType("pdf");
-                          markResourceComplete(pdf.id?.toString() || `pdf-${index}`);
-                        }}
-                        className="text-[10px] text-blue-600 hover:text-blue-700 uppercase font-bold cursor-pointer font-sans bg-transparent border-none"
-                      >
-                        Visualizar
-                      </button>
-                    </div>
-                  ))
+                  <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-blue-100 bg-blue-50/20">
+                    <PdfSlidesViewer
+                      pdfUrl={coursePdfs[activePdfIndex]?.url || ""}
+                      title={coursePdfs[activePdfIndex]?.title || ""}
+                      inline={true}
+                      initialMode="slides"
+                      hideModeToggle={false}
+                      hideHeader={true}
+                    />
+                  </div>
                 )}
               </div>
             </div>
           )}
 
           {subjectActiveTab === "slides" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="slides-view-container">
-              {/* Left Column: Embedded Slide Viewer */}
-              <div className="lg:col-span-2 space-y-4">
+            <div className="w-full" id="slides-view-container">
+              <div className="w-full space-y-4">
                 {courseSlides.length === 0 ? (
                   <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 text-xs italic">
                     Nenhum slide cadastrado para esta matéria.
                   </div>
                 ) : (
-                  <div className="w-full h-[550px] rounded-2xl overflow-hidden shadow-lg border border-slate-800">
+                  <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-blue-100 bg-blue-50/20">
                     <PdfSlidesViewer
                       pdfUrl={courseSlides[activeSlideIndex]?.url || ""}
                       title={courseSlides[activeSlideIndex]?.title || ""}
@@ -1341,69 +1378,6 @@ export default function MeusCursos({
                     />
                   </div>
                 )}
-                
-                <div className="glass-panel rounded-2xl p-5 shadow-sm">
-                  <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
-                    Slides e Apresentação Visual
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-sans">
-                    Acompanhe o material visual de apoio da aula ativa no painel do player acima. Use a playlist lateral à direita para alternar entre as apresentações.
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Column: Slides Playlist */}
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                  <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-                    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                      Apresentações de Slides
-                    </h3>
-                    <span className="text-xs font-mono text-blue-600 font-bold">
-                      {courseSlides.length} Arquivos
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
-                    {courseSlides.length === 0 ? (
-                      <div className="text-xs text-slate-400 italic py-2 text-center">Nenhum slide disponível.</div>
-                    ) : (
-                      courseSlides.map((slide, idx) => {
-                        const isActive = idx === activeSlideIndex;
-                        return (
-                          <div
-                            key={slide.id || idx}
-                            className={`w-full p-3 rounded-xl border text-xs transition-all flex items-center justify-between ${
-                              isActive
-                                ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
-                                : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
-                            }`}
-                          >
-                            {/* Left: status indicator */}
-                            <div className="flex items-center pr-2 shrink-0 z-20">
-                              {renderStatusIndicator(slide.id?.toString() || `slides-${idx}`)}
-                            </div>
-
-                            {/* Right: clickable slide selection area */}
-                            <div
-                              onClick={() => {
-                                setActiveSlideIndex(idx);
-                                markResourceComplete(slide.id?.toString() || `slides-${idx}`);
-                              }}
-                              className="flex-1 flex items-center justify-between cursor-pointer min-w-0"
-                            >
-                              <div className="flex items-center space-x-2.5 truncate">
-                                <Presentation className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
-                                <span className="text-xs truncate pr-1 text-left">{slide.title}</span>
-                              </div>
-                              <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">Ver</span>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -1417,52 +1391,7 @@ export default function MeusCursos({
 
           {subjectActiveTab === "flashcards" && (
             <div className="space-y-6">
-              {/* Filtering Toolbar */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between shadow-sm">
-                <div className="flex items-center space-x-2 text-slate-700">
-                  <Filter className="w-4 h-4 text-blue-600" />
-                  <span className="text-xs font-mono uppercase tracking-wider font-bold">Filtragem de Flashcards</span>
-                </div>
 
-                <div className="flex flex-wrap gap-3 items-center">
-                  {/* Discipline Selector */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-[10px] font-mono uppercase text-slate-500 font-semibold">Disciplina</label>
-                    <select
-                      value={flashcardDisciplineFilter}
-                      onChange={(e) => {
-                        setFlashcardDisciplineFilter(e.target.value);
-                        setFlashcardSubjectFilter("Todos");
-                        setCurrentFlashcardIndex(0);
-                        setFlashcardFlipped(false);
-                      }}
-                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer"
-                    >
-                      {uniqueFlashcardDisciplines.map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Subject Selector */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-[10px] font-mono uppercase text-slate-500 font-semibold">Assunto</label>
-                    <select
-                      value={flashcardSubjectFilter}
-                      onChange={(e) => {
-                        setFlashcardSubjectFilter(e.target.value);
-                        setCurrentFlashcardIndex(0);
-                        setFlashcardFlipped(false);
-                      }}
-                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer"
-                    >
-                      {uniqueFlashcardSubjects.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
 
               {/* Grid Layout (Card on left, Playlist on right) */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="flashcards-view-container">
@@ -1471,23 +1400,11 @@ export default function MeusCursos({
                   {filteredFlashcards.length > 0 && filteredFlashcards[currentFlashcardIndex] ? (
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
                       
-                      {/* Metadata bar */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-slate-500 border-b border-slate-200 pb-3">
-                        <div className="flex items-center space-x-3">
-                          <span className="bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px]">Card {currentFlashcardIndex + 1} de {filteredFlashcards.length}</span>
-                          <span>•</span>
-                          <span>Tipo: <span className="font-semibold text-slate-700">Memorização</span></span>
-                        </div>
-                        <span className="text-blue-600 font-bold uppercase tracking-wider text-[10px]">
-                          {filteredFlashcards[currentFlashcardIndex]?.discipline || "Geral"} • {filteredFlashcards[currentFlashcardIndex]?.subject || "Geral"}
-                        </span>
-                      </div>
-
                       {/* Flappable Card */}
                       <div className="flex flex-col items-center justify-center py-4" style={{ perspective: '1000px' }}>
                         <div 
                           onClick={() => setFlashcardFlipped(!flashcardFlipped)}
-                          className="w-full max-w-md h-60 cursor-pointer select-none relative transition-transform duration-700"
+                          className="w-full max-w-2xl h-80 cursor-pointer select-none relative transition-transform duration-700"
                           style={{
                             transform: flashcardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                             transformStyle: 'preserve-3d',
@@ -1505,7 +1422,7 @@ export default function MeusCursos({
                             </div>
                             
                             <div className="flex-1 flex items-center justify-center pt-4">
-                              <p className="text-xs md:text-sm font-sans font-extrabold text-blue-950 leading-relaxed px-4">
+                              <p className="text-sm md:text-base font-sans font-extrabold text-blue-950 leading-relaxed px-4">
                                 {filteredFlashcards[currentFlashcardIndex]?.q}
                               </p>
                             </div>
@@ -1529,8 +1446,8 @@ export default function MeusCursos({
                               <span className="text-[8px] font-mono text-emerald-600 font-bold uppercase tracking-wider">Resposta / Doutrina</span>
                             </div>
                             
-                            <div className="flex-1 flex items-center justify-center overflow-y-auto pt-6 pb-2 max-h-[130px] custom-scrollbar">
-                              <p className="text-xs font-sans font-extrabold text-emerald-950 leading-relaxed px-4 italic">
+                            <div className="flex-1 flex items-center justify-center overflow-y-auto pt-6 pb-2 max-h-[220px] custom-scrollbar">
+                              <p className="text-sm md:text-base font-sans font-extrabold text-emerald-950 leading-relaxed px-4 italic">
                                 {filteredFlashcards[currentFlashcardIndex]?.a}
                               </p>
                             </div>
@@ -1664,7 +1581,7 @@ export default function MeusCursos({
                       </span>
                     </div>
 
-                    <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 pb-32">
                       {filteredFlashcards.length === 0 ? (
                         <div className="text-xs text-slate-400 italic py-2 text-center">Nenhum cartão disponível.</div>
                       ) : (
@@ -1695,24 +1612,27 @@ export default function MeusCursos({
                           }
 
                           return (
-                            <button
+                            <div
                               key={card.id || idx}
-                              onClick={() => {
-                                setCurrentFlashcardIndex(idx);
-                                setFlashcardFlipped(false);
-                              }}
-                              className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                              className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center ${
                                 isActive
                                   ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                                   : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
                               }`}
                             >
-                              <div className="flex items-center space-x-2.5 truncate">
-                                {statusIcon}
-                                <span className="text-xs truncate pr-1">Card {idx + 1}</span>
+                              <div className="flex items-center pr-2 shrink-0">
+                                {renderStatusIndicator(cardId)}
                               </div>
-                              <span className="text-[9px] font-mono text-slate-400 shrink-0 uppercase">{statusTitle}</span>
-                            </button>
+                              <div 
+                                onClick={() => {
+                                  setCurrentFlashcardIndex(idx);
+                                  setFlashcardFlipped(false);
+                                }}
+                                className="flex-1 flex items-center min-w-0 cursor-pointer"
+                              >
+                                <span className="text-xs truncate pr-1 flex-1">Card {idx + 1}</span>
+                              </div>
+                            </div>
                           );
                         })
                       )}
