@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getCompletedResourceIds, setResourceStatus } from './progress';
 
 export interface TrilhaResource {
   id: string;
@@ -78,7 +79,30 @@ export async function savePlannerToSupabase() {
 }
 
 export function getPlannerState(): PlannerState {
-  return { ...plannerCache, study_proficiency: { ...plannerCache.study_proficiency }, trilha_tasks: [...plannerCache.trilha_tasks] };
+  const completedIds = getCompletedResourceIds();
+  
+  // Dynamically update task resources and status based on completedIds
+  const updatedTasks = plannerCache.trilha_tasks.map(task => {
+    const updatedResources = task.resources.map(res => ({
+      ...res,
+      completed: completedIds.includes(res.id)
+    }));
+    
+    const allCompleted = updatedResources.every(r => r.completed);
+    const newStatus = allCompleted ? 'Concluida' as const : (task.status === 'Concluida' ? 'Pendente' as const : task.status);
+    
+    return {
+      ...task,
+      resources: updatedResources,
+      status: newStatus
+    };
+  });
+
+  return { 
+    ...plannerCache, 
+    study_proficiency: { ...plannerCache.study_proficiency }, 
+    trilha_tasks: updatedTasks 
+  };
 }
 
 // Perform daily late verification for Calendar Mode
@@ -204,7 +228,8 @@ function generateStudyQueue(
   let blockCounter = 0;
   const today = new Date();
   
-  const tasks: TrilhaTask[] = weightedQueue.map((item, idx) => {
+  const tasks: TrilhaTask[] = [];
+  weightedQueue.forEach((item, idx) => {
     const task: TrilhaTask = {
       id: `${item.contentId}-task-${idx}`,
       contentId: item.contentId,
@@ -217,10 +242,20 @@ function generateStudyQueue(
     };
 
     if (mode === 'calendario') {
-      // Calculate date based on available daily blocks
-      const plannedDate = new Date(today);
+      let plannedDate = new Date(today);
       plannedDate.setDate(today.getDate() + dayCounter);
-      task.datePlanned = plannedDate.toISOString().split('T')[0];
+      let plannedDateStr = plannedDate.toISOString().split('T')[0];
+
+      // Shift to next day if this subject is already scheduled on plannedDateStr
+      while (tasks.some(t => t.datePlanned === plannedDateStr && t.contentId === item.contentId)) {
+        dayCounter++;
+        plannedDate = new Date(today);
+        plannedDate.setDate(today.getDate() + dayCounter);
+        plannedDateStr = plannedDate.toISOString().split('T')[0];
+        blockCounter = 0; // Reset blocks on new day
+      }
+
+      task.datePlanned = plannedDateStr;
 
       blockCounter++;
       if (blockCounter >= dailyBlocks) {
@@ -231,7 +266,7 @@ function generateStudyQueue(
       task.cycleIndex = idx;
     }
 
-    return task;
+    tasks.push(task);
   });
 
   return tasks;
@@ -268,6 +303,9 @@ function interleaveSubjects(queue: any[]): any[] {
 
 // Mark resource inside a task as completed
 export async function completeTaskResource(taskId: string, resourceId: string, completed: boolean) {
+  // Sync with global progress
+  setResourceStatus(resourceId, completed ? 'estudado' : 'a-estudar');
+
   let taskChanged = false;
   plannerCache.trilha_tasks = plannerCache.trilha_tasks.map(task => {
     if (task.id === taskId) {
@@ -316,23 +354,35 @@ export async function recalculateCalendarRoute() {
   let blockCounter = 0;
   const today = new Date();
 
-  const reallocatedPending = pendingTasks.map((task, idx) => {
-    const plannedDate = new Date(today);
+  const reallocatedPending: TrilhaTask[] = [];
+  pendingTasks.forEach((task) => {
+    let plannedDate = new Date(today);
     plannedDate.setDate(today.getDate() + dayCounter);
+    let plannedDateStr = plannedDate.toISOString().split('T')[0];
 
-    const reallocated: TrilhaTask = {
+    // Shift to next day if this subject is already reallocated for this day
+    while (
+      reallocatedPending.some(t => t.datePlanned === plannedDateStr && t.contentId === task.contentId) ||
+      completedTasks.some(t => t.datePlanned === plannedDateStr && t.contentId === task.contentId)
+    ) {
+      dayCounter++;
+      plannedDate = new Date(today);
+      plannedDate.setDate(today.getDate() + dayCounter);
+      plannedDateStr = plannedDate.toISOString().split('T')[0];
+      blockCounter = 0;
+    }
+
+    reallocatedPending.push({
       ...task,
-      status: 'Pendente', // Reset late tasks to Pending
-      datePlanned: plannedDate.toISOString().split('T')[0]
-    };
+      status: 'Pendente',
+      datePlanned: plannedDateStr
+    });
 
     blockCounter++;
     if (blockCounter >= plannerCache.daily_blocks_available) {
       blockCounter = 0;
       dayCounter++;
     }
-
-    return reallocated;
   });
 
   // Re-assemble task list

@@ -488,7 +488,11 @@ export default function DashboardHome({
       {/* Welcome Header Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div>
+        <div className="space-y-1">
+          <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-3">
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Progressão e Evolução</span>
+          </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
             Bem-vindo de volta, <span className="text-amber-300">{userName.split(' ')[0]}</span>.
           </h2>

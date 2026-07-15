@@ -722,7 +722,22 @@ export default function MeusCursos({
     }
     return (
       <div className="space-y-6" id="meus-cursos-list-view">
-
+        {/* Header Panel */}
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm text-white">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase">
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Painel do Aluno</span>
+            </div>
+            <h2 className="text-2xl font-display font-extrabold tracking-tight">
+              Meus Cursos Preparatórios
+            </h2>
+            <p className="text-xs text-indigo-200 font-mono leading-relaxed">
+              Selecione uma das suas turmas ativas abaixo para acessar as vídeo-aulas, materiais teóricos e questões.
+            </p>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {courses.map((course) => (

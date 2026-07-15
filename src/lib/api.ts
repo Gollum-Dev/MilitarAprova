@@ -142,9 +142,10 @@ export async function fetchSimulators(): Promise<MockSimulator[]> {
     id: d.id,
     title: d.title,
     description: d.description,
-    questionsCount: d.questions_count,
+    questionsCount: d.questions_count || (d.questions ? d.questions.length : 0),
     duration: d.duration,
-    status: d.status
+    status: d.status,
+    questions: d.questions || []
   }));
 }
 

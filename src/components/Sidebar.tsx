@@ -72,7 +72,7 @@ export default function Sidebar({
 
   // Base navigation menu items (ALWAYS visible)
   const menuItems = [
-    { id: "inicio", label: "Início", icon: Home },
+    { id: "inicio", label: "Progressão", icon: LineChart },
     { id: "trilha", label: "Trilha Inteligente", icon: Map },
     { id: "cursos", label: "Meus Cursos", icon: BookOpen },
     { id: "configuracoes", label: "Configurações", icon: Settings },
