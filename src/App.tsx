@@ -132,6 +132,10 @@ export default function App() {
           await supabase.auth.signOut();
           return;
         }
+
+        // Record last login
+        supabase.from('students').update({ last_login: new Date().toISOString() }).eq('id', student.id).then().catch(console.error);
+
         initializeProgress(student);
         initializePlanner(student);
         handleLoginSuccess(student.name, "aluno", student.allowed_courses || []);

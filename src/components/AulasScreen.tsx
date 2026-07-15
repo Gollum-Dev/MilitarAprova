@@ -243,6 +243,7 @@ export default function AulasScreen({
         } else {
           const { data, error } = await supabase
             .from('materias')
+            .select('*')
             .eq('discipline', displayDiscipline);
             
           if (error) throw error;

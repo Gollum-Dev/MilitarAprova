@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree, Eye } from "lucide-react";
 import CourseEditor, { CourseData } from "./CourseEditor";
 import { MateriasManager } from "./MateriasManager";
+import { ProvasManager } from "./ProvasManager";
+import StudentMetricsManager from "./StudentMetricsManager";
 import { supabase } from "../lib/supabase";
 import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCourse, generateNewCourseId } from "../lib/api";
 import { fetchStudents, createStudent, updateStudent, deleteStudent } from "../lib/student";
@@ -12,7 +14,7 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ onLogout, userName }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"cursos" | "usuarios" | "metricas" | "config">("cursos");
+  const [activeTab, setActiveTab] = useState<"cursos" | "materias" | "provas" | "usuarios" | "metricas" | "config">("cursos");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [institutions, setInstitutions] = useState(["CBMMG", "PMMG", "PMESP", "CBMERJ"]);
@@ -41,246 +43,9 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [studentAllowedCourses, setStudentAllowedCourses] = useState<string[]>([]);
 
   // Exam/Prova Manager States
-  const [activeExamCourseId, setActiveExamCourseId] = useState<string | null>(null);
-  const [exams, setExams] = useState<any[]>([]);
-  const [loadingExams, setLoadingExams] = useState(false);
-  const [showExamForm, setShowExamForm] = useState(false);
-  const [editingExam, setEditingExam] = useState<any | null>(null);
-  
-  // Exam Form fields
-  const [examTitle, setExamTitle] = useState("");
-  const [examDescription, setExamDescription] = useState("");
-  const [examDuration, setExamDuration] = useState("02h 00m");
-  const [examStatus, setExamStatus] = useState<"aberto" | "recomendado" | "finalizado" | "bloqueado">("aberto");
-  const [examQuestions, setExamQuestions] = useState<any[]>([]);
+  const [provasFilterCourseId, setProvasFilterCourseId] = useState<string | null>(null);
+  const [globalExams, setGlobalExams] = useState<any[]>([]);
 
-  // Exam Question Form fields
-  const [eqText, setEqText] = useState("");
-  const [eqOptA, setEqOptA] = useState("");
-  const [eqOptB, setEqOptB] = useState("");
-  const [eqOptC, setEqOptC] = useState("");
-  const [eqOptD, setEqOptD] = useState("");
-  const [eqCorrect, setEqCorrect] = useState("A");
-  const [eqExplanation, setEqExplanation] = useState("");
-
-  const fetchCourseExams = async (courseId: string) => {
-    setLoadingExams(true);
-    try {
-      const { data, error } = await supabase
-        .from('mock_simulators')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        // Filter by course ID prefix
-        setExams(data.filter((s: any) => s.id.startsWith(courseId)));
-      }
-    } catch (err) {
-      console.error("Erro ao buscar provas:", err);
-    } finally {
-      setLoadingExams(false);
-    }
-  };
-
-  const handleOpenExamManager = (courseId: string) => {
-    setActiveExamCourseId(courseId);
-    fetchCourseExams(courseId);
-  };
-
-  const handleAddQuestionToExam = async () => {
-    if (!eqText.trim()) {
-      alert("Escreva o enunciado da questão.");
-      return;
-    }
-    if (!eqOptA.trim() || !eqOptB.trim() || !eqOptC.trim() || !eqOptD.trim()) {
-      alert("Preencha todas as alternativas A, B, C e D.");
-      return;
-    }
-    
-    const newQ = {
-      id: "q-eq-" + Math.random().toString(36).substr(2, 9) + "-" + Date.now(),
-      text: eqText.trim(),
-      alternatives: [
-        { letter: "A", text: eqOptA.trim() },
-        { letter: "B", text: eqOptB.trim() },
-        { letter: "C", text: eqOptC.trim() },
-        { letter: "D", text: eqOptD.trim() }
-      ],
-      correct: eqCorrect,
-      explanation: eqExplanation.trim() || "Doutrina padrão CRS."
-    };
-
-    const updatedQuestions = [...examQuestions, newQ];
-    setExamQuestions(updatedQuestions);
-
-    if (editingExam) {
-      try {
-        const { error } = await supabase
-          .from('mock_simulators')
-          .update({
-            questions: updatedQuestions,
-            questions_count: updatedQuestions.length
-          })
-          .eq('id', editingExam.id);
-        
-        if (error) throw error;
-        
-        // Update editingExam locally
-        setEditingExam(prev => ({
-          ...prev,
-          questions: updatedQuestions,
-          questions_count: updatedQuestions.length
-        }));
-
-        if (activeExamCourseId) {
-          fetchCourseExams(activeExamCourseId);
-        }
-      } catch (err) {
-        console.error("Erro ao salvar questão:", err);
-        alert("Erro ao salvar questão no banco.");
-      }
-    }
-    
-    // Clear question form
-    setEqText("");
-    setEqOptA("");
-    setEqOptB("");
-    setEqOptC("");
-    setEqOptD("");
-    setEqCorrect("A");
-    setEqExplanation("");
-  };
-
-  const handleRemoveQuestionFromExam = async (qId: string) => {
-    const updatedQuestions = examQuestions.filter(q => q.id !== qId);
-    setExamQuestions(updatedQuestions);
-
-    if (editingExam) {
-      try {
-        const { error } = await supabase
-          .from('mock_simulators')
-          .update({
-            questions: updatedQuestions,
-            questions_count: updatedQuestions.length
-          })
-          .eq('id', editingExam.id);
-        
-        if (error) throw error;
-
-        setEditingExam(prev => ({
-          ...prev,
-          questions: updatedQuestions,
-          questions_count: updatedQuestions.length
-        }));
-
-        if (activeExamCourseId) {
-          fetchCourseExams(activeExamCourseId);
-        }
-      } catch (err) {
-        console.error("Erro ao remover questão:", err);
-        alert("Erro ao remover questão do banco.");
-      }
-    }
-  };
-
-  const handleSaveExam = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!examTitle.trim()) {
-      alert("Título da prova é obrigatório.");
-      return;
-    }
-
-    try {
-      if (editingExam) {
-        // Update basic info
-        const examData = {
-          title: examTitle.trim(),
-          description: examDescription.trim(),
-          duration: examDuration.trim(),
-          status: examStatus
-        };
-
-        const { error } = await supabase
-          .from('mock_simulators')
-          .update(examData)
-          .eq('id', editingExam.id);
-        
-        if (error) throw error;
-        alert("Informações da prova salvas com sucesso!");
-      } else {
-        // Create new exam with empty questions array first
-        const newId = `${activeExamCourseId}-sim-${Date.now()}`;
-        const examData = {
-          id: newId,
-          title: examTitle.trim(),
-          description: examDescription.trim(),
-          questions_count: 0,
-          duration: examDuration.trim(),
-          status: examStatus,
-          questions: []
-        };
-
-        const { error } = await supabase
-          .from('mock_simulators')
-          .insert([examData]);
-        
-        if (error) throw error;
-        
-        alert("Prova criada! Agora você pode cadastrar as questões no formulário abaixo.");
-        
-        // Enter edit mode immediately
-        setEditingExam(examData);
-        setExamQuestions([]);
-      }
-
-      // Refresh list
-      if (activeExamCourseId) {
-        fetchCourseExams(activeExamCourseId);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao salvar prova.");
-    }
-  };
-
-  const handleDeleteExam = async (examId: string) => {
-    if (!window.confirm("Excluir esta prova permanentemente?")) return;
-    try {
-      const { error } = await supabase
-        .from('mock_simulators')
-        .delete()
-        .eq('id', examId);
-      
-      if (error) throw error;
-      alert("Prova excluída com sucesso!");
-      if (activeExamCourseId) {
-        fetchCourseExams(activeExamCourseId);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao excluir prova.");
-    }
-  };
-
-  const handleEditExamClick = (exam: any) => {
-    setEditingExam(exam);
-    setExamTitle(exam.title);
-    setExamDescription(exam.description || "");
-    setExamDuration(exam.duration || "02h 00m");
-    setExamStatus(exam.status || "aberto");
-    setExamQuestions(exam.questions || []);
-    setShowExamForm(true);
-  };
-
-  const handleOpenCreateExamClick = () => {
-    setEditingExam(null);
-    setExamTitle("");
-    setExamDescription("");
-    setExamDuration("02h 00m");
-    setExamStatus("aberto");
-    setExamQuestions([]);
-    setShowExamForm(true);
-  };
 
   const syncAllCourseMateriasToGlobal = async (coursesList: CourseData[]) => {
     try {
@@ -349,7 +114,14 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
     async function loadCourses() {
       setLoading(true);
       try {
-        const data = await fetchAdminCourses();
+        const [data, { data: examsData }] = await Promise.all([
+          fetchAdminCourses(),
+          supabase.from('mock_simulators').select('id, course_ids')
+        ]);
+        
+        if (examsData) {
+          setGlobalExams(examsData);
+        }
         const mapped = data.map((c: any) => ({
           id: c.id,
           title: c.title,
@@ -380,8 +152,15 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   }, []);
 
   useEffect(() => {
-    if (activeTab === "usuarios") {
+    if (activeTab === "usuarios" || activeTab === "metricas") {
       loadStudentsList();
+    } else if (activeTab === "cursos") {
+      // Reload exams silently to keep counters up to date
+      supabase.from('mock_simulators').select('id, course_ids')
+        .then(({ data }) => {
+          if (data) setGlobalExams(data);
+        })
+        .catch(console.error);
     }
   }, [activeTab]);
 
@@ -524,6 +303,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const menuItems = [
     { id: "cursos", label: "Gerenciar Cursos", icon: BookOpen },
     { id: "materias", label: "Gerenciar Matérias", icon: Layers },
+    { id: "provas", label: "Gerenciar Provas", icon: FileCheck },
     { id: "usuarios", label: "Alunos Matriculados", icon: Users },
     { id: "metricas", label: "Estatísticas de Uso", icon: LineChart },
     { id: "config", label: "Configurações da Plataforma", icon: Settings },
@@ -576,7 +356,10 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  setActiveTab(item.id as any);
+                  if (item.id === "provas") {
+                    setProvasFilterCourseId(null); // Clear filter when clicking sidebar
+                  }
                   setEditingCourseId(null);
                   setActiveMateria(null);
                 }}
@@ -696,6 +479,8 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                           });
                         }
 
+                        const qtdProvas = globalExams.filter(e => e.course_ids && e.course_ids.includes(course.id.toString())).length;
+
                         return (
                           <div key={course.id} className="glass-panel p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between h-auto group hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden bg-gradient-to-br from-white to-slate-50">
                             {/* Decorative accent */}
@@ -714,18 +499,22 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                               <p className="text-[11px] text-slate-500 font-mono mb-4">{course.institution} • {course.year}</p>
                               
                               {/* Structure Stats */}
-                              <div className="grid grid-cols-3 gap-2 mb-4 p-2.5 bg-slate-100/50 rounded-xl border border-slate-100">
+                              <div className="grid grid-cols-4 gap-1 mb-4 p-2 bg-slate-100/50 rounded-xl border border-slate-100">
                                 <div className="flex flex-col items-center justify-center text-center">
-                                  <span className="text-lg font-display font-bold text-slate-700">{qtdDisciplinas}</span>
-                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Disciplinas</span>
+                                  <span className="text-sm font-display font-bold text-slate-700">{qtdDisciplinas}</span>
+                                  <span className="text-[8px] uppercase tracking-wider font-bold text-slate-400">Disciplinas</span>
                                 </div>
-                                <div className="flex flex-col items-center justify-center text-center border-l border-r border-slate-200/60">
-                                  <span className="text-lg font-display font-bold text-slate-700">{qtdEixos}</span>
-                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Eixos</span>
+                                <div className="flex flex-col items-center justify-center text-center border-l border-slate-200/60">
+                                  <span className="text-sm font-display font-bold text-slate-700">{qtdEixos}</span>
+                                  <span className="text-[8px] uppercase tracking-wider font-bold text-slate-400">Eixos</span>
                                 </div>
-                                <div className="flex flex-col items-center justify-center text-center">
-                                  <span className="text-lg font-display font-bold text-slate-700">{qtdConteudos}</span>
-                                  <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">Conteúdos</span>
+                                <div className="flex flex-col items-center justify-center text-center border-l border-slate-200/60">
+                                  <span className="text-sm font-display font-bold text-slate-700">{qtdConteudos}</span>
+                                  <span className="text-[8px] uppercase tracking-wider font-bold text-slate-400">Conteúdos</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center text-center border-l border-slate-200/60">
+                                  <span className="text-sm font-display font-bold text-indigo-600">{qtdProvas}</span>
+                                  <span className="text-[8px] uppercase tracking-wider font-bold text-indigo-400">Provas</span>
                                 </div>
                               </div>
 
@@ -743,13 +532,13 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100/80 pt-3 mt-4 relative z-10">
+                            <div className="flex flex-nowrap justify-end gap-1.5 border-t border-slate-100/80 pt-3 mt-4 relative z-10 overflow-x-auto pb-1 hide-scrollbar">
                               {course.cover_url && (
                                 <a 
                                   href={course.cover_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-600 hover:text-white hover:bg-slate-600 rounded transition-colors flex items-center space-x-1 cursor-pointer decoration-none"
+                                  className="px-2 py-1.5 text-[10px] uppercase font-bold text-slate-600 hover:text-white hover:bg-slate-600 rounded transition-colors flex items-center space-x-1 cursor-pointer decoration-none whitespace-nowrap"
                                 >
                                   <Eye className="w-3 h-3" />
                                   <span>Capa</span>
@@ -757,21 +546,24 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                               )}
                               <button 
                                 onClick={() => { setEditingCourseMode('basic'); setEditingCourseId(course.id); }}
-                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                className="px-2 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer whitespace-nowrap"
                               >
                                 <Edit className="w-3 h-3" />
                                 <span>Editar</span>
                               </button>
                               <button 
                                 onClick={() => { setEditingCourseMode('curriculum'); setEditingCourseId(course.id); }}
-                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-emerald-600 hover:text-white hover:bg-emerald-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                className="px-2 py-1.5 text-[10px] uppercase font-bold text-emerald-600 hover:text-white hover:bg-emerald-600 rounded transition-colors flex items-center space-x-1 cursor-pointer whitespace-nowrap"
                               >
                                 <Layers className="w-3 h-3" />
                                 <span>Matéria</span>
                               </button>
                               <button 
-                                onClick={() => { handleOpenExamManager(course.id.toString()); }}
-                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                onClick={() => { 
+                                  setProvasFilterCourseId(course.id.toString());
+                                  setActiveTab("provas");
+                                }}
+                                className="px-2 py-1.5 text-[10px] uppercase font-bold text-indigo-600 hover:text-white hover:bg-indigo-600 rounded transition-colors flex items-center space-x-1 cursor-pointer whitespace-nowrap"
                               >
                                 <FileCheck className="w-3 h-3" />
                                 <span>Prova</span>
@@ -788,7 +580,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                                     }
                                   }
                                 }}
-                                className="px-3 py-1.5 text-[10px] uppercase font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                                className="px-2 py-1.5 text-[10px] uppercase font-bold text-rose-500 hover:text-white hover:bg-rose-500 rounded transition-colors flex items-center space-x-1 cursor-pointer shrink-0"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -938,6 +730,10 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
               <MateriasManager onActiveMateriaChange={setActiveMateria} />
             )}
 
+            {activeTab === "provas" && (
+              <ProvasManager initialFilterCourseId={provasFilterCourseId} />
+            )}
+
             {activeTab === "usuarios" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b border-slate-200 pb-4">
@@ -1052,11 +848,12 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
             )}
 
             {activeTab === "metricas" && (
-              <div className="glass-panel p-8 rounded-2xl border border-slate-200 text-center">
-                <LineChart className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-display font-bold text-slate-800 mb-2">Métricas e Relatórios</h3>
-                <p className="text-sm text-slate-500 max-w-md mx-auto">Dashboard de conversão e engajamento das turmas.</p>
-              </div>
+              <StudentMetricsManager 
+                students={students} 
+                loading={loadingStudents} 
+                courses={courses}
+                globalExams={globalExams}
+              />
             )}
             
             {activeTab === "config" && (
@@ -1204,300 +1001,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         </div>
       )}
 
-      {/* Exam/Prova Manager Modal */}
-      {activeExamCourseId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto animate-smooth-fade">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-display font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center space-x-2">
-                <FileCheck className="w-5 h-5 text-indigo-600 animate-pulse" />
-                <span>Gerenciar Provas e Simulados do Curso</span>
-              </h3>
-              <button 
-                onClick={() => { setActiveExamCourseId(null); setShowExamForm(false); setEditingExam(null); }}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors cursor-pointer border-none bg-transparent"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6">
-              
-              {/* Left Column: Provas List */}
-              <div className="w-full md:w-[35%] border-r border-slate-100 pr-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-mono uppercase font-bold text-slate-500">Provas Cadastradas</h4>
-                  <button
-                    onClick={handleOpenCreateExamClick}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center space-x-1 cursor-pointer border-none"
-                  >
-                    <PlusCircle className="w-3 h-3" />
-                    <span>Nova Prova</span>
-                  </button>
-                </div>
-
-                {loadingExams ? (
-                  <div className="flex justify-center py-10">
-                    <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                  </div>
-                ) : exams.length === 0 ? (
-                  <div className="text-center text-slate-400 text-xs py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    Nenhuma prova cadastrada para este curso.
-                  </div>
-                ) : (
-                  <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-                    {exams.map((exam) => (
-                      <div key={exam.id} className="p-3 border border-slate-100 bg-slate-50/50 rounded-xl flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <div className="min-w-0 pr-2">
-                          <h5 className="text-xs font-sans font-bold text-slate-700 truncate">{exam.title}</h5>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">{exam.questions_count} questões • {exam.duration}</p>
-                        </div>
-                        <div className="flex space-x-1 shrink-0">
-                          <button
-                            onClick={() => handleEditExamClick(exam)}
-                            className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-200 rounded transition-all cursor-pointer bg-transparent border-none"
-                            title="Editar Prova"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteExam(exam.id)}
-                            className="p-1 text-slate-500 hover:text-rose-600 hover:bg-slate-200 rounded transition-all cursor-pointer bg-transparent border-none"
-                            title="Excluir Prova"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Form Editor */}
-              <div className="flex-1">
-                {showExamForm ? (
-                  <form onSubmit={handleSaveExam} className="space-y-5">
-                    <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5 space-y-4">
-                      <h4 className="text-xs font-mono uppercase font-bold text-slate-700 border-b border-slate-200 pb-2">
-                        {editingExam ? "Editar Dados Gerais da Prova" : "Dados Gerais da Nova Prova"}
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Título da Prova *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            value={examTitle}
-                            onChange={(e) => setExamTitle(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                            placeholder="Ex: CFO Simulado Oficial 01"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Duração total *</label>
-                          <input 
-                            type="text" 
-                            required 
-                            value={examDuration}
-                            onChange={(e) => setExamDuration(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                            placeholder="Ex: 02h 30m"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status / Visibilidade</label>
-                          <select 
-                            value={examStatus}
-                            onChange={(e: any) => setExamStatus(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans cursor-pointer"
-                          >
-                            <option value="aberto">Aberto para Realização</option>
-                            <option value="recomendado">Recomendado</option>
-                            <option value="bloqueado">Bloqueado</option>
-                            <option value="finalizado">Finalizado</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Descrição Curta</label>
-                          <input 
-                            type="text"
-                            value={examDescription}
-                            onChange={(e) => setExamDescription(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                            placeholder="Ex: Abrangendo física de incêndio e combate a chamas."
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Question Builder (Only visible after the basic exam record is created/saved) */}
-                    {editingExam ? (
-                      <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5 space-y-4">
-                        <h4 className="text-xs font-mono uppercase font-bold text-slate-700 border-b border-slate-200 pb-2 flex justify-between items-center">
-                          <span>Adicionar Questões à Prova</span>
-                          <span className="text-indigo-600">{examQuestions.length} questões na lista</span>
-                        </h4>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Enunciado da Questão *</label>
-                            <textarea 
-                              value={eqText}
-                              onChange={(e) => setEqText(e.target.value)}
-                              rows={3}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans resize-none"
-                              placeholder="Digite o texto de enunciado da questão..."
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Alternativa A *</label>
-                              <input 
-                                type="text" 
-                                value={eqOptA}
-                                onChange={(e) => setEqOptA(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                                placeholder="Texto da alternativa A"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Alternativa B *</label>
-                              <input 
-                                type="text" 
-                                value={eqOptB}
-                                onChange={(e) => setEqOptB(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                                placeholder="Texto da alternativa B"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Alternativa C *</label>
-                              <input 
-                                type="text" 
-                                value={eqOptC}
-                                onChange={(e) => setEqOptC(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                                placeholder="Texto da alternativa C"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1">Alternativa D *</label>
-                              <input 
-                                type="text" 
-                                value={eqOptD}
-                                onChange={(e) => setEqOptD(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                                placeholder="Texto da alternativa D"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Alternativa Correta</label>
-                              <select 
-                                value={eqCorrect}
-                                onChange={(e) => setEqCorrect(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans cursor-pointer"
-                              >
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Justificativa / Comentário (Doutrina)</label>
-                              <input 
-                                type="text" 
-                                value={eqExplanation}
-                                onChange={(e) => setEqExplanation(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-sans"
-                                placeholder="Ex: Em conformidade com o art. 13 do CEDM."
-                              />
-                            </div>
-                          </div>
-
-                          <div className="pt-2 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={handleAddQuestionToExam}
-                              className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-sans font-bold text-xs uppercase rounded-lg transition-colors border border-indigo-200/50 cursor-pointer text-xs"
-                            >
-                              Adicionar Questão
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Added Questions List Preview */}
-                        {examQuestions.length > 0 && (
-                          <div className="space-y-2 mt-4 pt-3 border-t border-slate-200">
-                            <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider mb-1.5">Questões nesta prova:</label>
-                            <div className="space-y-1.5 max-h-[200px] overflow-y-auto p-1 bg-white rounded-xl border border-slate-200">
-                              {examQuestions.map((q, qidx) => (
-                                <div key={q.id || qidx} className="p-2 border border-slate-100 rounded-lg flex items-center justify-between text-xs hover:bg-slate-50/50">
-                                  <div className="truncate mr-3">
-                                    <span className="font-bold font-mono text-indigo-600 mr-1.5">#{qidx + 1}</span>
-                                    <span className="text-slate-600 font-sans">{q.text}</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveQuestionFromExam(q.id)}
-                                    className="text-[10px] font-bold text-rose-500 hover:text-rose-700 bg-transparent border-none cursor-pointer shrink-0 uppercase"
-                                  >
-                                    Remover
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-slate-50 border border-slate-200/50 rounded-xl p-4 text-center text-xs text-slate-500 italic">
-                        Por favor, salve as informações básicas da prova primeiro para desbloquear o cadastro de questões.
-                      </div>
-                    )}
-
-                    <div className="flex space-x-3 justify-end pt-3">
-                      <button 
-                        type="button" 
-                        onClick={() => { setShowExamForm(false); setEditingExam(null); }}
-                        className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 cursor-pointer uppercase transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button 
-                        type="submit"
-                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm border-none"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>{editingExam ? "Salvar Dados Básicos" : "Criar Prova & Avançar"}</span>
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                    <FileCheck className="w-12 h-12 text-slate-300" />
-                    <h4 className="text-sm font-sans font-bold text-slate-700 uppercase">Editor de Provas</h4>
-                    <p className="text-xs text-slate-400 max-w-sm">Selecione uma prova na lista lateral para editar ou clique em "Nova Prova" para começar.</p>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
       </main>
     </div>
   );

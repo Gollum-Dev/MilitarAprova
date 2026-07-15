@@ -10,6 +10,10 @@ export interface Student {
   status?: string;
   allowed_courses?: string[];
   created_at?: string;
+  last_login?: string;
+  study_hours?: number;
+  resource_statuses?: any;
+  completed_resources?: string[];
 }
 
 export async function fetchStudents(): Promise<Student[]> {
@@ -31,7 +35,11 @@ export async function fetchStudents(): Promise<Student[]> {
     cpf: s.cpf || '',
     status: s.status || 'Ativo',
     allowed_courses: Array.isArray(s.allowed_courses) ? s.allowed_courses : [],
-    created_at: s.created_at
+    created_at: s.created_at,
+    last_login: s.last_login,
+    study_hours: s.study_hours,
+    resource_statuses: s.resource_statuses,
+    completed_resources: s.completed_resources
   }));
 }
 
@@ -111,7 +119,16 @@ export async function validateStudentLogin(email: string, password: string): Pro
     console.warn("Credenciais inválidas ou erro ao validar login de aluno:", error.message);
     return null;
   }
-  
+  if (data?.id) {
+    // Record last login in background
+    supabase
+      .from('students')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', data.id)
+      .then()
+      .catch(e => console.error('Erro ao atualizar last_login:', e));
+  }
+
   return {
     id: data.id,
     name: data.name,
@@ -120,6 +137,10 @@ export async function validateStudentLogin(email: string, password: string): Pro
     cpf: data.cpf || '',
     status: data.status || 'Ativo',
     allowed_courses: Array.isArray(data.allowed_courses) ? data.allowed_courses : [],
-    created_at: data.created_at
+    created_at: data.created_at,
+    last_login: data.last_login,
+    study_hours: data.study_hours,
+    resource_statuses: data.resource_statuses,
+    completed_resources: data.completed_resources
   };
 }

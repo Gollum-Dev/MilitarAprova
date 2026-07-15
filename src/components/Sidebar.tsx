@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface SidebarProps {
   currentTab: string;

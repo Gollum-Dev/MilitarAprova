@@ -147,17 +147,17 @@ export default function TrilhaGuiadaScreen({
     const activeCourse = courses.find(c => c.id === activeCourseId) || courses[0];
     return (
       <div className="space-y-6 w-full animate-smooth-fade">
-        <div className="bg-gradient-to-r from-blue-950 via-indigo-900 to-blue-950 border border-indigo-700/30 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-md text-white">
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm text-white">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 space-y-3">
-            <div className="inline-flex items-center space-x-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-xs font-mono font-bold text-amber-300 uppercase">
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Configuração de Trilha Inteligente</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-display font-extrabold tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
               Monte o seu Roteiro de Estudos Personalizado
             </h2>
-            <p className="text-sm text-indigo-200 max-w-2xl leading-relaxed">
+            <p className="text-sm text-indigo-200 mt-1 max-w-4xl truncate md:whitespace-nowrap">
               Responda a estas rápidas perguntas para que o nosso algoritmo monte a sequência lógica ideal de matérias e o cronograma diário adaptado para o seu tempo.
             </p>
           </div>
