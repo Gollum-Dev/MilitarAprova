@@ -9,6 +9,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import ConfiguracoesScreen from "./components/ConfiguracoesScreen";
 import DesempenhoScreen from "./components/DesempenhoScreen";
 import TrilhaGuiadaScreen from "./components/TrilhaGuiadaScreen";
+import SupportModal from "./components/SupportModal";
 import { fetchCourses } from "./lib/api";
 import { getStudentStats, StudentStats, initializeProgress, incrementStudyHours } from "./lib/progress";
 import { initializePlanner } from "./lib/studyPlanner";
@@ -23,6 +24,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState("inicio");
   const [userRank, setUserRank] = useState("SOLDADO");
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   useEffect(() => {
     if (authView === "app" && userRole === "aluno") {
@@ -153,7 +155,7 @@ export default function App() {
     if (!userEmail) return;
 
     if (userEmail === "admin@teste.com" || userEmail.endsWith("@admin.com")) {
-      handleLoginSuccess("Administrador", "admin", []);
+      handleLoginSuccess("Administrador", "admin", [], userEmail);
       return;
     }
 
@@ -184,12 +186,12 @@ export default function App() {
         if (!insertError && inserted) {
           initializeProgress(inserted);
           initializePlanner(inserted);
-          handleLoginSuccess(inserted.name, "aluno", inserted.allowed_courses || []);
+          handleLoginSuccess(inserted.name, "aluno", inserted.allowed_courses || [], userEmail);
         } else {
           console.error("Erro ao criar estudante via Google Auth:", insertError);
           initializeProgress(newStudent);
           initializePlanner(newStudent);
-          handleLoginSuccess(newStudent.name, "aluno", newStudent.allowed_courses);
+          handleLoginSuccess(newStudent.name, "aluno", newStudent.allowed_courses, userEmail);
         }
       } else {
         if (student.status === 'Inativo') {
@@ -203,7 +205,7 @@ export default function App() {
 
         initializeProgress(student);
         initializePlanner(student);
-        handleLoginSuccess(student.name, "aluno", student.allowed_courses || []);
+        handleLoginSuccess(student.name, "aluno", student.allowed_courses || [], userEmail);
       }
     } catch (err) {
       console.error("Erro ao processar login social:", err);
@@ -395,6 +397,8 @@ export default function App() {
         subjectActiveTab={subjectActiveTab}
         setSubjectActiveTab={setSubjectActiveTab}
         allowedCourses={allowedCourses}
+        userEmail={userEmail}
+        onOpenSupport={() => setIsSupportModalOpen(true)}
       />
 
       {/* Main Content Area */}

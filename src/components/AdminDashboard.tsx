@@ -4,6 +4,7 @@ import CourseEditor, { CourseData } from "./CourseEditor";
 import { MateriasManager } from "./MateriasManager";
 import { ProvasManager } from "./ProvasManager";
 import StudentMetricsManager from "./StudentMetricsManager";
+import SuporteManager from "./SuporteManager";
 import { supabase } from "../lib/supabase";
 import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCourse, generateNewCourseId } from "../lib/api";
 import { fetchStudents, createStudent, updateStudent, deleteStudent } from "../lib/student";
@@ -14,7 +15,7 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ onLogout, userName }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"cursos" | "materias" | "provas" | "usuarios" | "metricas" | "config">("cursos");
+  const [activeTab, setActiveTab] = useState<"cursos" | "materias" | "provas" | "usuarios" | "metricas" | "config" | "suporte">("cursos");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [institutions, setInstitutions] = useState(["CBMMG", "PMMG", "PMESP", "CBMERJ"]);
@@ -306,6 +307,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
     { id: "provas", label: "Gerenciar Provas", icon: FileCheck },
     { id: "usuarios", label: "Alunos Matriculados", icon: Users },
     { id: "metricas", label: "Estatísticas de Uso", icon: LineChart },
+    { id: "suporte", label: "Suporte e Contato", icon: MessageSquare },
     { id: "config", label: "Configurações da Plataforma", icon: Settings },
   ] as const;
 
@@ -404,7 +406,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           />
         ) : (
           <div className="max-w-7xl mx-auto space-y-6">
-            {!activeMateria && activeTab !== "provas" && activeTab !== "usuarios" && activeTab !== "metricas" && (
+            {!activeMateria && activeTab !== "provas" && activeTab !== "usuarios" && activeTab !== "metricas" && activeTab !== "suporte" && (
               <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                 <div>
                   <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
@@ -837,6 +839,8 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                 globalExams={globalExams}
               />
             )}
+
+            {activeTab === "suporte" && <SuporteManager />}
             
             {activeTab === "config" && (
               <div className="glass-panel p-8 rounded-2xl border border-slate-200 text-center">

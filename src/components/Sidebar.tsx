@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface SidebarProps {
   currentTab: string;
+
   onChangeTab: (tab: string) => void;
   userRank: string;
   onLogout: () => void;
@@ -24,13 +25,15 @@ interface SidebarProps {
   subjectActiveTab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides";
   setSubjectActiveTab: (tab: "aulas" | "materiais" | "questoes" | "flashcards" | "audio" | "slides") => void;
   allowedCourses: string[];
+  onOpenSupport?: () => void;
+  userEmail?: string;
 }
 
 export default function Sidebar({ 
   currentTab, onChangeTab, userRank, onLogout, isOfflineMode,
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   selectedContentId, setSelectedContentId,
-  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses
+  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses, onOpenSupport
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   interface HoveredTabInfo {
@@ -275,7 +278,10 @@ export default function Sidebar({
       <div className="p-4 border-t border-slate-100 space-y-3">
         <div className="space-y-1">
           <button
-            onClick={() => alert("Suporte técnico do Cabo Véio. Envie suas dúvidas para suporte@caboveio.com.br")}
+            onClick={() => {
+              if (onOpenSupport) onOpenSupport();
+              else alert("Suporte técnico do Cabo Véio. Envie suas dúvidas para suporte@caboveio.com.br");
+            }}
             className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium uppercase text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
           >
             <SupportIcon className="w-3.5 h-3.5 text-slate-400" />
