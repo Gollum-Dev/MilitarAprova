@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { 
   BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
-  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X, Presentation, CheckCircle, XCircle, Filter, ChevronDown
+  Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X, Presentation, CheckCircle, XCircle, Filter, ChevronDown, Lock
 } from "lucide-react";
 import { CourseModule, Course } from "../data";
 import { fetchCourses } from "../lib/api";
 import { markResourceComplete, getCompletedResourceIds, getResourceStatuses, setResourceStatus } from "../lib/progress";
+import { supabase } from "../lib/supabase";
 import AulasScreen from "./AulasScreen";
 import QuestoesScreen from "./QuestoesScreen";
 import SimuladoresScreen from "./SimuladoresScreen";
@@ -183,6 +184,7 @@ interface MeusCursosProps {
   onClearTutorPrompt: () => void;
   allowedCourses?: string[];
   userName: string;
+  userEmail?: string;
 }
 
 export default function MeusCursos({ 
@@ -190,13 +192,56 @@ export default function MeusCursos({
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   selectedContentId, setSelectedContentId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab,
-  tutorInitialPrompt, onClearTutorPrompt, allowedCourses, userName
+  tutorInitialPrompt, onClearTutorPrompt, allowedCourses, userName, userEmail
 }: MeusCursosProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [resourceStatuses, setResourceStatuses] = useState<Record<string, 'a-estudar' | 'estudando' | 'estudado'>>({});
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [activePdfIndex, setActivePdfIndex] = useState(0);
+
+  const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
+  const handleStartPurchase = async (course: Course) => {
+    setIsPurchasing(true);
+    try {
+      let email = userEmail;
+      
+      if (!email) {
+        const { data: { user } } = await supabase.auth.getUser();
+        email = user?.email || "";
+      }
+
+      if (!email) {
+        alert("Você precisa estar logado para realizar uma compra.");
+        setIsPurchasing(false);
+        return;
+      }
+
+      const response = await fetch("/api/payments/create-preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, courseId: course.id })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Falha ao iniciar transação de pagamento.");
+      }
+
+      const data = await response.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        throw new Error("Link de pagamento não retornado.");
+      }
+    } catch (err: any) {
+      console.error("Erro na compra:", err);
+      alert(`Ocorreu um erro ao iniciar o pagamento: ${err.message || err}`);
+      setIsPurchasing(false);
+    }
+  };
 
   const capitalizeFirstOnly = (text: string) => {
     if (!text) return "";
@@ -348,13 +393,10 @@ export default function MeusCursos({
 
   useEffect(() => {
     fetchCourses().then(data => {
-      const filtered = allowedCourses
-        ? data.filter(c => allowedCourses.includes(c.id))
-        : data;
-      setCourses(filtered);
+      setCourses(data);
       setLoading(false);
     }).catch(console.error);
-  }, [allowedCourses]);
+  }, []);
 
   const completedResources = getCompletedResourceIds();
 
@@ -740,48 +782,161 @@ export default function MeusCursos({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <div 
-              key={course.id}
-              onClick={() => {
-                setSelectedCourseId(course.id);
-                setCourseActiveTab("materias");
-              }}
-              className="bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center"
-            >
-              {course.cover_url ? (
-                <img 
-                  src={course.cover_url} 
-                  alt={course.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
-                    <BookOpen className="w-6 h-6" />
+          {courses.map((course) => {
+            const isAllowed = allowedCourses?.includes(course.id);
+            return (
+              <div 
+                key={course.id}
+                onClick={() => {
+                  if (isAllowed) {
+                    setSelectedCourseId(course.id);
+                    setCourseActiveTab("materias");
+                  } else {
+                    setCheckoutCourse(course);
+                  }
+                }}
+                className={`bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center ${!isAllowed ? "filter saturate-50" : ""}`}
+              >
+                {course.cover_url ? (
+                  <img 
+                    src={course.cover_url} 
+                    alt={course.title} 
+                    className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isAllowed ? "opacity-75 blur-[1px]" : ""}`}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                      <BookOpen className="w-6 h-6" />
+                    </div>
+                    <span className="text-sm font-sans font-bold text-slate-700 group-hover:text-blue-700 transition-colors line-clamp-2 px-2">
+                      {course.title}
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-white/60 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-200/50">
+                      Sem Capa
+                    </span>
                   </div>
-                  <span className="text-sm font-sans font-bold text-slate-700 group-hover:text-blue-700 transition-colors line-clamp-2 px-2">
+                )}
+                
+                {/* Lock Badge for unallowed courses */}
+                {!isAllowed && (
+                  <div className="absolute top-4 right-4 bg-slate-900/80 text-amber-400 p-2.5 rounded-full border border-amber-400/20 backdrop-blur-md z-20 shadow-md">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                )}
+
+                {/* Overlay with subtle gradient on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                  <h3 className="text-white text-sm font-sans font-extrabold mb-1 drop-shadow-md line-clamp-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                     {course.title}
-                  </span>
-                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-white/60 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-200/50">
-                    Sem Capa
-                  </span>
+                  </h3>
+                  {isAllowed ? (
+                    <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <span>Estudar Agora</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  ) : (
+                    <span className="text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <span>Liberar Acesso Premium</span>
+                      <Lock className="w-3.5 h-3.5" />
+                    </span>
+                  )}
                 </div>
-              )}
-              
-              {/* Overlay with subtle gradient on hover to indicate it's clickable */}
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
-                <h3 className="text-white text-sm font-sans font-extrabold mb-1 drop-shadow-md line-clamp-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                  {course.title}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Checkout Modal */}
+        {checkoutCourse && (
+          <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-smooth-fade">
+            <div className="bg-white border border-slate-100 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-smooth-zoom flex flex-col">
+              {/* Header */}
+              <div className="bg-gradient-to-br from-blue-900 to-indigo-850 p-6 text-white relative">
+                <button 
+                  onClick={() => setCheckoutCourse(null)}
+                  className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full border-none cursor-pointer transition text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="inline-flex items-center space-x-1 bg-amber-400/20 border border-amber-400/35 text-amber-300 text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-3">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Acesso Premium Completo</span>
+                </div>
+                <h3 className="text-lg font-sans font-black pr-8 leading-snug">
+                  {checkoutCourse.title}
                 </h3>
-                <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <span>Estudar Agora</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh] scrollbar-thin">
+                <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                  Adquira agora a licença oficial e tenha acesso irrestrito a toda a estrutura tática de estudos.
+                </p>
+
+                {/* Benefits */}
+                <div className="space-y-3 bg-slate-50 p-4.5 rounded-2xl border border-slate-100">
+                  <h4 className="text-[10px] font-mono font-extrabold uppercase text-slate-400 tracking-wider">O que está incluso:</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="flex items-start space-x-2 text-[11px] font-sans font-bold text-slate-700">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{checkoutCourse.hours} horas de conteúdo</span>
+                    </div>
+                    <div className="flex items-start space-x-2 text-[11px] font-sans font-bold text-slate-700">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{checkoutCourse.lessons} vídeo-aulas táticas</span>
+                    </div>
+                    <div className="flex items-start space-x-2 text-[11px] font-sans font-bold text-slate-700">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>Material complementar em PDF</span>
+                    </div>
+                    <div className="flex items-start space-x-2 text-[11px] font-sans font-bold text-slate-700">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>Banco de questões e simulados</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Methods Info */}
+                <div className="flex items-center justify-between p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono font-black text-indigo-500 uppercase tracking-widest block">Investimento Único</span>
+                    <span className="text-xl font-sans font-black text-indigo-900">
+                      R$ {checkoutCourse.id === 'cho-cbmmg-2027' ? '497,00' : checkoutCourse.id === 'cfo-cbmmg-2027' ? '597,00' : '297,00'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1.5 text-slate-400">
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-white px-2 py-1 rounded-md border border-slate-200">Pix</span>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-white px-2 py-1 rounded-md border border-slate-200">Cartão</span>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-white px-2 py-1 rounded-md border border-slate-200">Boleto</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Button */}
+              <div className="p-6 border-t border-slate-100 flex flex-col space-y-2">
+                <button
+                  onClick={() => handleStartPurchase(checkoutCourse)}
+                  disabled={isPurchasing}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-700 to-indigo-700 text-white rounded-xl font-sans font-black text-xs uppercase tracking-wider hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer border-none flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPurchasing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white text-white"></div>
+                      <span>Processando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Iniciar Pagamento Seguro</span>
+                    </>
+                  )}
+                </button>
+                <span className="text-[9px] text-slate-400 font-mono text-center block">
+                  Processado com segurança via Mercado Pago
                 </span>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -886,10 +1041,12 @@ export default function MeusCursos({
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                );
+              })}
+
+
             </div>
+          </div>
           )}
 
           {courseActiveTab === "simuladores" && (

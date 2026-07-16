@@ -18,6 +18,7 @@ export default function App() {
   const [authView, setAuthView] = useState<"landing" | "login" | "app">("landing");
   const [userRole, setUserRole] = useState<"aluno" | "admin">("aluno");
   const [userName, setUserName] = useState("Silva");
+  const [userEmail, setUserEmail] = useState("");
   const [allowedCourses, setAllowedCourses] = useState<string[]>([]);
   const [currentTab, setCurrentTab] = useState("inicio");
   const [userRank, setUserRank] = useState("SOLDADO");
@@ -71,6 +72,70 @@ export default function App() {
       });
   }, []);
 
+  // Check URL query parameters for payments and mock confirmations
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mockPayment = params.get("mock_payment");
+    const preferenceId = params.get("preference_id");
+    const courseId = params.get("course_id");
+    const email = params.get("email");
+    const status = params.get("payment_status");
+
+    if (mockPayment === "true" && preferenceId && courseId && email) {
+      fetch("/api/payments/mock-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferenceId, courseId, email })
+      })
+      .then(res => res.json())
+      .then(async (data) => {
+        if (data.success) {
+          alert("PAGAMENTO SIMULADO APROVADO!\nSeu curso foi liberado com sucesso. O painel será atualizado.");
+          
+          try {
+            // Fetch student data using the email from URL to restore login state
+            const { data: student, error } = await supabase
+              .from('students')
+              .select('*')
+              .eq('email', email.toLowerCase().trim())
+              .single();
+
+            if (!error && student) {
+              // Log the student back in automatically
+              handleLoginSuccess(student.name, "aluno", student.allowed_courses || [], student.email);
+              
+              // Select the course and redirect to course view
+              setSelectedCourseId(courseId);
+              setCurrentTab("cursos");
+              setCourseActiveTab("materias");
+            } else {
+              console.error("Erro ao carregar perfil do aluno pós-pagamento:", error);
+            }
+          } catch (fetchErr) {
+            console.error("Erro ao buscar dados do estudante:", fetchErr);
+          }
+          
+          // Clear query parameters from URL without reloading
+          window.history.replaceState({}, document.title, window.location.origin);
+        } else {
+          alert(`Erro ao confirmar pagamento simulado: ${data.error}`);
+        }
+      })
+      .catch(err => console.error("Erro na confirmação mock:", err));
+    }
+
+    if (status) {
+      if (status === "success") {
+        alert("Parabéns! Seu pagamento foi recebido com sucesso. O curso será liberado em instantes.");
+      } else if (status === "pending") {
+        alert("Seu pagamento está em análise. O acesso será liberado assim que for compensado.");
+      } else if (status === "failure") {
+        alert("O pagamento não pôde ser processado. Por favor, tente novamente.");
+      }
+      window.history.replaceState({}, document.title, window.location.origin);
+    }
+  }, []);
+
   useEffect(() => {
     if (selectedCourseId) {
       localStorage.setItem("militar_last_course_id", selectedCourseId);
@@ -107,7 +172,7 @@ export default function App() {
           phone: '',
           cpf: '',
           status: 'Ativo',
-          allowed_courses: ["cho-cbmmg-2027", "cfo-cbmmg-2027", "eap-cbmmg-2026"]
+          allowed_courses: ["eap-cbmmg-2026"]
         };
 
         const { data: inserted, error: insertError } = await supabase
@@ -166,10 +231,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno", allowedCoursesList: string[] = []) => {
+  const handleLoginSuccess = (name: string, role: "aluno" | "admin" = "aluno", allowedCoursesList: string[] = [], email: string = "") => {
     setUserName(name);
     setUserRole(role);
     setAllowedCourses(allowedCoursesList);
+    setUserEmail(email);
     setAuthView("app");
   };
 
@@ -236,6 +302,7 @@ export default function App() {
             onClearTutorPrompt={() => setTutorInitialPrompt("")}
             allowedCourses={allowedCourses}
             userName={userName}
+            userEmail={userEmail}
           />
         );
       case "trilha":
@@ -268,12 +335,40 @@ export default function App() {
     }
   };
 
+  const [pendingCoursePurchase, setPendingCoursePurchase] = useState<string | null>(null);
+
   if (authView === "landing") {
-    return <LandingPage onNavigateToLogin={() => setAuthView("login")} />;
+    return (
+      <LandingPage 
+        onNavigateToLogin={(courseId) => {
+          if (courseId && typeof courseId === 'string') {
+            setPendingCoursePurchase(courseId);
+          }
+          setAuthView("login");
+        }} 
+      />
+    );
   }
 
   if (authView === "login") {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} onBackToLanding={() => setAuthView("landing")} />;
+    return (
+      <LoginScreen 
+        onLoginSuccess={(name, role, allowedCoursesList, email) => {
+          handleLoginSuccess(name, role, allowedCoursesList || [], email);
+          if (pendingCoursePurchase) {
+            setSelectedCourseId(pendingCoursePurchase);
+            setCurrentTab("cursos");
+            setCourseActiveTab("materias");
+            setPendingCoursePurchase(null);
+          }
+        }} 
+        onBackToLanding={() => {
+          setPendingCoursePurchase(null);
+          setAuthView("landing");
+        }} 
+        initialCourseId={pendingCoursePurchase}
+      />
+    );
   }
 
   if (authView === "app" && userRole === "admin") {

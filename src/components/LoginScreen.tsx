@@ -1,20 +1,27 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft } from "lucide-react";
-import { validateStudentLogin } from "../lib/student";
+import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft, User, Phone, FileText } from "lucide-react";
+import { validateStudentLogin, createStudent } from "../lib/student";
 import { supabase } from "../lib/supabase";
 import { initializeProgress } from "../lib/progress";
 import { initializePlanner } from "../lib/studyPlanner";
 
 interface LoginScreenProps {
-  onLoginSuccess: (name: string, role: "aluno" | "admin", allowedCourses: string[]) => void;
+  onLoginSuccess: (name: string, role: "aluno" | "admin", allowedCourses: string[], email?: string) => void;
   onBackToLanding?: () => void;
+  initialCourseId?: string | null;
 }
 
-export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginScreenProps) {
+export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCourseId }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [isRegisterMode, setIsRegisterMode] = useState(initialCourseId ? true : false);
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
 
   const handleGoogleLogin = async () => {
     try {
@@ -36,13 +43,61 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
     e.preventDefault();
     setIsLoading(true);
     
+    if (isRegisterMode) {
+      if (!registerName || !registerEmail || !registerPassword) {
+        alert("Por favor, preencha todos os campos obrigatórios.");
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const { data: existingStudent } = await supabase
+          .from('students')
+          .select('id')
+          .eq('email', registerEmail.trim().toLowerCase())
+          .maybeSingle();
+
+        if (existingStudent) {
+          alert("Este e-mail já está cadastrado. Por favor, faça login.");
+          setIsLoading(false);
+          setIsRegisterMode(false);
+          setEmail(registerEmail);
+          return;
+        }
+
+        const newStudent = await createStudent({
+          name: registerName,
+          email: registerEmail.trim().toLowerCase(),
+          password: registerPassword,
+          phone: registerPhone,
+          cpf: "",
+          status: 'Ativo',
+          allowed_courses: []
+        });
+
+        setIsLoading(false);
+        if (newStudent) {
+          alert("Cadastro realizado com sucesso! Bem-vindo combatente.");
+          initializeProgress(newStudent);
+          initializePlanner(newStudent);
+          onLoginSuccess(newStudent.name, "aluno", newStudent.allowed_courses || [], newStudent.email);
+        } else {
+          alert("Erro ao realizar o cadastro. Tente novamente.");
+        }
+      } catch (err: any) {
+        setIsLoading(false);
+        console.error("Erro no cadastro:", err);
+        alert(`Erro técnico ao realizar cadastro: ${err.message || err}`);
+      }
+      return;
+    }
+
     const isEmailAdmin = email.toLowerCase() === "admin@teste.com";
     
     if (isEmailAdmin) {
       if (password === "123456") {
         setTimeout(() => {
           setIsLoading(false);
-          onLoginSuccess("Administrador", "admin", []);
+          onLoginSuccess("Administrador", "admin", [], "admin@teste.com");
         }, 800);
       } else {
         setIsLoading(false);
@@ -55,7 +110,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
         if (student) {
           initializeProgress(student);
           initializePlanner(student);
-          onLoginSuccess(student.name, "aluno", student.allowed_courses || []);
+          onLoginSuccess(student.name, "aluno", student.allowed_courses || [], student.email);
         } else {
           alert("Credenciais de aluno inválidas ou conta inativa. Use a senha definida pelo administrador.");
         }
@@ -136,57 +191,165 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
 
         {/* Form Container */}
         <div className="w-full max-w-md mx-auto my-auto glass-panel rounded-2xl p-6 md:p-8 shadow-md z-10 animate-smooth-zoom" id="login-card">
-          <div className="mb-6">
-            <h2 className="text-xl font-display font-bold text-slate-800 tracking-tight">
-              Acesse sua Área Tática
+          {initialCourseId && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-sans font-bold flex items-start space-x-2.5 shadow-sm">
+              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="block font-black uppercase text-[10px] tracking-wider text-amber-700">Matrícula Requerida</span>
+                <span className="leading-relaxed">Para adquirir o curso selecionado, você deve primeiro entrar na área do aluno ou realizar um cadastro.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Selector */}
+          <div className="flex border-b border-slate-100 mb-6">
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(false)}
+              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${!isRegisterMode ? 'text-emerald-700 border-b-2 border-emerald-700 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(true)}
+              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${isRegisterMode ? 'text-emerald-700 border-b-2 border-emerald-700 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+            >
+              Cadastrar-se
+            </button>
+          </div>
+
+          <div className="mb-6 text-center">
+            <h2 className="text-xl font-display font-bold text-slate-800 tracking-tight uppercase">
+              {isRegisterMode ? "Crie sua Conta de Aluno" : "Área do Aluno"}
             </h2>
-            <p className="text-xs text-slate-500 mt-1 font-sans">
-              Entre com suas credenciais de aluno ou administrador.
-            </p>
+            {isRegisterMode && (
+              <p className="text-xs text-slate-500 mt-1 font-sans">
+                Preencha os dados militares abaixo para criar seu acesso.
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Identificação (E-mail)</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  required
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="aluno@email.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
-                />
-              </div>
-            </div>
+            {isRegisterMode ? (
+              <>
+                {/* Nome Completo */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Nome Completo</label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      type="text"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      placeholder="Recruta Silva"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha de Acesso</label>
-                <a href="#recuperar" className="text-[10px] font-sans font-bold text-emerald-700 hover:text-emerald-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  required
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
+                {/* Email de Cadastro */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">E-mail</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      placeholder="aluno@email.com"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Senha de Cadastro */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      placeholder="Defina uma senha"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Telefone */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Telefone / WhatsApp (opcional)</label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value)}
+                      placeholder="(31) 99999-9999"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Email de Login */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Identificação (E-mail)</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      id="login-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="aluno@email.com"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Senha de Login */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha de Acesso</label>
+                    <a href="#recuperar" className="text-[10px] font-sans font-bold text-emerald-700 hover:text-emerald-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      required
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Sua senha"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Submit Button */}
             <button
@@ -198,7 +361,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
               {isLoading ? (
                 <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
               ) : (
-                <span>ENTRAR EM MISSÃO</span>
+                <span>{isRegisterMode ? "CADASTRAR E ENTRAR" : "ENTRAR"}</span>
               )}
             </button>
           </form>
@@ -241,12 +404,13 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding }: LoginSc
           {/* Bottom register link */}
           <div className="mt-6 text-center text-sm">
             <p className="text-slate-500">
-              Ainda não possui conta?{" "}
+              {isRegisterMode ? "Já possui uma conta?" : "Ainda não possui conta?"}{" "}
               <button
-                onClick={() => alert("O cadastro militar de novos usuários é restrito ou exige credencial homologada pela Escola de Formação.")}
-                className="text-emerald-700 hover:underline font-sans font-semibold transition-all cursor-pointer"
+                type="button"
+                onClick={() => setIsRegisterMode(!isRegisterMode)}
+                className="text-emerald-700 hover:underline font-sans font-semibold transition-all cursor-pointer border-none bg-transparent"
               >
-                Criar conta
+                {isRegisterMode ? "Faça login" : "Criar conta"}
               </button>
             </p>
           </div>

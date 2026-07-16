@@ -332,6 +332,277 @@ Dê um mnemônico ou macete rápido de 1 linha.`;
   }
 });
 
+// 5. Create Mercado Pago Checkout Preference
+app.post("/api/payments/create-preference", async (req, res) => {
+  const { email, courseId } = req.body;
+  if (!email || !courseId) {
+    return res.status(400).json({ error: "E-mail e Course ID são obrigatórios." });
+  }
+
+  try {
+    // Fetch course details to get title and price
+    const { data: course, error: courseError } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('id', courseId)
+      .single();
+
+    if (courseError || !course) {
+      return res.status(404).json({ error: "Curso não encontrado." });
+    }
+
+    const price = parseFloat(course.price || 297.00);
+    const title = course.title;
+
+    // If MP token is not set, simulate payment creation (for offline development)
+    const mpToken = process.env.MP_ACCESS_TOKEN;
+    if (!mpToken) {
+      console.warn("MP_ACCESS_TOKEN is not set. Creating a mock preference.");
+      const mockPreferenceId = `mock-pref-${Math.random().toString(36).substring(7)}`;
+      
+      const { error: insertError } = await supabase
+        .from('payments')
+        .insert([{
+          student_email: email,
+          course_id: courseId,
+          status: 'pending',
+          amount: price,
+          preference_id: mockPreferenceId
+        }]);
+
+      if (insertError) {
+        console.error("Error inserting mock payment:", insertError);
+        return res.status(500).json({ error: `Erro ao salvar transação temporária: ${insertError.message || JSON.stringify(insertError)}` });
+      }
+
+      const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+      return res.json({
+        init_point: `${appUrl}/?mock_payment=true&preference_id=${mockPreferenceId}&course_id=${courseId}&email=${encodeURIComponent(email)}`,
+        preferenceId: mockPreferenceId
+      });
+    }
+
+    // Call Mercado Pago API to create preference
+    const response = await fetch("https://api.mercadopago.com/v1/preferences", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${mpToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items: [
+          {
+            id: courseId,
+            title: title,
+            quantity: 1,
+            unit_price: price,
+            currency_id: "BRL"
+          }
+        ],
+        payer: {
+          email: email
+        },
+        back_urls: {
+          success: `${process.env.APP_URL || 'http://localhost:3000'}/?payment_status=success`,
+          pending: `${process.env.APP_URL || 'http://localhost:3000'}/?payment_status=pending`,
+          failure: `${process.env.APP_URL || 'http://localhost:3000'}/?payment_status=failure`
+        },
+        auto_return: "approved",
+        notification_url: `${process.env.APP_URL || 'http://localhost:3000'}/api/payments/webhook`
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Mercado Pago API error:", errText);
+      return res.status(500).json({ error: "Erro ao criar preferência no Mercado Pago." });
+    }
+
+    const prefData = await response.json() as any;
+
+    const { error: insertError } = await supabase
+      .from('payments')
+      .insert([{
+        student_email: email,
+        course_id: courseId,
+        status: 'pending',
+        amount: price,
+        preference_id: prefData.id
+      }]);
+
+    if (insertError) {
+      console.error("Error inserting payment record:", insertError);
+      return res.status(500).json({ error: `Erro ao salvar transação de pagamento: ${insertError.message || JSON.stringify(insertError)}` });
+    }
+
+    res.json({
+      init_point: prefData.init_point,
+      preferenceId: prefData.id
+    });
+  } catch (err: any) {
+    console.error("Error creating payment preference:", err);
+    res.status(500).json({ error: err.message || "Erro interno do servidor." });
+  }
+});
+
+// 6. Mercado Pago Webhook Notification Receiver
+app.post("/api/payments/webhook", async (req, res) => {
+  const paymentId = req.body?.data?.id || req.query?.id;
+  const action = req.body?.action || req.query?.topic;
+
+  console.log(`Mercado Pago Webhook received. Payment ID: ${paymentId}, Action/Topic: ${action}`);
+
+  if (!paymentId) {
+    return res.status(200).send("No payment ID provided");
+  }
+
+  try {
+    const mpToken = process.env.MP_ACCESS_TOKEN;
+    if (!mpToken) {
+      console.warn("MP_ACCESS_TOKEN is not set. Webhook received but cannot verify payment.");
+      return res.status(200).send("No token configured");
+    }
+
+    const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+      headers: {
+        "Authorization": `Bearer ${mpToken}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch payment details from Mercado Pago: ${response.statusText}`);
+      return res.status(200).send("Failed to fetch payment details");
+    }
+
+    const paymentDetails = await response.json() as any;
+    const preferenceId = paymentDetails.preference_id;
+    const status = paymentDetails.status;
+
+    console.log(`Payment Details - Preference ID: ${preferenceId}, Status: ${status}`);
+
+    if (preferenceId) {
+      const { data: paymentRecord, error: updateError } = await supabase
+        .from('payments')
+        .update({ status: status, payment_id: String(paymentId), updated_at: new Date().toISOString() })
+        .eq('preference_id', preferenceId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating payment status in database:", updateError);
+      } else if (paymentRecord && status === "approved") {
+        const email = paymentRecord.student_email;
+        const courseId = paymentRecord.course_id;
+
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select('*')
+          .eq('email', email)
+          .single();
+
+        if (studentError || !student) {
+          console.log(`Student not found for email ${email}. Creating a new student account...`);
+          const newStudent = {
+            name: email.split('@')[0],
+            email: email,
+            password: 'google-oauth-login',
+            phone: '',
+            cpf: '',
+            status: 'Ativo',
+            allowed_courses: [courseId]
+          };
+          const { error: createError } = await supabase
+            .from('students')
+            .insert([newStudent]);
+          if (createError) {
+            console.error("Error creating student on webhook:", createError);
+          } else {
+            console.log(`Successfully created student account and unlocked course ${courseId} for ${email}`);
+          }
+        } else {
+          let allowed = student.allowed_courses || [];
+          if (!allowed.includes(courseId)) {
+            allowed.push(courseId);
+            const { error: saveError } = await supabase
+              .from('students')
+              .update({ allowed_courses: allowed })
+              .eq('id', student.id);
+
+            if (saveError) {
+              console.error("Error updating student allowed courses:", saveError);
+            } else {
+              console.log(`Successfully unlocked course ${courseId} for student ${email}`);
+            }
+          }
+        }
+      }
+    }
+
+    res.status(200).send("OK");
+  } catch (err: any) {
+    console.error("Error in Webhook handler:", err);
+    res.status(200).send("Internal processing error");
+  }
+});
+
+// 7. Mock Payment Confirmation (for local development/testing without API keys)
+app.post("/api/payments/mock-confirm", async (req, res) => {
+  const { preferenceId, courseId, email } = req.body;
+  if (!preferenceId || !courseId || !email) {
+    return res.status(400).json({ error: "Parâmetros inválidos." });
+  }
+
+  try {
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({ status: 'approved', updated_at: new Date().toISOString() })
+      .eq('preference_id', preferenceId);
+
+    if (updateError) console.error("Error updating mock payment:", updateError);
+
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (studentError || !student) {
+      const newStudent = {
+        name: email.split('@')[0],
+        email: email,
+        password: 'google-oauth-login',
+        phone: '',
+        cpf: '',
+        status: 'Ativo',
+        allowed_courses: [courseId]
+      };
+      const { error: createError } = await supabase
+        .from('students')
+        .insert([newStudent]);
+      if (createError) {
+        return res.status(500).json({ error: "Erro ao criar estudante no modo simulado." });
+      }
+    } else {
+      let allowed = student.allowed_courses || [];
+      if (!allowed.includes(courseId)) {
+        allowed.push(courseId);
+        const { error: saveError } = await supabase
+          .from('students')
+          .update({ allowed_courses: allowed })
+          .eq('id', student.id);
+
+        if (saveError) {
+          return res.status(500).json({ error: "Erro ao atualizar permissões do estudante." });
+        }
+      }
+    }
+
+    res.json({ success: true, message: "Curso liberado com sucesso (Modo Simulado)!" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Serve frontend assets
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
