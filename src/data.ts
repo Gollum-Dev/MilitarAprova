@@ -418,6 +418,7 @@ export interface MockSimulator {
   grade?: number;
   estGain?: string;
   questions?: Question[];
+  course_ids?: string[];
 }
 
 export const MOCK_SIMULATORS: MockSimulator[] = [

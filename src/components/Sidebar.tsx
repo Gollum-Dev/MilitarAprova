@@ -33,32 +33,45 @@ export default function Sidebar({
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
-  interface HoveredModuleInfo {
+  interface HoveredTabInfo {
     id: string;
     top: number;
-    title: string;
-    rawDiscipline: any;
+    courseId: string;
   }
 
-  const [hoveredModule, setHoveredModule] = useState<HoveredModuleInfo | null>(null);
+  const [hoveredTab, setHoveredTab] = useState<HoveredTabInfo | null>(null);
+  
+  interface HoveredDisciplineInfo {
+    id: string;
+    top: number;
+    rawDiscipline: any;
+  }
+  const [hoveredDiscipline, setHoveredDiscipline] = useState<HoveredDisciplineInfo | null>(null);
+  
   const [sidebarModulesExpanded, setSidebarModulesExpanded] = useState(true);
   const timeoutRef = useRef<any>(null);
+  const disciplineTimeoutRef = useRef<any>(null);
 
-  const handleMouseEnter = (module: any, e: React.MouseEvent) => {
+  const handleTabMouseEnter = (subItemId: string, courseId: string, e: React.MouseEvent) => {
+    if (subItemId !== "materias") return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     const rect = e.currentTarget.getBoundingClientRect();
-    setHoveredModule({
-      id: module.id,
+    setHoveredTab({
+      id: subItemId,
       top: rect.top,
-      title: module.title,
-      rawDiscipline: module.rawDiscipline
+      courseId: courseId
     });
   };
 
-  const handleMouseLeave = () => {
+  const handleTabMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
-      setHoveredModule(null);
-    }, 150);
+      setHoveredTab(null);
+    }, 200);
+  };
+
+  const handleFlyoutMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (disciplineTimeoutRef.current) clearTimeout(disciplineTimeoutRef.current);
   };
   
   const capitalizeFirstOnly = (text: string) => {
@@ -196,9 +209,13 @@ export default function Sidebar({
                                {courseSubItems.map(subItem => {
                                  const SubIcon = subItem.icon;
                                  const isSubActive = courseActiveTab === subItem.id;
-                                 const showModulesAccordion = subItem.id === "materias" && courseActiveTab === "materias" && sidebarModulesExpanded;
                                  return (
-                                    <div key={subItem.id} className="space-y-1">
+                                    <div 
+                                      key={subItem.id} 
+                                      className="space-y-1"
+                                      onMouseEnter={(e) => handleTabMouseEnter(subItem.id, course.id, e)}
+                                      onMouseLeave={handleTabMouseLeave}
+                                    >
                                       <button
                                         onClick={() => {
                                           if (subItem.id === "materias" && isSubActive && selectedModuleId === null) {
@@ -222,39 +239,6 @@ export default function Sidebar({
                                         <SubIcon className="w-3 h-3 shrink-0" />
                                         <span>{subItem.label}</span>
                                       </button>
-
-                                      {/* Subject Modules Accordion Level 3 (with Hover Flyout) */}
-                                      {showModulesAccordion && course.modules && course.modules.length > 0 && (
-                                        <div className="pl-2.5 py-1 space-y-1 border-l border-slate-200 ml-2 animate-smooth-fade">
-                                          {course.modules.map(module => {
-                                            const isModuleSelected = selectedModuleId === module.id;
-                                            return (
-                                              <div 
-                                                key={module.id} 
-                                                className="relative"
-                                                onMouseEnter={(e) => handleMouseEnter(module, e)}
-                                                onMouseLeave={handleMouseLeave}
-                                              >
-                                                <button
-                                                  onClick={() => {
-                                                    setSelectedModuleId(module.id);
-                                                    setSelectedContentId(null);
-                                                    onChangeTab("cursos");
-                                                  }}
-                                                  className={`group w-full flex items-center space-x-1.5 px-2 py-1.5 rounded text-xs font-sans font-medium transition-all duration-150 cursor-pointer text-left hover:bg-slate-100/50 hover:font-bold ${
-                                                    isModuleSelected
-                                                      ? "text-slate-800 font-bold bg-slate-100"
-                                                      : "text-slate-500 hover:text-slate-700"
-                                                  }`}
-                                                >
-                                                  <BookOpen className="w-2.5 h-2.5 shrink-0 opacity-60" />
-                                                  <span className="line-clamp-2 leading-tight">{capitalizeFirstOnly((module.title || "").replace(/^Módulo \d+:\s*/, ""))}</span>
-                                                </button>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
                                     </div>
                                  );
                                })}
@@ -308,55 +292,127 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Flyout Menu showing subjects (materias) on hover (rendered using fixed position to prevent parent overflow clipping) */}
-      {hoveredModule && (
+      {/* Flyout Menu for Course Modules */}
+      {hoveredTab && (
         <div 
-          className="fixed w-72 bg-white border border-slate-200 shadow-xl rounded-xl py-2 z-[9999] pl-1 pr-1 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-left-1 duration-150"
+          className="fixed z-[9999] bg-white border border-slate-200 shadow-2xl rounded-xl w-72 max-h-[70vh] overflow-y-auto animate-in fade-in slide-in-from-left-1 duration-150"
           style={{ 
-            top: Math.min(hoveredModule.top, window.innerHeight - 310), 
-            left: 210 
+            top: Math.max(20, Math.min(hoveredTab.top, window.innerHeight - 300)),
+            left: 140
           }}
-          onMouseEnter={() => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          }}
-          onMouseLeave={handleMouseLeave}
+          onMouseEnter={handleFlyoutMouseEnter}
+          onMouseLeave={handleTabMouseLeave}
         >
-          <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400">Matérias da Disciplina</span>
+          <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+            <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">
+              Disciplinas do Curso
+            </h4>
           </div>
-          {(() => {
-            const materiasList: any[] = [];
-            if (hoveredModule.rawDiscipline && Array.isArray(hoveredModule.rawDiscipline.areas)) {
-              hoveredModule.rawDiscipline.areas.forEach((area: any) => {
-                if (Array.isArray(area.contents)) {
-                  area.contents.forEach((content: any) => {
-                    materiasList.push(content);
-                  });
-                }
-              });
-            }
+          <div className="p-2 space-y-1">
+            {courses.find(c => c.id === hoveredTab.courseId)?.modules?.map((module) => {
+              const isModuleSelected = selectedModuleId === module.id;
+              return (
+                <button
+                  key={module.id}
+                  onMouseEnter={(e) => {
+                    if (disciplineTimeoutRef.current) clearTimeout(disciplineTimeoutRef.current);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setHoveredDiscipline({
+                      id: module.id,
+                      top: rect.top,
+                      rawDiscipline: module.rawDiscipline
+                    });
+                  }}
+                  onMouseLeave={() => {
+                    disciplineTimeoutRef.current = setTimeout(() => {
+                      setHoveredDiscipline(null);
+                    }, 150);
+                  }}
+                  onClick={() => {
+                    setSelectedCourseId(hoveredTab.courseId);
+                    setSelectedModuleId(module.id);
+                    setSelectedContentId(null);
+                    setCourseActiveTab("materias");
+                    onChangeTab("cursos");
+                    setHoveredTab(null);
+                    setHoveredDiscipline(null);
+                  }}
+                  className={`w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl font-sans text-xs transition-all duration-150 cursor-pointer text-left hover:bg-slate-50 group/flyout ${
+                    isModuleSelected
+                      ? "text-indigo-700 font-bold bg-indigo-50/50"
+                      : "text-slate-600 font-medium hover:text-slate-900 hover:shadow-sm hover:-translate-y-0.5"
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover/flyout:text-indigo-500 transition-colors" />
+                  <span className="line-clamp-2 leading-tight">
+                    {capitalizeFirstOnly((module.title || "").replace(/^Módulo \d+:\s*/, ""))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-            if (materiasList.length === 0) {
-              return <div className="text-[10px] text-slate-400 italic px-3 py-1">Nenhuma matéria disponível</div>;
-            }
+      {/* Flyout 2 Menu for Eixos and Materias */}
+      {hoveredDiscipline && hoveredDiscipline.rawDiscipline && (
+        <div 
+          className="fixed z-[10000] bg-white border border-slate-200 shadow-2xl rounded-xl w-72 max-h-[70vh] overflow-y-auto animate-in fade-in slide-in-from-left-1 duration-150"
+          style={{ 
+            top: Math.max(20, Math.min(hoveredDiscipline.top, window.innerHeight - 300)),
+            left: 250
+          }}
+          onMouseEnter={handleFlyoutMouseEnter}
+          onMouseLeave={() => {
+            disciplineTimeoutRef.current = setTimeout(() => {
+              setHoveredDiscipline(null);
+            }, 150);
+            handleTabMouseLeave();
+          }}
+        >
+          <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+            <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">
+              Matérias
+            </h4>
+          </div>
+          <div className="p-2 space-y-1">
+            {(() => {
+              const materiasList: any[] = [];
+              if (hoveredDiscipline.rawDiscipline && Array.isArray(hoveredDiscipline.rawDiscipline.areas)) {
+                hoveredDiscipline.rawDiscipline.areas.forEach((area: any) => {
+                  if (Array.isArray(area.contents)) {
+                    area.contents.forEach((content: any) => {
+                      materiasList.push(content);
+                    });
+                  }
+                });
+              }
 
-            return materiasList.map(materia => (
-              <button
-                key={materia.id}
-                onClick={() => {
-                  setSelectedModuleId(hoveredModule.id);
-                  setSelectedContentId(materia.id);
-                  setSubjectActiveTab("aulas");
-                  onChangeTab("cursos");
-                  setHoveredModule(null); // Close flyout on select
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 rounded-lg text-xs font-sans transition-colors cursor-pointer border-none bg-transparent block truncate"
-                title={materia.name}
-              >
-                {materia.name}
-              </button>
-            ));
-          })()}
+              if (materiasList.length === 0) {
+                return <div className="text-[10px] text-slate-400 italic px-3 py-1">Nenhuma matéria disponível</div>;
+              }
+
+              return materiasList.map(materia => (
+                <button
+                  key={materia.id}
+                  onClick={() => {
+                    if (hoveredTab) setSelectedCourseId(hoveredTab.courseId);
+                    setSelectedModuleId(hoveredDiscipline.id);
+                    setSelectedContentId(materia.id);
+                    setSubjectActiveTab("aulas");
+                    setCourseActiveTab("materias");
+                    onChangeTab("cursos");
+                    setHoveredTab(null);
+                    setHoveredDiscipline(null);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 rounded-lg text-xs font-sans transition-colors cursor-pointer border-none bg-transparent block truncate"
+                  title={materia.name}
+                >
+                  {materia.name}
+                </button>
+              ));
+            })()}
+          </div>
         </div>
       )}
     </aside>

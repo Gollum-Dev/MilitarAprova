@@ -316,36 +316,21 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         {/* Top Brand / Logo */}
         <div className="p-5 border-b border-slate-100 space-y-2">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-emerald-400/20 flex items-center justify-center shrink-0 shadow-sm">
-              <ShieldAlert className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-emerald-200/50 shadow-sm bg-slate-50">
+              <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div className="overflow-hidden">
               <h1 className="text-xs font-sans font-bold text-slate-800 tracking-wide uppercase truncate">
                 Cabo Véio
               </h1>
-              <p className="text-[9px] text-emerald-700 font-mono font-bold tracking-wider uppercase truncate">
+              <p className="text-[9px] text-blue-700 font-mono font-bold tracking-wider uppercase truncate">
                 Painel Administrativo
               </p>
             </div>
           </div>
         </div>
 
-        {/* User Info */}
-        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/80">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center text-white font-mono font-bold text-sm shadow-sm">
-              AD
-            </div>
-            <div className="overflow-hidden">
-              <h3 className="text-xs font-sans font-semibold text-slate-800 uppercase truncate">
-                {userName}
-              </h3>
-              <span className="inline-block mt-1 text-[8px] font-sans font-extrabold text-white bg-indigo-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Administrador
-              </span>
-            </div>
-          </div>
-        </div>
+
 
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -419,7 +404,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
           />
         ) : (
           <div className="max-w-7xl mx-auto space-y-6">
-            {!activeMateria && (
+            {!activeMateria && activeTab !== "provas" && activeTab !== "usuarios" && activeTab !== "metricas" && (
               <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                 <div>
                   <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
@@ -738,9 +723,6 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
               <div className="space-y-6">
                 <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                   <div>
-                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">
-                      VISÃO DO GESTOR
-                    </span>
                     <h2 className="text-xs font-mono uppercase font-bold text-slate-700 tracking-tight mt-0.5">
                       Alunos Matriculados
                     </h2>

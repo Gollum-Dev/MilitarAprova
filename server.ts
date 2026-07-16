@@ -326,8 +326,15 @@ Dê um mnemônico ou macete rápido de 1 linha.`;
     });
   } catch (err: any) {
     console.error("Gemini failed to generate question comment:", err);
+    let errorMessage = "Erro inesperado ao consultar a inteligência militar.";
+    const errString = err.message || err.toString();
+    
+    if (errString.includes("503") || errString.includes("UNAVAILABLE") || errString.includes("high demand") || errString.includes("overloaded")) {
+      errorMessage = "O Cabo Véio está atendendo muitos alunos no momento (Sistema sobrecarregado). Aguarde um instante e tente novamente.";
+    }
+
     res.json({
-      comment: `Erro de conexão com o Cabo Véio IA (${err.message || err}). Lembre-se que o gabarito oficial é a alternativa ${correctAnswer}.`
+      comment: `${errorMessage}\nLembre-se que o gabarito oficial é a alternativa ${correctAnswer}.`
     });
   }
 });

@@ -141,6 +141,9 @@ export async function validateStudentLogin(email: string, password: string): Pro
     last_login: data.last_login,
     study_hours: data.study_hours,
     resource_statuses: data.resource_statuses,
-    completed_resources: data.completed_resources
+    completed_resources: data.completed_resources,
+    completed_dates: data.completed_dates,
+    questions_answered: data.questions_answered,
+    questions_correct: data.questions_correct
   };
 }

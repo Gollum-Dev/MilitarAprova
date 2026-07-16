@@ -753,6 +753,66 @@ export default function MeusCursos({
     }
   }, [currentFlashcardIndex, filteredFlashcards.length]);
 
+  const renderCourseCard = (course: Course, isAllowed: boolean) => (
+    <div 
+      key={course.id}
+      onClick={() => {
+        if (isAllowed) {
+          setSelectedCourseId(course.id);
+          setCourseActiveTab("materias");
+        } else {
+          setCheckoutCourse(course);
+        }
+      }}
+      className={`bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center ${!isAllowed ? "filter saturate-50" : ""}`}
+    >
+      {course.cover_url ? (
+        <img 
+          src={course.cover_url} 
+          alt={course.title} 
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isAllowed ? "opacity-75 blur-[1px]" : ""}`}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <span className="text-sm font-sans font-bold text-slate-700 group-hover:text-blue-700 transition-colors line-clamp-2 px-2">
+            {course.title}
+          </span>
+          <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-white/60 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-200/50">
+            Sem Capa
+          </span>
+        </div>
+      )}
+      
+      {/* Lock Badge for unallowed courses */}
+      {!isAllowed && (
+        <div className="absolute top-4 right-4 bg-slate-900/80 text-amber-400 p-2.5 rounded-full border border-amber-400/20 backdrop-blur-md z-20 shadow-md">
+          <Lock className="w-4 h-4" />
+        </div>
+      )}
+
+      {/* Overlay with subtle gradient on hover */}
+      <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+        <h3 className="text-white text-sm font-sans font-extrabold mb-1 drop-shadow-md line-clamp-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+          {course.title}
+        </h3>
+        {isAllowed ? (
+          <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+            <span>Estudar Agora</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        ) : (
+          <span className="text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+            <span>Liberar Acesso Premium</span>
+            <Lock className="w-3.5 h-3.5" />
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
   // View 1: List of all courses
   if (!selectedCourseId) {
     if (loading) {
@@ -781,70 +841,29 @@ export default function MeusCursos({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {courses.map((course) => {
-            const isAllowed = allowedCourses?.includes(course.id);
-            return (
-              <div 
-                key={course.id}
-                onClick={() => {
-                  if (isAllowed) {
-                    setSelectedCourseId(course.id);
-                    setCourseActiveTab("materias");
-                  } else {
-                    setCheckoutCourse(course);
-                  }
-                }}
-                className={`bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center ${!isAllowed ? "filter saturate-50" : ""}`}
-              >
-                {course.cover_url ? (
-                  <img 
-                    src={course.cover_url} 
-                    alt={course.title} 
-                    className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isAllowed ? "opacity-75 blur-[1px]" : ""}`}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center space-y-3 p-6 text-center w-full h-full bg-gradient-to-br from-slate-50 to-blue-50/30">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
-                      <BookOpen className="w-6 h-6" />
-                    </div>
-                    <span className="text-sm font-sans font-bold text-slate-700 group-hover:text-blue-700 transition-colors line-clamp-2 px-2">
-                      {course.title}
-                    </span>
-                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest bg-white/60 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-200/50">
-                      Sem Capa
-                    </span>
-                  </div>
-                )}
-                
-                {/* Lock Badge for unallowed courses */}
-                {!isAllowed && (
-                  <div className="absolute top-4 right-4 bg-slate-900/80 text-amber-400 p-2.5 rounded-full border border-amber-400/20 backdrop-blur-md z-20 shadow-md">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                )}
+        {courses.filter(c => allowedCourses?.includes(c.id)).length > 0 && (
+          <>
+            <h3 className="text-sm font-mono font-bold text-slate-500 uppercase tracking-widest mt-8 mb-4 border-b border-slate-200 pb-2">Cursos Cadastrados</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {courses.filter(c => allowedCourses?.includes(c.id)).map((course) => {
+                const isAllowed = true;
+                return renderCourseCard(course, isAllowed);
+              })}
+            </div>
+          </>
+        )}
 
-                {/* Overlay with subtle gradient on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
-                  <h3 className="text-white text-sm font-sans font-extrabold mb-1 drop-shadow-md line-clamp-1 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    {course.title}
-                  </h3>
-                  {isAllowed ? (
-                    <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <span>Estudar Agora</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                  ) : (
-                    <span className="text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <span>Liberar Acesso Premium</span>
-                      <Lock className="w-3.5 h-3.5" />
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {courses.filter(c => !allowedCourses?.includes(c.id)).length > 0 && (
+          <>
+            <h3 className="text-sm font-mono font-bold text-slate-500 uppercase tracking-widest mt-12 mb-4 border-b border-slate-200 pb-2">Outros Cursos Disponíveis</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {courses.filter(c => !allowedCourses?.includes(c.id)).map((course) => {
+                const isAllowed = false;
+                return renderCourseCard(course, isAllowed);
+              })}
+            </div>
+          </>
+        )}
 
         {/* Checkout Modal */}
         {checkoutCourse && (
@@ -951,42 +970,27 @@ export default function MeusCursos({
               {selectedCourse.modules.map((mod) => {
                 const rawDisc = mod.rawDiscipline;
                 if (rawDisc && Array.isArray(rawDisc.areas)) {
-                  const isExpanded = !!expandedDisciplines[mod.id];
                   return (
-                    <div key={mod.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-6 shadow-xs transition-all">
-                      <div 
-                        className="flex justify-between items-center pb-3 border-b border-slate-200/60 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setExpandedDisciplines(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
-                      >
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
-                          <h3 className="text-sm font-sans font-black text-slate-800 flex items-center space-x-2">
-                             <span>{(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}</span>
-                          </h3>
-                        </div>
-                        <div className="text-slate-400">
-                          {isExpanded ? <ChevronDown className="w-5 h-5 transition-transform" /> : <ChevronRight className="w-5 h-5 transition-transform" />}
+                    <div 
+                      key={mod.id} 
+                      className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-xs hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group"
+                      onClick={() => setSelectedModuleId(mod.id)}
+                    >
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
+                        <h3 className="text-sm font-sans font-black text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center space-x-2">
+                           <span>{(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}</span>
+                        </h3>
+                      </div>
+                      
+                      <div className="mt-4 md:mt-0 flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                        <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200/50 shrink-0">
+                          {calculateModuleProgress(mod)}% Concluído
+                        </span>
+                        <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white transition-all">
+                          <ChevronRight className="w-4 h-4" />
                         </div>
                       </div>
-
-                      {isExpanded && (
-                        <div className="space-y-6 animate-smooth-fade">
-                          {rawDisc.areas.map((area: any) => (
-                            <div key={area.id} className="space-y-4">
-                              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100">
-                                <h4 className="text-xs font-mono font-bold text-slate-600 tracking-wider">
-                                  {capitalizeFirstOnly(area.name)}
-                                </h4>
-                              </div>
-                              
-                              {/* Matérias Grid (3 por linha) */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Array.isArray(area.contents) && area.contents.map((content: any) => renderMateriaCard(content, mod))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   );
                 }
@@ -1050,7 +1054,7 @@ export default function MeusCursos({
           )}
 
           {courseActiveTab === "simuladores" && (
-            <SimuladoresScreen onAskTutor={onAskTutor} />
+            <SimuladoresScreen onAskTutor={onAskTutor} courseId={selectedCourseId} />
           )}
 
           {courseActiveTab === "leis" && (

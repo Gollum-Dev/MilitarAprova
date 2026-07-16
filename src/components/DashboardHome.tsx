@@ -227,7 +227,7 @@ export default function DashboardHome({
         percent: sStats[title].total > 0 ? Math.round((sStats[title].completed / sStats[title].total) * 100) : 0,
         completed: sStats[title].completed,
         total: sStats[title].total
-      })).filter(r => r.total > 0).sort((a, b) => b.completed - a.completed);
+      })).filter(r => r.total > 0).sort((a, b) => b.percent - a.percent);
       setSubjectRanking(ranking);
 
       // Calcular produtividade diária por tipo de matéria e tendência de 7 dias
@@ -239,6 +239,28 @@ export default function DashboardHome({
         { label: "QUESTÕES", count: questionsCount, highlighted: questionsCount > 0, from: "from-violet-400", to: "to-violet-500", text: "text-violet-400" },
         { label: "CARDS", count: flashcardsCount, highlighted: flashcardsCount > 0, from: "from-rose-400", to: "to-rose-500", text: "text-rose-400" }
       ]);
+
+      const trend = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        
+        let dayTotal = 0, dayVideo = 0, dayAudio = 0, dayPdf = 0, daySlides = 0, dayQuestoes = 0, dayCards = 0;
+        completedList.forEach(c => {
+          if (c.date === dateStr) {
+            dayTotal++;
+            if (c.type === 'video') dayVideo++;
+            else if (c.type === 'audio') dayAudio++;
+            else if (c.type === 'pdf') dayPdf++;
+            else if (c.type === 'slides') daySlides++;
+            else if (c.type === 'questoes' || c.type === 'question') dayQuestoes++;
+            else if (c.type === 'cards' || c.type === 'flashcard') dayCards++;
+          }
+        });
+        trend.push({ date: dateStr, total: dayTotal, video: dayVideo, audio: dayAudio, pdf: dayPdf, slides: daySlides, questoes: dayQuestoes, cards: dayCards });
+      }
+      setTrendData(trend);
 
       // Load last accessed course/module/materia
       const lastCourseId = localStorage.getItem("militar_last_course_id");
@@ -540,7 +562,7 @@ export default function DashboardHome({
                   <div className="grid grid-cols-2 gap-4">
                     {/* Mais Estudadas */}
                     <div>
-                      <h4 className="text-[10px] font-mono text-emerald-600 font-bold uppercase mb-2">Mais Estudadas (Atividades)</h4>
+                      <h4 className="text-[10px] font-mono text-emerald-600 font-bold uppercase mb-2">Mais Estudadas</h4>
                       <div className="space-y-2.5">
                         {subjectRanking.slice(0, 3).map((sub, idx) => (
                           <div key={`most-${idx}`} className="flex flex-col space-y-1 text-[11px]">

@@ -133,20 +133,60 @@ export async function fetchBadges(): Promise<Badge[]> {
 }
 
 export async function fetchSimulators(): Promise<MockSimulator[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from('mock_simulators')
     .select('*');
     
   if (error) throw error;
+
+  let resultsMap: Record<string, number> = {};
+  if (user) {
+    const { data: resultsData } = await supabase
+      .from('user_simulator_results')
+      .select('simulator_id, grade')
+      .eq('user_id', user.id);
+    if (resultsData) {
+      resultsData.forEach(r => {
+        resultsMap[r.simulator_id] = r.grade;
+      });
+    }
+  }
+
   return data.map((d: any) => ({
     id: d.id,
     title: d.title,
     description: d.description,
     questionsCount: d.questions_count || (d.questions ? d.questions.length : 0),
     duration: d.duration,
-    status: d.status,
-    questions: d.questions || []
+    status: resultsMap[d.id] !== undefined ? "finalizado" : d.status,
+    grade: resultsMap[d.id],
+    questions: d.questions || [],
+    course_ids: d.course_ids || []
   }));
+}
+
+export async function saveSimulatorResult(simulatorId: string, grade: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  
+  const { data: existing } = await supabase
+    .from('user_simulator_results')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('simulator_id', simulatorId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from('user_simulator_results').update({ grade, completed_at: new Date().toISOString() }).eq('id', existing.id);
+  } else {
+    await supabase.from('user_simulator_results').insert({
+      user_id: user.id,
+      simulator_id: simulatorId,
+      grade
+    });
+  }
 }
 
 export async function generateNewCourseId(title: string): Promise<string> {

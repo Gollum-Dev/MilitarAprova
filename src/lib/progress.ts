@@ -38,9 +38,13 @@ export function initializeProgress(student: any) {
 async function saveProgressToSupabase() {
   try {
     const email = progressCache.email;
-    if (!email) return;
+    console.log("saveProgressToSupabase called for email:", email, "cache:", progressCache);
+    if (!email) {
+      console.warn("saveProgressToSupabase: No email in progressCache, aborting save.");
+      return;
+    }
 
-    await supabase
+    const { error } = await supabase
       .from('students')
       .update({
         resource_statuses: progressCache.resource_statuses,
@@ -51,6 +55,10 @@ async function saveProgressToSupabase() {
         questions_correct: progressCache.questions_correct
       })
       .eq('email', email);
+      
+    if (error) {
+      console.error("Erro do Supabase ao salvar progresso:", error);
+    }
   } catch (err) {
     console.error("Erro ao salvar progresso no Supabase:", err);
   }

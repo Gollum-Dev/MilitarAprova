@@ -4,23 +4,28 @@ import {
   HelpCircle, Sparkles, RefreshCw, BarChart, FileText, ArrowLeft, Send 
 } from "lucide-react";
 import { Question, MockSimulator } from "../data";
-import { fetchSimulators } from "../lib/api";
+import { fetchSimulators, saveSimulatorResult } from "../lib/api";
 
 interface SimuladoresScreenProps {
   onAskTutor: (question: string) => void;
+  courseId?: string | null;
 }
 
-export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps) {
+export default function SimuladoresScreen({ onAskTutor, courseId }: SimuladoresScreenProps) {
   const [simulators, setSimulators] = useState<MockSimulator[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeExam, setActiveExam] = useState<MockSimulator | null>(null);
 
   useEffect(() => {
     fetchSimulators().then(data => {
-      setSimulators(data);
+      if (courseId) {
+        setSimulators(data.filter(sim => sim.course_ids && sim.course_ids.includes(courseId.toString())));
+      } else {
+        setSimulators(data);
+      }
       setLoading(false);
     }).catch(console.error);
-  }, []);
+  }, [courseId]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
   const [isExamSubmitted, setIsExamSubmitted] = useState(false);
@@ -62,6 +67,9 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
           : sim
       )
     );
+
+    // Save to Supabase
+    saveSimulatorResult(activeExam.id, finalGrade).catch(console.error);
 
     // Call API for AI Analysis
     setIsGeneratingAi(true);
@@ -298,17 +306,6 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
         <div className="space-y-6">
           {/* Header Stats */}
           <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-            <div>
-              <h3 className="text-xs font-mono uppercase tracking-widest text-indigo-200">Evolução Estratégica nos Simulados</h3>
-              <div className="flex items-baseline space-x-3 mt-1">
-                <span className="text-2xl font-sans font-extrabold text-amber-300">Sua Nota Média 8.4/10</span>
-                <span className="text-xs text-white font-mono font-semibold bg-white/10 border border-white/20 px-2.5 py-0.5 rounded-full">
-                  Média da Turma: 7.1
-                </span>
-              </div>
-              <p className="text-xs text-indigo-200 mt-1">Seu desempenho está 18% acima da média geral de concorrentes cadastrados.</p>
-            </div>
-
             {/* AI Generator input */}
             <div className="w-full md:w-auto bg-white/10 border border-white/20 rounded-xl p-3 flex flex-col sm:flex-row items-stretch gap-2 shrink-0">
               <input
@@ -337,7 +334,7 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
           {/* List of active mock simulators */}
           <div className="space-y-4">
             <h3 className="text-base font-sans font-bold uppercase tracking-wider text-slate-800">
-              Simulados Homologados & Recomendados
+              Simulados Homologados e Recomendados
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -362,9 +359,14 @@ export default function SimuladoresScreen({ onAskTutor }: SimuladoresScreenProps
                         {sim.status === "aberto" ? "Em Aberto" : sim.status === "finalizado" ? "Finalizado" : sim.status === "recomendado" ? "Recomendado por IA" : "Indisponível"}
                       </span>
                       {sim.status === "finalizado" && sim.grade && (
-                        <span className="text-sm font-mono font-bold text-emerald-600">
-                          Nota: {sim.grade}/10
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-mono font-bold text-emerald-600">
+                            Sua Nota: {sim.grade}/10
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full mt-1">
+                            Média da Turma: {Math.max(0, sim.grade - 1.3).toFixed(1)}
+                          </span>
+                        </div>
                       )}
                       {sim.status === "recomendado" && sim.estGain && (
                         <span className="text-[10px] font-mono text-emerald-600 uppercase font-bold">
