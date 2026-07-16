@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree, Eye } from "lucide-react";
+import { ShieldAlert, LogOut, Users, BookOpen, LineChart, PlusCircle, Settings, Edit, Trash2, X, Save, Video, Headphones, FileText, HelpCircle, Layers, FileCheck, FolderTree, ListTree, Eye, MessageSquare } from "lucide-react";
 import CourseEditor, { CourseData } from "./CourseEditor";
 import { MateriasManager } from "./MateriasManager";
 import { ProvasManager } from "./ProvasManager";
@@ -8,6 +8,7 @@ import SuporteManager from "./SuporteManager";
 import { supabase } from "../lib/supabase";
 import { fetchAdminCourses, createAdminCourse, updateAdminCourse, deleteAdminCourse, generateNewCourseId } from "../lib/api";
 import { fetchStudents, createStudent, updateStudent, deleteStudent } from "../lib/student";
+import { getUnreadAdminMessagesCount } from "../lib/support";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -18,6 +19,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [activeTab, setActiveTab] = useState<"cursos" | "materias" | "provas" | "usuarios" | "metricas" | "config" | "suporte">("cursos");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadSupport, setUnreadSupport] = useState(0);
   const [institutions, setInstitutions] = useState(["CBMMG", "PMMG", "PMESP", "CBMERJ"]);
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | number | null>(null);
@@ -112,45 +114,54 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   };
 
   useEffect(() => {
-    async function loadCourses() {
-      setLoading(true);
-      try {
-        const [data, { data: examsData }] = await Promise.all([
-          fetchAdminCourses(),
-          supabase.from('mock_simulators').select('id, course_ids')
-        ]);
-        
-        if (examsData) {
-          setGlobalExams(examsData);
-        }
-        const mapped = data.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          institution: c.institution || '',
-          year: c.year || '',
-          status: c.status || 'Rascunho',
-          cover_url: c.cover_url || '',
-          description: c.description || '',
-          disciplines: c.disciplines_json || []
-        }));
-        setCourses(mapped);
-        
-        // Executar sincronização de matérias ausentes
-        await syncAllCourseMateriasToGlobal(mapped);
-
-        // Atualizar as categorias da Constituição de 1988 para a nomenclatura oficial no Supabase
-        await supabase
-          .from('law_articles')
-          .update({ category: 'Constituição da República Federativa do Brasil de 1988' })
-          .in('id', ['lei-01', 'lei-02', 'lei-05']);
-      } catch (err) {
-        console.error("Erro ao carregar cursos:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCourses();
+    fetchInitialData();
+    checkUnreadMessages();
+    const interval = setInterval(checkUnreadMessages, 10000); // Check every 10s
+    return () => clearInterval(interval);
   }, []);
+
+  const checkUnreadMessages = async () => {
+    const count = await getUnreadAdminMessagesCount();
+    setUnreadSupport(count);
+  };
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const [data, { data: examsData }] = await Promise.all([
+        fetchAdminCourses(),
+        supabase.from('mock_simulators').select('id, course_ids')
+      ]);
+      
+      if (examsData) {
+        setGlobalExams(examsData);
+      }
+      const mapped = data.map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        institution: c.institution || '',
+        year: c.year || '',
+        status: c.status || 'Rascunho',
+        cover_url: c.cover_url || '',
+        description: c.description || '',
+        disciplines: c.disciplines_json || []
+      }));
+      setCourses(mapped);
+      
+      // Executar sincronização de matérias ausentes
+      await syncAllCourseMateriasToGlobal(mapped);
+
+      // Atualizar as categorias da Constituição de 1988 para a nomenclatura oficial no Supabase
+      await supabase
+        .from('law_articles')
+        .update({ category: 'Constituição da República Federativa do Brasil de 1988' })
+        .in('id', ['lei-01', 'lei-02', 'lei-05']);
+    } catch (err) {
+      console.error("Erro ao carregar cursos:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "usuarios" || activeTab === "metricas") {
@@ -347,6 +358,9 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                   if (item.id === "provas") {
                     setProvasFilterCourseId(null); // Clear filter when clicking sidebar
                   }
+                  if (item.id === "suporte") {
+                    setUnreadSupport(0); // Optimistic clear
+                  }
                   setEditingCourseId(null);
                   setActiveMateria(null);
                 }}
@@ -357,7 +371,12 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                 }`}
               >
                 <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                <span>{item.label}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.id === "suporte" && unreadSupport > 0 && (
+                  <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">{unreadSupport}</span>
+                  </div>
+                )}
               </button>
             );
           })}

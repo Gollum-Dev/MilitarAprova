@@ -412,6 +412,14 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {/* Support Modal overlay */}
+      {isSupportModalOpen && (
+        <SupportModal 
+          userId={userEmail || 'aluno-default'} 
+          onClose={() => setIsSupportModalOpen(false)} 
+        />
+      )}
     </div>
   );
 }

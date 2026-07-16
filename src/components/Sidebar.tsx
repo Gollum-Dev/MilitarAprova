@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
+import { getUnreadStudentMessagesCount } from "../lib/support";
 import React, { useState, useEffect, useRef } from "react";
 
 interface SidebarProps {
@@ -33,9 +34,11 @@ export default function Sidebar({
   currentTab, onChangeTab, userRank, onLogout, isOfflineMode,
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   selectedContentId, setSelectedContentId,
-  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses, onOpenSupport
+  courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab, allowedCourses, onOpenSupport, userEmail
 }: SidebarProps) {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [unreadSupport, setUnreadSupport] = useState(0);
+
   interface HoveredTabInfo {
     id: string;
     top: number;
@@ -54,6 +57,21 @@ export default function Sidebar({
   const [sidebarModulesExpanded, setSidebarModulesExpanded] = useState(true);
   const timeoutRef = useRef<any>(null);
   const disciplineTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    fetchCourses().then(setCourses).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    const checkUnread = async () => {
+      const count = await getUnreadStudentMessagesCount(userEmail);
+      setUnreadSupport(count);
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 10000);
+    return () => clearInterval(interval);
+  }, [userEmail]);
 
   const handleTabMouseEnter = (subItemId: string, courseId: string, e: React.MouseEvent) => {
     if (subItemId !== "materias") return;
@@ -279,13 +297,21 @@ export default function Sidebar({
         <div className="space-y-1">
           <button
             onClick={() => {
+              setUnreadSupport(0);
               if (onOpenSupport) onOpenSupport();
               else alert("Suporte técnico do Cabo Véio. Envie suas dúvidas para suporte@caboveio.com.br");
             }}
-            className="w-full flex items-center space-x-3 px-3 py-1.5 rounded text-[11px] font-sans font-medium uppercase text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            className="w-full flex items-center justify-between px-3 py-1.5 rounded text-[11px] font-sans font-medium uppercase text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer text-left"
           >
-            <SupportIcon className="w-3.5 h-3.5 text-slate-400" />
-            <span>SUPORTE</span>
+            <div className="flex items-center space-x-3">
+              <SupportIcon className="w-3.5 h-3.5 text-slate-400" />
+              <span>SUPORTE</span>
+            </div>
+            {unreadSupport > 0 && (
+              <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="text-[9px] font-bold text-white">{unreadSupport}</span>
+              </div>
+            )}
           </button>
           
           <button
