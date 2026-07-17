@@ -39,6 +39,7 @@ export interface CourseData {
   cover_url?: string;
   description?: string;
   disciplines?: Discipline[];
+  end_date?: string;
 }
 
 interface CourseEditorProps {
@@ -55,6 +56,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
   const [year, setYear] = useState(course.year);
   const [coverUrl, setCoverUrl] = useState(course.cover_url || "");
   const [description, setDescription] = useState(course.description || "");
+  const [endDate, setEndDate] = useState(course.end_date || "");
   const [disciplines, setDisciplines] = useState<Discipline[]>(course.disciplines || []);
   
   // Auto-save geral com debounce
@@ -72,11 +74,12 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
         year,
         cover_url: coverUrl,
         description,
+        end_date: endDate,
         disciplines
       }, false); // <== IMPORTANTE: não fechar o editor no auto-save
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [title, institution, year, coverUrl, description, disciplines]);
+  }, [title, institution, year, coverUrl, description, endDate, disciplines]);
   
   // UI States (Focus Navigation)
   const [activeDisciplineId, setActiveDisciplineId] = useState<number | null>(null);
@@ -559,6 +562,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
       year,
       cover_url: coverUrl,
       description,
+      end_date: endDate,
       disciplines
     });
   };
@@ -597,7 +601,7 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
           {mode !== 'curriculum' && (
             <section className="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-sm">
               <h4 className="text-sm font-bold font-sans text-slate-800 uppercase tracking-wider mb-4">Dados Básicos</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Instituição</label>
                   <select
@@ -619,6 +623,15 @@ export default function CourseEditor({ course, institutions, onSave, onCancel, m
                     onChange={(e) => setYear(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                     placeholder="Ex: 2024"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Data de Encerramento</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
               </div>

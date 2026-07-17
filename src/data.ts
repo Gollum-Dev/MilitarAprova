@@ -42,6 +42,7 @@ export interface Course {
   disciplinesCount: number;
   cover_url?: string;
   description?: string;
+  end_date?: string;
   modules: CourseModule[];
 }
 

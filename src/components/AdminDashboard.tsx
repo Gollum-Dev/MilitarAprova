@@ -29,6 +29,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
   const [newCourseYear, setNewCourseYear] = useState("");
   const [newCourseCoverUrl, setNewCourseCoverUrl] = useState("");
   const [newCourseDescription, setNewCourseDescription] = useState("");
+  const [newCourseEndDate, setNewCourseEndDate] = useState("");
   const [activeMateria, setActiveMateria] = useState<any>(null);
 
   // Students Management States
@@ -144,6 +145,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         status: c.status || 'Rascunho',
         cover_url: c.cover_url || '',
         description: c.description || '',
+        end_date: c.end_date || '',
         disciplines: c.disciplines_json || []
       }));
       setCourses(mapped);
@@ -282,6 +284,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         subtitle: newCourseDescription || "Descrição do curso",
         description: newCourseDescription || "Descrição do curso",
         cover_url: newCourseCoverUrl || "",
+        end_date: newCourseEndDate || null,
         hours: 0,
         lessons: 0,
         disciplines_count: 0
@@ -297,6 +300,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
         status: newCourseData.status,
         cover_url: newCourseData.cover_url,
         description: newCourseData.description,
+        end_date: newCourseData.end_date,
         disciplines: []
       }]);
       
@@ -305,6 +309,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
       setNewCourseYear("");
       setNewCourseCoverUrl("");
       setNewCourseDescription("");
+      setNewCourseEndDate("");
       setIsCreatingCourse(false);
     } catch (err) {
       console.error("Erro ao criar curso:", err);
@@ -624,7 +629,7 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                         />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                           <div className="flex justify-between items-center mb-2">
                             <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider">Instituição</label>
@@ -683,6 +688,15 @@ export default function AdminDashboard({ onLogout, userName }: AdminDashboardPro
                             value={newCourseYear}
                             onChange={(e) => setNewCourseYear(e.target.value)}
                             placeholder="Ex: 2026"
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-sans text-slate-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Data de Encerramento</label>
+                          <input 
+                            type="date" 
+                            value={newCourseEndDate}
+                            onChange={(e) => setNewCourseEndDate(e.target.value)}
                             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-sans text-slate-800"
                           />
                         </div>

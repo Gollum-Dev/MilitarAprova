@@ -85,6 +85,7 @@ export async function fetchCourses(): Promise<Course[]> {
       disciplinesCount: Array.isArray(disciplinesList) ? disciplinesList.length : (course.disciplines_count || 0),
       cover_url: course.cover_url || '',
       description: course.description || '',
+      end_date: course.end_date || undefined,
       modules: mappedModules
     };
   });
@@ -201,7 +202,7 @@ export async function generateNewCourseId(title: string): Promise<string> {
 export async function fetchAdminCourses() {
   const { data, error } = await supabase
     .from('courses')
-    .select('id, title, institution, year, status, cover_url, description, disciplines_json');
+    .select('id, title, institution, year, status, cover_url, description, end_date, disciplines_json');
     
   if (error) {
     console.error("Erro ao buscar cursos:", error);

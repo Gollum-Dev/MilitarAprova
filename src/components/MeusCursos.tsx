@@ -759,13 +759,15 @@ export default function MeusCursos({
     }
   }, [currentFlashcardIndex, filteredFlashcards.length]);
 
-  const renderCourseCard = (course: Course, isAllowed: boolean) => (
+  const renderCourseCard = (course: Course, isAllowed: boolean, isExpired: boolean = false) => (
     <div
       key={course.id}
       onClick={() => {
         if (isAllowed) {
           setSelectedCourseId(course.id);
           setCourseActiveTab("materias");
+        } else if (isExpired) {
+          alert("O período de acesso a este curso expirou.");
         } else {
           setCheckoutCourse(course);
         }
@@ -808,6 +810,11 @@ export default function MeusCursos({
           <span className="text-blue-200 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
             <span>Estudar Agora</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </span>
+        ) : isExpired ? (
+          <span className="text-red-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+            <span>Acesso Expirado</span>
+            <Lock className="w-3.5 h-3.5" />
           </span>
         ) : (
           <span className="text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center space-x-1.5 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
@@ -864,8 +871,9 @@ export default function MeusCursos({
             <h3 className="text-sm font-mono font-bold text-slate-500 uppercase tracking-widest mt-8 mb-4 border-b border-slate-200 pb-2">Cursos Cadastrados</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {courses.filter(c => allowedCourses?.includes(c.id)).map((course) => {
-                const isAllowed = true;
-                return renderCourseCard(course, isAllowed);
+                const isExpired = course.end_date ? new Date(course.end_date + 'T23:59:59') < new Date() : false;
+                const isAllowed = !isExpired;
+                return renderCourseCard(course, isAllowed, isExpired);
               })}
             </div>
           </>
@@ -876,8 +884,9 @@ export default function MeusCursos({
             <h3 className="text-sm font-mono font-bold text-slate-500 uppercase tracking-widest mt-12 mb-4 border-b border-slate-200 pb-2">Outros Cursos Disponíveis</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {courses.filter(c => !allowedCourses?.includes(c.id)).map((course) => {
+                const isExpired = course.end_date ? new Date(course.end_date + 'T23:59:59') < new Date() : false;
                 const isAllowed = false;
-                return renderCourseCard(course, isAllowed);
+                return renderCourseCard(course, isAllowed, isExpired);
               })}
             </div>
           </>
