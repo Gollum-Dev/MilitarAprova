@@ -136,8 +136,8 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
       )}
 
       {/* Left side Image (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-[55%] relative bg-emerald-950 items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-emerald-900/60 mix-blend-multiply z-10" />
+      <div className="hidden lg:flex lg:w-[55%] relative bg-blue-950 items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
         <img 
           src="/login-bg-premium.png" 
           alt="Cabo Véio Tactical Background" 
@@ -145,7 +145,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
         />
         {/* Decorative elements over image */}
         <div className="relative z-20 text-center px-12 mt-[-10%]">
-           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-amber-400/20 flex items-center justify-center shadow-2xl mb-8">
+           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-800 border border-amber-400/20 flex items-center justify-center shadow-2xl mb-8">
              <div className="relative">
                <ShieldAlert className="w-12 h-12 text-white" />
                <div className="absolute inset-0 flex items-center justify-center opacity-40">
@@ -156,7 +156,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
             <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
               A Doutrina que Aprova
             </h2>
-            <p className="text-emerald-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
+            <p className="text-indigo-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
               A plataforma tática definitiva para a sua aprovação.
             </p>
         </div>
@@ -170,7 +170,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
         {/* Header / Logo (Visible mostly on mobile, but kept small on desktop) */}
         <div className="w-full flex justify-center pt-4 lg:hidden z-10">
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-amber-400/20 flex items-center justify-center shadow-sm">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-800 border border-amber-400/20 flex items-center justify-center shadow-sm">
               <div className="relative">
                 <ShieldAlert className="w-9 h-9 text-white" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-40">
@@ -206,14 +206,14 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
             <button
               type="button"
               onClick={() => setIsRegisterMode(false)}
-              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${!isRegisterMode ? 'text-emerald-700 border-b-2 border-emerald-700 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${!isRegisterMode ? 'text-indigo-600 border-b-2 border-indigo-600 font-black' : 'text-slate-400 hover:text-slate-655'}`}
             >
               Entrar
             </button>
             <button
               type="button"
               onClick={() => setIsRegisterMode(true)}
-              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${isRegisterMode ? 'text-emerald-700 border-b-2 border-emerald-700 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${isRegisterMode ? 'text-indigo-600 border-b-2 border-indigo-600 font-black' : 'text-slate-400 hover:text-slate-655'}`}
             >
               Cadastrar-se
             </button>
@@ -225,7 +225,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
             </h2>
             {isRegisterMode && (
               <p className="text-xs text-slate-500 mt-1 font-sans">
-                Preencha os dados militares abaixo para criar seu acesso.
+                Preencha os dados abaixo para criar seu acesso.
               </p>
             )}
           </div>
@@ -244,7 +244,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
                       placeholder="Recruta Silva"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
                     />
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       placeholder="aluno@email.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
                     />
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
                       placeholder="Defina uma senha"
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
                     />
                     <button
                       type="button"
@@ -298,7 +298,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
                       placeholder="(31) 99999-9999"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
                     />
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="aluno@email.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
                     />
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha de Acesso</label>
-                    <a href="#recuperar" className="text-[10px] font-sans font-bold text-emerald-700 hover:text-emerald-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
+                    <a href="#recuperar" className="text-[10px] font-sans font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -337,7 +337,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Sua senha"
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
                     />
                     <button
                       type="button"
@@ -356,7 +356,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
               id="login-submit"
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-700/50 text-white font-sans font-bold text-sm uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center space-x-2 border border-transparent active:scale-[0.98]"
+              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-800 disabled:bg-indigo-600/50 text-white font-sans font-bold text-sm uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center space-x-2 border border-transparent active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
@@ -408,7 +408,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
               <button
                 type="button"
                 onClick={() => setIsRegisterMode(!isRegisterMode)}
-                className="text-emerald-700 hover:underline font-sans font-semibold transition-all cursor-pointer border-none bg-transparent"
+                className="text-indigo-600 hover:underline font-sans font-semibold transition-all cursor-pointer border-none bg-transparent"
               >
                 {isRegisterMode ? "Faça login" : "Criar conta"}
               </button>

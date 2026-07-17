@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { 
   ShieldAlert, Award, ArrowRight, Target, Tv, BookOpen, 
-  ChevronRight, CheckCircle, X, Sparkles 
+  ChevronRight, CheckCircle, X, Sparkles, BarChart3, TrendingUp, 
+  Activity, Map, Bot, FileText, Headphones, MonitorPlay, 
+  Library, Clock, Phone, Mail
 } from "lucide-react";
 import { fetchCourses } from "../lib/api";
+import { sendSupportMessage } from "../lib/support";
 import { Course } from "../data";
 
 interface LandingPageProps {
@@ -16,6 +19,11 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [buyerEmail, setBuyerEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [isSendingContact, setIsSendingContact] = useState(false);
 
   useEffect(() => {
     fetchCourses()
@@ -31,6 +39,29 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
 
   const handleBuyClick = (course: Course) => {
     onNavigateToLogin(course.id);
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName || !contactEmail || !contactMessage) return;
+
+    setIsSendingContact(true);
+    try {
+      const fullMessage = `Novo Contato (Site Aberto)\nNome: ${contactName}\nContato: ${contactEmail}\n\nMensagem:\n${contactMessage}`;
+      const fakeUserId = `LEAD_${contactEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      
+      await sendSupportMessage(fakeUserId, fullMessage, 'student');
+      
+      alert("Sua mensagem foi enviada com sucesso! Nossa equipe entrará em contato em breve.");
+      setContactName("");
+      setContactEmail("");
+      setContactMessage("");
+    } catch (err) {
+      console.error(err);
+      alert("Houve um erro ao enviar sua mensagem. Tente novamente ou use o WhatsApp.");
+    } finally {
+      setIsSendingContact(false);
+    }
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -71,49 +102,80 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] font-sans overflow-x-hidden animate-smooth-fade flex flex-col">
-      {/* HEADER (Topbar) */}
-      <header className="w-full fixed top-0 left-0 z-50 glass-panel border-b border-white/10 backdrop-blur-lg">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-800 border border-amber-400/20 flex items-center justify-center shadow-sm">
-              <ShieldAlert className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-[var(--bg)] font-sans overflow-x-hidden animate-smooth-fade flex flex-col">      
+      {/* HEADER (Topbar) Premium */}
+      <header className="w-full fixed top-4 left-0 z-50 flex justify-center px-4 transition-all duration-300 animate-smooth-fade">
+        <div className="max-w-7xl w-full bg-white/80 hover:bg-white/95 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_rgba(30,58,138,0.08)] rounded-full h-16 flex items-center justify-between px-3 md:px-6 transition-all duration-300">
+          
+          {/* Logo Premium */}
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-indigo-300/40 shadow-lg shadow-indigo-600/20 group-hover:shadow-indigo-500/40 transition-all duration-300 group-hover:scale-105">
+              <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Logo Cabo Véio" className="w-full h-full object-cover" />
             </div>
-            <div>
-              <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">
+            <div className="flex flex-col">
+              <h1 className="text-lg md:text-xl font-display font-black text-slate-800 tracking-tight group-hover:text-indigo-700 transition-colors">
                 Cabo Véio
               </h1>
-              <p className="text-[10px] text-slate-500 font-mono tracking-wider uppercase">
-                Doutrina e Bizus de Caserna
+              <p className="text-[8px] md:text-[9px] text-slate-500 font-mono tracking-widest uppercase font-bold">
+                Doutrina & Bizus
               </p>
             </div>
           </div>
 
-          {/* Navigation (Desktop) */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* Navigation Tabs (Desktop) Premium */}
+          <nav className="hidden md:flex flex-1 mx-6 lg:mx-12 items-center justify-between space-x-1 bg-slate-100/60 p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             <button 
               onClick={() => scrollToSection("cursos")} 
-              className="text-sm font-sans font-semibold text-slate-600 hover:text-emerald-700 transition-colors border-none bg-transparent cursor-pointer"
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
             >
-              Nossos Cursos
+              Cursos
+            </button>
+            <button 
+              onClick={() => scrollToSection("painel")} 
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
+            >
+              Controle
             </button>
             <button 
               onClick={() => scrollToSection("recursos")} 
-              className="text-sm font-sans font-semibold text-slate-600 hover:text-emerald-700 transition-colors border-none bg-transparent cursor-pointer"
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
             >
-              Recursos Táticos
+              Inovação
+            </button>
+            <button 
+              onClick={() => scrollToSection("gestao")} 
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
+            >
+              Gestão
+            </button>
+            <button 
+              onClick={() => scrollToSection("treino")} 
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
+            >
+              Treino
+            </button>
+            <button 
+              onClick={() => scrollToSection("porque")} 
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
+            >
+              Por Que
+            </button>
+            <button 
+              onClick={() => scrollToSection("contato")} 
+              className="flex-1 w-full py-2 rounded-full text-[10px] lg:text-[11px] font-sans font-bold text-slate-600 hover:text-indigo-700 hover:bg-white hover:shadow-sm transition-all duration-300 border-none cursor-pointer uppercase tracking-wider text-center"
+            >
+              Contato
             </button>
           </nav>
 
-          {/* Login Button */}
-          <div className="flex items-center space-x-4">
+          {/* Login Button Premium */}
+          <div className="flex items-center">
             <button 
               onClick={() => onNavigateToLogin()}
-              className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-sm font-sans font-bold uppercase tracking-wide transition-all shadow-md flex items-center space-x-2 active:scale-95 cursor-pointer border-none"
+              className="px-5 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white rounded-full text-[10px] md:text-xs font-sans font-black uppercase tracking-widest transition-all shadow-[0_4px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_25px_rgba(79,70,229,0.5)] flex items-center space-x-2 active:scale-95 cursor-pointer border border-indigo-400/30"
             >
-              <span>Entrar no Sistema</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Acessar</span>
+              <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
         </div>
@@ -121,8 +183,8 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
 
       {/* HERO SECTION */}
       <section className="relative w-full pt-32 pb-20 md:pt-40 md:pb-32 flex items-center overflow-hidden">
-        <div className="absolute inset-0 bg-emerald-950 z-0">
-          <div className="absolute inset-0 bg-emerald-900/60 mix-blend-multiply z-10" />
+        <div className="absolute inset-0 bg-blue-950 z-0">
+          <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
           <img 
             src="/login-bg-premium.png" 
             alt="Cabo Véio Tactical Background" 
@@ -131,79 +193,69 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         </div>
         
         {/* Glow Effects */}
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-700/20 rounded-full blur-[120px] pointer-events-none z-10" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none z-10" />
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none z-10" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none z-10" />
 
         <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-20 flex flex-col items-center text-center">
-          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md mb-6 animate-smooth-fade">
-            <Award className="w-4 h-4 text-amber-400" />
-            <span className="text-[10px] font-mono text-white uppercase tracking-widest font-bold">Líder em Doutrina e Bizus CHO e CFS CBMMG</span>
-          </div>
 
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white tracking-tight leading-tight mb-6 drop-shadow-2xl max-w-4xl">
-            A experiência do <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Cabo Véio</span> para o seu sucesso
+            Cabo Véio: Revolucione a Sua Forma de <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-400">Aprender</span>
           </h2>
 
           <p className="text-lg md:text-xl font-sans max-w-2xl mx-auto mb-10 drop-shadow-md leading-relaxed text-slate-100">
-            O ambiente definitivo com bizus do Cabo Véio, vídeo aulas, áudio aulas e uma grande quantidade de questões focadas nas carreiras militares estaduais.
+            A plataforma de estudos mais completa do mercado. Inteligência Artificial, trilhas personalizadas e gestão total do seu progresso para garantir a sua aprovação e aprendizado.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center w-full space-y-4 sm:space-y-0 sm:space-x-6">
             <button 
               onClick={() => onNavigateToLogin()}
-              className="w-full sm:w-[280px] px-4 py-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-sans font-bold uppercase tracking-wider transition-all shadow-lg shadow-emerald-900/50 flex items-center justify-center space-x-2 hover:scale-105 active:scale-95 cursor-pointer border-none"
+              className="w-full sm:w-auto px-8 py-5 bg-white text-indigo-900 hover:bg-slate-100 rounded-xl text-sm font-sans font-black uppercase tracking-wider transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] flex items-center justify-center space-x-3 active:scale-95 cursor-pointer border-none whitespace-nowrap"
             >
-              <span>Marcha para a Vitória</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => scrollToSection("cursos")} 
-              className="w-full sm:w-[280px] px-4 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-sans font-bold uppercase tracking-wider backdrop-blur-md transition-all flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <span>Conhecer os Cursos</span>
+              <span>Criar Minha Conta e Testar a Plataforma</span>
+              <ArrowRight className="w-5 h-5 text-indigo-600 shrink-0" />
             </button>
           </div>
         </div>
       </section>
 
       {/* CATALOGUE SECTION */}
-      <section id="cursos" className="py-20 bg-white relative z-20 border-b border-slate-100">
+      <section id="cursos" className="py-24 bg-slate-50 relative z-20 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1 text-[10px] font-mono font-bold text-emerald-700 uppercase mb-3">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-50/50 border border-indigo-100 rounded-full px-3 py-1 text-[10px] font-mono font-bold text-indigo-600 uppercase mb-3">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
               <span>Nossos Cursos Disponíveis</span>
             </div>
             <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight mb-4">
               Matricule-se e Inicie Seus Estudos
             </h3>
-            <p className="text-slate-500 font-sans max-w-2xl mx-auto text-base">
-              Acesso completo a vídeo-aulas, materiais didáticos em PDF, questões comentadas e simuladores com IA.
+            <p className="text-slate-500 font-sans max-w-4xl mx-auto text-base leading-relaxed">
+              Acesso ilimitado a aulas em vídeo e áudio, materiais didáticos e resumos em PDF, slides dos professores, flashcards inteligentes, banco de questões comentadas, simulados inéditos e provas anteriores.
             </p>
           </div>
 
           {loading ? (
             <div className="flex justify-center items-center h-48">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-700"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {courses.map((course) => (
                 <div 
                   key={course.id} 
-                  className="bg-slate-50/70 border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                  className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                 >
                   {/* Cover */}
                   <div className="relative aspect-video w-full bg-slate-200 overflow-hidden">
                     {course.cover_url ? (
                       <img src={course.cover_url} alt={course.title} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-800 to-emerald-950 text-white p-6 text-center">
-                        <ShieldAlert className="w-10 h-10 text-emerald-400 mb-2" />
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-800 to-blue-950 text-white p-6 text-center">
+                        <ShieldAlert className="w-10 h-10 text-cyan-400 mb-2" />
                         <span className="font-sans font-black text-xs uppercase tracking-wider">{course.title}</span>
                       </div>
                     )}
-                    <div className="absolute top-4 right-4 bg-emerald-700 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full shadow-sm">
+                    <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-full shadow-sm">
                       R$ {course.id === 'cho-cbmmg-2027' ? '497' : course.id === 'cfo-cbmmg-2027' ? '597' : '297'}
                     </div>
                   </div>
@@ -239,12 +291,12 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                       {/* Features list */}
                       <ul className="space-y-2 text-[11px] font-sans font-bold text-slate-600 list-none p-0 m-0">
                         <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <CheckCircle className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                           <span>Aulas em Áudio e Vídeo ilimitadas</span>
                         </li>
                         <li className="flex items-center space-x-2">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span>Resumos & Simulados com IA</span>
+                          <CheckCircle className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span>Resumos Estratégicos & Simulados Inéditos</span>
                         </li>
                       </ul>
                     </div>
@@ -252,7 +304,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                     {/* Buy Button */}
                     <button 
                       onClick={() => handleBuyClick(course)}
-                      className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
+                      className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
                     >
                       <span>Matricular-se Agora</span>
                     </button>
@@ -264,64 +316,339 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         </div>
       </section>
 
-      {/* CATEGORIES SECTION (Like Qbizu) */}
-      <section id="recursos" className="py-20 relative bg-slate-50 z-20 border-b border-slate-100">
+      {/* DASHBOARD SECTION */}
+      <section id="painel" className="py-24 bg-white relative z-20 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="text-center mb-16">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-50/50 border border-indigo-100 rounded-full px-3 py-1 text-[10px] font-mono font-bold text-indigo-600 uppercase mb-3">
+              <BarChart3 className="w-3.5 h-3.5 animate-pulse" />
+              <span>Painel do Aluno</span>
+            </div>
             <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight mb-4">
-              A metodologia que mais aprova
+              Assuma o Controle dos Seus Estudos
             </h3>
-            <p className="text-slate-500 font-sans max-w-2xl mx-auto text-lg">
-              Nosso ecossistema de aprendizado foi desenhado para maximizar sua retenção e preparar você para o cenário real da prova.
+            <p className="text-slate-500 font-sans max-w-2xl mx-auto text-base leading-relaxed">
+              Nós criamos um Ecossistema de Aprendizado onde você nunca estuda no escuro. Acompanhe cada passo da sua jornada com métricas claras e precisas.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Questões */}
-            <div className="glass-panel rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-200/60 bg-white group cursor-pointer" onClick={() => onNavigateToLogin()}>
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition-colors duration-300">
-                <Target className="w-8 h-8 text-indigo-600 group-hover:text-white transition-colors" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 hover:shadow-lg transition-all bg-slate-50/50">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 text-indigo-600">
+                <Target className="w-6 h-6" />
               </div>
-              <h4 className="text-xl font-display font-bold text-slate-800 mb-3">Questões Focadas</h4>
-              <p className="text-sm text-slate-600 leading-relaxed mb-6 font-sans">
-                Treinamento intensivo com milhares de questões atualizadas e comentadas por IA, filtradas exclusivamente para concursos de oficiais e sargentos.
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Progresso dos Cursos</h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Saiba exatamente qual a porcentagem de conclusão de cada curso matriculado.
               </p>
-              <div className="flex items-center text-indigo-600 font-bold text-xs uppercase tracking-wider group-hover:translate-x-2 transition-transform">
-                <span>Resolver Agora</span>
-                <ChevronRight className="w-4 h-4 ml-1" />
+            </div>
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 hover:shadow-lg transition-all bg-slate-50/50">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 text-indigo-600">
+                <Activity className="w-6 h-6" />
               </div>
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Produtividade Diária</h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Visualize seu ritmo de estudos dia a dia e mantenha a motivação em alta.
+              </p>
+            </div>
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 hover:shadow-lg transition-all bg-slate-50/50">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 text-indigo-600">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Últimas Matérias</h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Tenha um histórico claro do que já foi vencido no edital ou cronograma.
+              </p>
+            </div>
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 hover:shadow-lg transition-all bg-slate-50/50">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 text-indigo-600">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Tendência</h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Nosso sistema analisa seu ritmo e mostra se sua produtividade está subindo, caindo ou estável, ajudando você a ajustar sua rotina.
+              </p>
+            </div>
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 hover:shadow-lg transition-all bg-slate-50/50">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4 text-indigo-600">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Gestão de Progresso</h4>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Controle total e visual das matérias já estudadas e das que ainda faltam. O poder dos dados a favor da sua organização.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TECH & INNOVATION SECTION */}
+      <section id="recursos" className="py-24 bg-slate-900 relative z-20 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
+        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute left-0 bottom-0 w-96 h-96 bg-cyan-600/20 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight mb-4">
+              Inovação e Tecnologia a Favor da Sua Aprovação
+            </h3>
+            <p className="text-slate-300 font-sans max-w-5xl mx-auto text-base leading-relaxed">
+              Esqueça os métodos tradicionais e engessados. Aqui, a tecnologia trabalha para otimizar o seu tempo.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 p-8 rounded-3xl hover:border-indigo-500/50 transition-all group">
+              <div className="w-14 h-14 bg-indigo-500/20 border border-indigo-500/30 rounded-2xl flex items-center justify-center mb-6 text-indigo-400 group-hover:scale-110 transition-transform">
+                <Map className="w-7 h-7" />
+              </div>
+              <h4 className="text-xl font-bold text-white mb-3">Trilhas Inteligentes</h4>
+              <p className="text-slate-400 font-sans leading-relaxed text-sm">
+                Não sabe por onde começar? Nossas Trilhas Inteligentes organizam o conteúdo de forma lógica e estratégica, criando o caminho mais rápido e eficiente para o seu domínio da matéria. Otimize seu tempo e estude o que realmente importa.
+              </p>
             </div>
 
-            {/* Aulas */}
-            <div className="glass-panel rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-200/60 bg-white group cursor-pointer" onClick={() => onNavigateToLogin()}>
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition-colors duration-300">
-                <Tv className="w-8 h-8 text-indigo-600 group-hover:text-white transition-colors" />
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 p-8 rounded-3xl hover:border-cyan-500/50 transition-all group">
+              <div className="w-14 h-14 bg-cyan-500/20 border border-cyan-500/30 rounded-2xl flex items-center justify-center mb-6 text-cyan-400 group-hover:scale-110 transition-transform">
+                <Bot className="w-7 h-7" />
               </div>
-              <h4 className="text-xl font-display font-bold text-slate-800 mb-3">Vídeo e Áudio Aulas</h4>
-              <p className="text-sm text-slate-600 leading-relaxed mb-6 font-sans">
-                Aprenda a doutrina militar no seu ritmo. Estude de forma visual ou escute as áudio aulas durante o serviço, no trânsito ou na academia.
+              <h4 className="text-xl font-bold text-white mb-3">Tutor IA Exclusivo</h4>
+              <p className="text-slate-400 font-sans leading-relaxed text-sm">
+                Nunca mais fique com dúvidas! Cada curso possui um Tutor de Inteligência Artificial disponível 24 horas por dia, 7 dias por semana. Ele responde suas perguntas na hora, explica conceitos complexos e ajuda você a destravar em qualquer assunto.
               </p>
-              <div className="flex items-center text-indigo-600 font-bold text-xs uppercase tracking-wider group-hover:translate-x-2 transition-transform">
-                <span>Assistir Aulas</span>
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Livros */}
-            <div className="glass-panel rounded-2xl p-8 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-slate-200/60 bg-white group cursor-pointer" onClick={() => onNavigateToLogin()}>
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-6 group-hover:bg-amber-500 transition-colors duration-300">
-                <BookOpen className="w-8 h-8 text-amber-600 group-hover:text-white transition-colors" />
+      {/* STUDY FORMATS SECTION */}
+      <section id="gestao" className="py-24 bg-white relative z-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight mb-4">
+              Gestão de Estudo: Tudo o que Você Precisa em um Só Lugar
+            </h3>
+            <p className="text-slate-500 font-sans max-w-5xl mx-auto text-base leading-relaxed">
+              Cada matéria foi desenhada para atender a todos os perfis de aprendizagem. Você escolhe como prefere consumir o conteúdo:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {[
+              { icon: MonitorPlay, title: "Aulas em Vídeo", desc: "Explicações claras com os melhores professores." },
+              { icon: Headphones, title: "Áudios", desc: "Estude no trânsito, na academia ou onde quiser." },
+              { icon: FileText, title: "PDFs e Resumos", desc: "Material escrito completo e direto ao ponto para leitura e revisão rápida." },
+              { icon: Tv, title: "Slides das Aulas", desc: "Acompanhe o raciocínio do professor passo a passo." },
+              { icon: Library, title: "Cards (Flashcards)", desc: "Memorize conceitos e leis com o método de repetição espaçada." },
+            ].map((item, idx) => (
+              <div key={idx} className="glass-panel p-6 rounded-2xl border border-slate-100 flex flex-col items-center text-center bg-slate-50/30 hover:-translate-y-2 transition-transform">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4">
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">{item.title}</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed font-sans">{item.desc}</p>
               </div>
-              <h4 className="text-xl font-display font-bold text-slate-800 mb-3">Manuais e Livros (PDF)</h4>
-              <p className="text-sm text-slate-600 leading-relaxed mb-6 font-sans">
-                Os melhores materiais digitais. Resumos estruturados por IA e todo o MABOM e legislação compilados com navegação inteligente.
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PRACTICE SECTION */}
+      <section id="treino" className="py-24 bg-slate-50 relative z-20 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            <div className="lg:w-1/2 space-y-6">
+              <div className="inline-flex items-center space-x-1.5 bg-cyan-50 border border-cyan-100 rounded-full px-3 py-1 text-[10px] font-mono font-bold text-cyan-700 uppercase">
+                <Target className="w-3.5 h-3.5" />
+                <span>Simuladores e Questões</span>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight">
+                Prática Levada a Sério: Treino Difícil, Jogo Fácil
+              </h3>
+              <p className="text-slate-600 font-sans text-base leading-relaxed">
+                A teoria é fundamental, mas é a prática que garante o resultado. Nosso sistema de questões é robusto e feito para testar seus limites:
               </p>
-              <div className="flex items-center text-amber-600 font-bold text-xs uppercase tracking-wider group-hover:translate-x-2 transition-transform">
-                <span>Acessar Biblioteca</span>
-                <ChevronRight className="w-4 h-4 ml-1" />
+              <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-slate-500 my-4 text-sm font-sans">
+                "O segredo da aprovação está na resolução de questões e na familiaridade com a prova."
+              </blockquote>
+              <ul className="space-y-4">
+                <li className="flex items-start space-x-3">
+                  <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800 text-sm font-sans block mb-1">Banco de Questões</strong>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Filtre questões por matéria, assunto e nível de dificuldade.</span>
+                  </div>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800 text-sm font-sans block mb-1">Simulados Inéditos</strong>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Teste seus conhecimentos em um ambiente que simula o dia real do exame, com controle de tempo.</span>
+                  </div>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800 text-sm font-sans block mb-1">Provas Anteriores</strong>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Acesse o acervo completo das provas passadas para entender o padrão da banca examinadora.</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="lg:w-1/2 w-full">
+              <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl" />
+                <div className="relative z-10 flex flex-col items-center justify-center space-y-6">
+                  <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
+                    <Award className="w-10 h-10" />
+                  </div>
+                  <div className="text-center">
+                    <h4 className="text-lg font-bold text-slate-800">Pronto para o Desafio?</h4>
+                    <p className="text-xs text-slate-500 mt-2 font-sans">Simule as condições reais do seu concurso agora mesmo.</p>
+                  </div>
+                  <button onClick={() => onNavigateToLogin()} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-wider text-xs transition-colors shadow-md">
+                    Iniciar Simulado
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* COMPARISON TABLE */}
+      <section id="porque" className="py-24 bg-white relative z-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight">
+              Por Que Escolher o Cabo Véio?
+            </h3>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr>
+                  <th className="p-4 border-b-2 border-slate-200 font-bold text-slate-800 text-sm uppercase tracking-wider">Funcionalidade</th>
+                  <th className="p-4 border-b-2 border-slate-200 font-bold text-slate-500 text-sm uppercase tracking-wider text-center bg-slate-50">Plataformas Comuns</th>
+                  <th className="p-4 border-b-2 border-indigo-500 font-bold text-indigo-700 text-sm uppercase tracking-wider text-center bg-indigo-50 rounded-t-xl">Cabo Véio</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm font-sans">
+                <tr className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="p-4 font-semibold text-slate-700">Painel de Desempenho e Tendências</td>
+                  <td className="p-4 text-center text-slate-500 bg-slate-50/50">Básico / Inexistente</td>
+                  <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30">Completo e Analítico</td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="p-4 font-semibold text-slate-700">Trilhas Inteligentes</td>
+                  <td className="p-4 text-center text-slate-500 bg-slate-50/50">Não</td>
+                  <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30">Sim</td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="p-4 font-semibold text-slate-700">Tutor de Inteligência Artificial</td>
+                  <td className="p-4 text-center text-slate-500 bg-slate-50/50">Não</td>
+                  <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30">Sim (Em todos os cursos)</td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="p-4 font-semibold text-slate-700">Flashcards (Cards) Integrados</td>
+                  <td className="p-4 text-center text-slate-500 bg-slate-50/50">Não</td>
+                  <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30">Sim</td>
+                </tr>
+                <tr className="hover:bg-slate-50">
+                  <td className="p-4 font-semibold text-slate-700 rounded-bl-xl">Múltiplos Formatos (Áudio, Vídeo, PDF)</td>
+                  <td className="p-4 text-center text-slate-500 bg-slate-50/50">Apenas Vídeo e PDF</td>
+                  <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30 rounded-br-xl">Sim (Para todos os perfis)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACT SECTION */}
+      <section id="contato" className="py-24 bg-slate-50 relative z-20 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight mb-4">
+              Fale com a Nossa Equipe
+            </h3>
+            <p className="text-slate-500 font-sans max-w-2xl mx-auto text-base leading-relaxed">
+              Ficou com alguma dúvida ou precisa de suporte? Nossa equipe está pronta para ajudar você a alcançar sua aprovação.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="space-y-8 flex flex-col justify-center">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-6 hover:-translate-y-1 transition-transform">
+                <div className="w-14 h-14 bg-green-100 text-green-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Phone className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-base uppercase">WhatsApp / Telefone</h4>
+                  <p className="text-slate-500 text-sm font-sans mt-1">
+                    (31) 99999-9999
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-6 hover:-translate-y-1 transition-transform">
+                <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Mail className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-base uppercase">E-mail de Suporte</h4>
+                  <p className="text-slate-500 text-sm font-sans mt-1">
+                    contato@caboveio.com.br
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl" />
+              <h4 className="font-bold text-slate-800 text-xl mb-6 relative z-10">Envie uma Mensagem Direta</h4>
+              <form onSubmit={handleContactSubmit} className="space-y-5 relative z-10">
+                <div>
+                  <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Seu Nome / Posto</label>
+                  <input type="text" required value={contactName} onChange={e => setContactName(e.target.value)} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-colors" placeholder="Ex: Cb Silva" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">E-mail ou Telefone</label>
+                  <input type="text" required value={contactEmail} onChange={e => setContactEmail(e.target.value)} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-colors" placeholder="Para podermos responder..." />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Sua Dúvida ou Mensagem</label>
+                  <textarea required value={contactMessage} onChange={e => setContactMessage(e.target.value)} rows={4} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-colors resize-none" placeholder="Como podemos te ajudar na sua aprovação?"></textarea>
+                </div>
+                <button type="submit" disabled={isSendingContact} className="w-full py-4 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-all cursor-pointer border-none shadow-lg shadow-indigo-600/30 disabled:opacity-70 disabled:cursor-not-allowed">
+                  {isSendingContact ? "Enviando..." : "Enviar Mensagem ao Administrador"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA SECTION */}
+      <section className="py-24 bg-gradient-to-b from-indigo-900 to-slate-900 relative z-20 text-center">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
+        <div className="max-w-4xl mx-auto px-4 relative z-10">
+          <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6">
+            Pronto para mudar sua forma de estudar?
+          </h2>
+          <p className="text-lg text-indigo-200 font-sans mb-10 max-w-2xl mx-auto">
+            Junte-se aos alunos que já estão estudando com alta performance, foco e tecnologia de ponta.
+          </p>
+          <button 
+            onClick={() => onNavigateToLogin()}
+            className="px-8 py-5 bg-white text-indigo-900 hover:bg-slate-100 rounded-xl text-sm font-sans font-black uppercase tracking-wider transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_rgba(255,255,255,0.5)] flex items-center justify-center mx-auto space-x-3 active:scale-95 cursor-pointer border-none"
+          >
+            <span>Criar Minha Conta e Testar a Plataforma</span>
+            <ArrowRight className="w-5 h-5 text-indigo-600" />
+          </button>
         </div>
       </section>
 
@@ -331,7 +658,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
           <div className="bg-white border border-slate-100 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-smooth-zoom p-6 space-y-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <span className="text-[9px] font-mono font-black text-emerald-600 uppercase tracking-widest block">Inscrição Rápida</span>
+                <span className="text-[9px] font-mono font-black text-indigo-500 uppercase tracking-widest block">Inscrição Rápida</span>
                 <h3 className="text-lg font-sans font-black text-slate-850">
                   Matricular-se no curso
                 </h3>
@@ -361,14 +688,14 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                   placeholder="exemplo@gmail.com"
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-sans text-slate-700 outline-none focus:border-emerald-600 focus:bg-white transition-colors"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-sans text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
