@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { 
-  BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight, 
+import {
+  BookOpen, FileText, HelpCircle, ChevronRight, Bot, ArrowRight,
   Award, Trophy, PlayCircle, ArrowLeft, GraduationCap, Video, Layers, Sparkles, Scale, LineChart, Headphones, Play, Pause, Volume2, Eye, X, Presentation, CheckCircle, XCircle, Filter, ChevronDown, Lock
 } from "lucide-react";
 import { CourseModule, Course } from "../data";
@@ -17,13 +17,13 @@ import GestaoEstudoScreen from "./GestaoEstudoScreen";
 import PdfSlidesViewer from "./PdfSlidesViewer";
 
 // Custom Premium Status Selector
-const StatusSelector = ({ 
-  resourceId, 
-  currentStatus, 
-  onStatusChange 
-}: { 
-  resourceId: string; 
-  currentStatus: 'a-estudar' | 'estudando' | 'estudado'; 
+const StatusSelector = ({
+  resourceId,
+  currentStatus,
+  onStatusChange
+}: {
+  resourceId: string;
+  currentStatus: 'a-estudar' | 'estudando' | 'estudado';
   onStatusChange: (status: 'a-estudar' | 'estudando' | 'estudado') => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -150,11 +150,10 @@ const VideoSelector = ({
                   onSelectVideo(idx);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 text-xs font-sans flex items-center space-x-2 border-none bg-transparent cursor-pointer transition-colors ${
-                  isActive 
-                    ? "bg-indigo-50/60 text-indigo-700 font-extrabold" 
+                className={`w-full text-left px-4 py-2.5 text-xs font-sans flex items-center space-x-2 border-none bg-transparent cursor-pointer transition-colors ${isActive
+                    ? "bg-indigo-50/60 text-indigo-700 font-extrabold"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                }`}
+                  }`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-indigo-600" : "bg-transparent"}`} />
                 <span className="truncate">{v.title}</span>
@@ -187,8 +186,8 @@ interface MeusCursosProps {
   userEmail?: string;
 }
 
-export default function MeusCursos({ 
-  onChangeTab, onAskTutor, 
+export default function MeusCursos({
+  onChangeTab, onAskTutor,
   selectedCourseId, setSelectedCourseId, selectedModuleId, setSelectedModuleId,
   selectedContentId, setSelectedContentId,
   courseActiveTab, setCourseActiveTab, subjectActiveTab, setSubjectActiveTab,
@@ -207,7 +206,7 @@ export default function MeusCursos({
     setIsPurchasing(true);
     try {
       let email = userEmail;
-      
+
       if (!email) {
         const { data: { user } } = await supabase.auth.getUser();
         email = user?.email || "";
@@ -298,6 +297,7 @@ export default function MeusCursos({
   const [isPdfMaximized, setIsPdfMaximized] = useState(false);
   const [viewingPdfType, setViewingPdfType] = useState<"pdf" | "slides" | null>(null);
   const [expandedDisciplines, setExpandedDisciplines] = useState<Record<string, boolean>>({});
+
 
   const formatTime = (timeInSeconds: number) => {
     if (isNaN(timeInSeconds)) return "00:00";
@@ -437,8 +437,9 @@ export default function MeusCursos({
       rawDisc.areas.forEach((area: any) => {
         if (Array.isArray(area.contents)) {
           area.contents.forEach((content: any) => {
-            if (Array.isArray(content.resources)) {
+            if (Array.isArray(content?.resources)) {
               content.resources.forEach((res: any) => {
+                if (!res) return;
                 total++;
                 if (res.id && completedResources.includes(res.id.toString())) {
                   completedCount++;
@@ -455,6 +456,7 @@ export default function MeusCursos({
   };
 
   const renderMateriaCard = (content: any, mod: any) => {
+    if (!content) return null;
     let videoCount = 0, videoCompleted = 0;
     let audioCount = 0, audioCompleted = 0;
     let pdfCount = 0, pdfCompleted = 0;
@@ -462,8 +464,9 @@ export default function MeusCursos({
     let questionsCount = 0, questionsCompleted = 0;
     let flashcardsCount = 0, flashcardsCompleted = 0;
 
-    if (Array.isArray(content.resources)) {
+    if (Array.isArray(content?.resources)) {
       content.resources.forEach((r: any) => {
+        if (!r) return;
         const isCompleted = completedResources.includes(r.id?.toString());
         if (r.type === 'video') {
           videoCount++;
@@ -513,7 +516,7 @@ export default function MeusCursos({
     };
 
     return (
-      <div 
+      <div
         key={content.id}
         className="p-5 bg-slate-50/70 hover:bg-white border border-slate-200/80 rounded-2xl hover:border-indigo-400/30 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between space-y-4 relative group overflow-hidden"
       >
@@ -522,7 +525,7 @@ export default function MeusCursos({
 
         {/* Subject Info */}
         <div className="flex justify-between items-start gap-3 relative z-10">
-          <div 
+          <div
             className="space-y-1.5 min-w-0 cursor-pointer flex-1"
             onClick={() => handleAccess("aulas")}
           >
@@ -541,12 +544,12 @@ export default function MeusCursos({
         {/* Custom progress bar */}
         <div className="space-y-2 relative z-10">
           <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/50">
-            <div 
-              className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`} 
+            <div
+              className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`}
               style={{ width: `${percent}%` }}
             />
           </div>
-          
+
           <div className="flex justify-between items-center text-[9px] font-mono text-slate-400">
             <span className="font-bold">Progresso Geral</span>
             <span className="font-bold text-slate-600">{completedCount} de {totalResources} concluídos</span>
@@ -558,11 +561,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("aulas")}
             disabled={videoCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              videoCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${videoCount > 0
                 ? "bg-indigo-50/50 border-indigo-100/60 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={videoCount > 0 ? `Ver Video Aulas (${videoCompleted}/${videoCount})` : "Sem vídeo aulas"}
           >
             <Video className="w-3.5 h-3.5" />
@@ -573,11 +575,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("audio")}
             disabled={audioCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              audioCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${audioCount > 0
                 ? "bg-emerald-50/50 border-emerald-100/60 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={audioCount > 0 ? `Ouvir Áudio Aula (${audioCompleted}/${audioCount})` : "Sem áudio aula"}
           >
             <Headphones className="w-3.5 h-3.5" />
@@ -588,11 +589,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("materiais")}
             disabled={pdfCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              pdfCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${pdfCount > 0
                 ? "bg-blue-50/50 border-blue-100/60 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={pdfCount > 0 ? `Ler Materiais PDF (${pdfCompleted}/${pdfCount})` : "Sem materiais PDF"}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -603,11 +603,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("slides")}
             disabled={slidesCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              slidesCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${slidesCount > 0
                 ? "bg-amber-50/50 border-amber-100/60 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={slidesCount > 0 ? `Ver Slides (${slidesCompleted}/${slidesCount})` : "Sem slides"}
           >
             <Presentation className="w-3.5 h-3.5" />
@@ -618,11 +617,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("questoes")}
             disabled={questionsCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              questionsCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${questionsCount > 0
                 ? "bg-violet-50/50 border-violet-100/60 text-violet-600 hover:bg-violet-600 hover:text-white hover:border-violet-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={questionsCount > 0 ? `Resolver Questões (${questionsCompleted}/${questionsCount})` : "Sem questões"}
           >
             <HelpCircle className="w-3.5 h-3.5" />
@@ -633,11 +631,10 @@ export default function MeusCursos({
           <button
             onClick={() => handleAccess("flashcards")}
             disabled={flashcardsCount === 0}
-            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${
-              flashcardsCount > 0
+            className={`flex items-center justify-center space-x-1 px-1 py-2 rounded-xl border text-[10px] font-sans font-black transition-all duration-200 cursor-pointer shadow-xs w-full ${flashcardsCount > 0
                 ? "bg-rose-50/50 border-rose-100/60 text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 active:scale-95"
                 : "bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed opacity-30"
-            }`}
+              }`}
             title={flashcardsCount > 0 ? `Estudar Flashcards (${flashcardsCompleted}/${flashcardsCount})` : "Sem flashcards"}
           >
             <Award className="w-3.5 h-3.5" />
@@ -652,6 +649,15 @@ export default function MeusCursos({
   const selectedCourse = courses.find(c => c.id === selectedCourseId) || null;
   const selectedModule = selectedCourse?.modules.find(m => m.id === selectedModuleId) || null;
 
+  useEffect(() => {
+    if (selectedCourse?.modules?.length > 0 && Object.keys(expandedDisciplines).length === 0) {
+      const allExpanded: Record<string, boolean> = {};
+      selectedCourse.modules.forEach(mod => {
+        if (mod) allExpanded[mod.id] = true;
+      });
+      setExpandedDisciplines(allExpanded);
+    }
+  }, [selectedCourse, expandedDisciplines]);
 
   const handleAskQuick = (e: React.FormEvent) => {
     e.preventDefault();
@@ -719,8 +725,8 @@ export default function MeusCursos({
     });
   }
 
-  const currentFlashcards = courseFlashcards.length > 0 
-    ? courseFlashcards 
+  const currentFlashcards = courseFlashcards.length > 0
+    ? courseFlashcards
     : (selectedModule ? getModuleFlashcards(selectedModule.title) : []);
 
   const uniqueFlashcardDisciplines = ["Todas", ...new Set(currentFlashcards.map(c => c.discipline || "Geral"))];
@@ -754,7 +760,7 @@ export default function MeusCursos({
   }, [currentFlashcardIndex, filteredFlashcards.length]);
 
   const renderCourseCard = (course: Course, isAllowed: boolean) => (
-    <div 
+    <div
       key={course.id}
       onClick={() => {
         if (isAllowed) {
@@ -767,9 +773,9 @@ export default function MeusCursos({
       className={`bg-blue-50/60 backdrop-blur-md border border-blue-100 hover:border-blue-400/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group relative cursor-pointer aspect-video flex items-center justify-center ${!isAllowed ? "filter saturate-50" : ""}`}
     >
       {course.cover_url ? (
-        <img 
-          src={course.cover_url} 
-          alt={course.title} 
+        <img
+          src={course.cover_url}
+          alt={course.title}
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isAllowed ? "opacity-75 blur-[1px]" : ""}`}
         />
       ) : (
@@ -785,7 +791,7 @@ export default function MeusCursos({
           </span>
         </div>
       )}
-      
+
       {/* Lock Badge for unallowed courses */}
       {!isAllowed && (
         <div className="absolute top-4 right-4 bg-slate-900/80 text-amber-400 p-2.5 rounded-full border border-amber-400/20 backdrop-blur-md z-20 shadow-md">
@@ -825,17 +831,29 @@ export default function MeusCursos({
     return (
       <div className="space-y-6" id="meus-cursos-list-view">
         {/* Header Panel */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm text-white">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="space-y-1">
-            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-2">
+        <div className="relative rounded-2xl p-6 md:p-8 overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm border border-indigo-900/30 text-white">
+          <div className="absolute inset-0 bg-blue-950 z-0 rounded-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
+            <img
+              src="/Cabo_Veio_Logo.png"
+              alt="Tactical Background"
+              className="absolute inset-0 w-full h-full object-cover z-0 opacity-85"
+            />
+          </div>
+
+          {/* Glow Effects */}
+          <div className="absolute top-1/4 left-1/4 w-[250px] h-[250px] bg-indigo-600/30 rounded-full blur-[80px] pointer-events-none z-10" />
+          <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] bg-cyan-500/20 rounded-full blur-[60px] pointer-events-none z-10" />
+
+          <div className="space-y-1 relative z-20">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-2 backdrop-blur-sm">
               <GraduationCap className="w-3.5 h-3.5" />
               <span>Painel do Aluno</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight drop-shadow-md">
               Meus Cursos Preparatórios
             </h2>
-            <p className="text-sm text-indigo-200 mt-1 max-w-4xl truncate md:whitespace-nowrap">
+            <p className="text-sm text-indigo-100 mt-1 max-w-4xl truncate md:whitespace-nowrap drop-shadow-sm">
               Selecione uma das suas turmas ativas abaixo para acessar as vídeo-aulas, materiais teóricos e questões.
             </p>
           </div>
@@ -871,7 +889,7 @@ export default function MeusCursos({
             <div className="bg-white border border-slate-100 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-smooth-zoom flex flex-col">
               {/* Header */}
               <div className="bg-gradient-to-br from-blue-900 to-indigo-850 p-6 text-white relative">
-                <button 
+                <button
                   onClick={() => setCheckoutCourse(null)}
                   className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full border-none cursor-pointer transition text-white"
                 >
@@ -961,58 +979,87 @@ export default function MeusCursos({
   }
 
   const renderCourseDetailViewContent = () => {
+
     return (
       <div className="mt-2">
         {courseActiveTab === "materias" && (
-          <div className="space-y-6">
-            {/* Modules list grouped by Eixos Temáticos */}
-            <div className="space-y-8">
-              {selectedCourse.modules.map((mod) => {
-                const rawDisc = mod.rawDiscipline;
-                if (rawDisc && Array.isArray(rawDisc.areas)) {
-                  return (
-                    <div 
-                      key={mod.id} 
-                      className="bg-white border border-slate-200/80 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-xs hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group"
-                      onClick={() => setSelectedModuleId(mod.id)}
-                    >
-                      <div className="space-y-1">
-                        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
-                        <h3 className="text-sm font-sans font-black text-slate-800 group-hover:text-indigo-600 transition-colors flex items-center space-x-2">
-                           <span>{(mod.title || "").includes(':') ? `${(mod.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod.title || "")}</span>
-                        </h3>
-                      </div>
-                      
-                      <div className="mt-4 md:mt-0 flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
-                        <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200/50 shrink-0">
-                          {calculateModuleProgress(mod)}% Concluído
-                        </span>
-                        <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white transition-all">
+          <div className="space-y-6 animate-smooth-fade">
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-display font-bold text-white flex items-center">
+                  <BookOpen className="w-5 h-5 mr-2 text-indigo-400" />
+                  Painel do Curso
+                </h2>
+                <p className="text-sm text-slate-300 mt-1 font-sans">
+                  Acesse suas disciplinas, aulas, materiais complementares, questões e flashcards para iniciar seu estudo.
+                </p>
+              </div>
+            </div>
+            
+            {selectedCourse.modules?.map((mod) => {
+              if (!mod) return null;
+              const isExpanded = expandedDisciplines[mod.id];
+              const rawDisc = mod.rawDiscipline;
+
+              return (
+                <div key={mod.id} className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+                  <div
+                    className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => setExpandedDisciplines(prev => ({ ...prev, [mod.id]: !prev[mod.id] }))}
+                  >
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest block">Disciplina</span>
+                      <h3 className="text-sm font-sans font-black text-slate-800 flex items-center space-x-2">
+                        <span>{(mod?.title || "").includes(':') ? `${(mod?.title || "").split(':')[0]}: ${capitalizeFirstOnly((mod?.title || "").split(':').slice(1).join(':').trim())}` : capitalizeFirstOnly(mod?.title || "")}</span>
+                      </h3>
+                    </div>
+
+                    <div className="mt-4 md:mt-0 flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                      <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200/50 shrink-0">
+                        {calculateModuleProgress(mod)}% Concluído
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:border-indigo-600 group-hover:text-white transition-all">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
                           <ChevronRight className="w-4 h-4" />
-                        </div>
+                        )}
                       </div>
                     </div>
-                  );
-                }
+                  </div>
 
-                // Fallback para o caso de o módulo não ter a estrutura de disciplinas_json carregada
-                return (
-                  <div 
-                    key={mod.id}
-                    className="glass-panel hover:border-blue-300 rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow transition-all group"
-                  >
+                  {/* Accordion Content */}
+                  {isExpanded && rawDisc && Array.isArray(rawDisc.areas) && (
+                    <div className="p-6 space-y-6 bg-slate-50/30">
+                      {rawDisc.areas.map((area: any) => (
+                        <div key={area.id} className="space-y-4">
+                          <div className="border-b border-slate-200/60 pb-2">
+                            <h4 className="text-xs font-mono font-extrabold text-indigo-600 uppercase tracking-wider">
+                              {area.name}
+                            </h4>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Array.isArray(area.contents) && area.contents.map((content: any) =>
+                              renderMateriaCard(content, mod)
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Fallback case se não tiver disciplinas estruturadas */}
+                  {isExpanded && (!rawDisc || !Array.isArray(rawDisc.areas)) && (
+                    <div className="p-6 bg-slate-50/30">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 pb-3 border-b border-slate-100 mb-3">
                         <div>
-                          <h4 className="text-sm font-sans font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                          <h4 className="text-sm font-sans font-bold text-slate-800">
                             {mod.title}
                           </h4>
                           <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                             {mod.description}
                           </p>
                         </div>
-                        <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200/50 shrink-0">
-                          {calculateModuleProgress(mod)}% Concluído
-                        </span>
                       </div>
 
                       <div className="flex flex-col md:flex-row md:items-center justify-between space-y-3 md:space-y-0 pt-1">
@@ -1026,86 +1073,83 @@ export default function MeusCursos({
                             <span>{mod.pdfsCount} PDFs</span>
                           </span>
                           <span className="flex items-center space-x-1.5">
-                            <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{mod.questionsCount} Questões</span>
+                            <Headphones className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{mod.audiosCount || 0} Áudios</span>
                           </span>
                         </div>
-
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedModuleId(mod.id);
                             setSubjectActiveTab("aulas");
                           }}
-                          className="group/btn h-8 px-2 rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 flex items-center shadow-sm group-hover:bg-blue-50 group-hover:border-blue-200 group-hover:text-blue-600 cursor-pointer overflow-hidden"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-all flex items-center justify-center space-x-2 w-full md:w-auto mt-4 md:mt-0"
                         >
-                          <ChevronRight className="w-4 h-4 shrink-0" />
-                          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover/btn:max-w-[150px] group-hover/btn:ml-1.5 transition-all duration-500 font-sans font-bold text-[10px] uppercase">
-                            Acessar Matéria
-                          </span>
+                          <span>Acessar Disciplina</span>
+                          <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
-                );
-              })}
-
-
-            </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          )}
+        )}
 
-          {courseActiveTab === "simuladores" && (
-            <SimuladoresScreen onAskTutor={onAskTutor} courseId={selectedCourseId} />
-          )}
+        {courseActiveTab === "simuladores" && (
+          <SimuladoresScreen onAskTutor={onAskTutor} courseId={selectedCourseId} />
+        )}
 
-          {courseActiveTab === "leis" && (
-            <LeisInteligentesScreen />
-          )}
+        {courseActiveTab === "leis" && (
+          <LeisInteligentesScreen />
+        )}
 
-          {courseActiveTab === "tutor" && (
-            <TutorIAScreen 
-              initialPrompt={tutorInitialPrompt || quickQuestion}
-              onClearInitialPrompt={() => {
-                onClearTutorPrompt();
-                setQuickQuestion("");
-              }}
-            />
-          )}
+        {courseActiveTab === "tutor" && (
+          <TutorIAScreen
+            initialPrompt={tutorInitialPrompt || quickQuestion}
+            onClearInitialPrompt={() => {
+              onClearTutorPrompt();
+              setQuickQuestion("");
+            }}
+          />
+        )}
 
-          {courseActiveTab === "desempenho" && (
-            <DesempenhoScreen 
-              userName={userName}
-              allowedCourses={allowedCourses}
-              onNavigateToSubject={(courseId, moduleId, contentId) => {
-                setSelectedCourseId(courseId);
-                setSelectedModuleId(moduleId);
-                setSelectedContentId(contentId);
-                setCourseActiveTab("materias");
-                setSubjectActiveTab("aulas");
-              }}
-              onStartRecoveryTraining={(subject) => {
-                setCourseActiveTab("materias");
-                // Pre-select first module
-                if (selectedCourse.modules.length > 0) {
-                  setSelectedModuleId(selectedCourse.modules[0].id);
-                }
-              }}
-            />
-          )}
+        {courseActiveTab === "desempenho" && (
+          <DesempenhoScreen
+            userName={userName}
+            allowedCourses={allowedCourses}
+            onNavigateToSubject={(courseId, moduleId, contentId) => {
+              setSelectedCourseId(courseId);
+              setSelectedModuleId(moduleId);
+              setSelectedContentId(contentId);
+              setCourseActiveTab("materias");
+              setSubjectActiveTab("aulas");
+            }}
+            onStartRecoveryTraining={(subject) => {
+              setCourseActiveTab("materias");
+              // Pre-select first module
+              if (selectedCourse.modules.length > 0) {
+                setSelectedModuleId(selectedCourse.modules[0].id);
+              }
+            }}
+          />
+        )}
 
-          {courseActiveTab === "gestao" && (
-            <GestaoEstudoScreen 
-              selectedCourse={selectedCourse}
-              onNavigateToSubject={(moduleId, contentId) => {
-                setSelectedModuleId(moduleId);
-                setSelectedContentId(contentId);
-                setCourseActiveTab("materias");
-                setSubjectActiveTab("aulas");
-              }}
-            />
-          )}
-        </div>
-      );
-    }
+        {courseActiveTab === "gestao" && (
+          <GestaoEstudoScreen
+            selectedCourse={selectedCourse}
+            onNavigateToSubject={(moduleId, contentId) => {
+              setSelectedModuleId(moduleId);
+              setSelectedContentId(contentId);
+              setCourseActiveTab("materias");
+              setSubjectActiveTab("aulas");
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   // View 2: Course Dashboard (Matérias, Simuladores, Leis, Tutor IA, Desempenho)
   if (selectedCourse && !selectedModuleId) {
@@ -1127,7 +1171,7 @@ export default function MeusCursos({
           {/* Header with Back button */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex items-center justify-between shadow-sm">
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={() => {
                   setSelectedModuleId(null);
                   setSelectedContentId(null);
@@ -1181,7 +1225,7 @@ export default function MeusCursos({
     const courseAudios: any[] = [];
     const coursePdfs: any[] = [];
     const courseSlides: any[] = [];
-    
+
     if (rawDisc && Array.isArray(rawDisc.areas)) {
       rawDisc.areas.forEach((area: any) => {
         if (Array.isArray(area.contents)) {
@@ -1227,7 +1271,7 @@ export default function MeusCursos({
         {/* Header containing back button, discipline title, and tab selector */}
         <div className="bg-white border border-slate-200/80 rounded-2xl py-3 px-6 flex flex-col items-start gap-3 shadow-sm">
           <div className="flex items-center space-x-3">
-            <button 
+            <button
               onClick={() => {
                 setSelectedContentId(null);
               }}
@@ -1258,11 +1302,10 @@ export default function MeusCursos({
             <div className="flex flex-wrap items-center bg-slate-100/80 p-1 rounded-xl border border-slate-200/50 gap-1.5 shadow-inner">
               <button
                 onClick={() => setSubjectActiveTab("aulas")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "aulas" 
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "aulas"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <Video className="w-3.5 h-3.5" />
                 <span>Vídeos/Aulas</span>
@@ -1270,11 +1313,10 @@ export default function MeusCursos({
 
               <button
                 onClick={() => setSubjectActiveTab("audio")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "audio" 
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "audio"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <Headphones className="w-3.5 h-3.5" />
                 <span>Áudios</span>
@@ -1282,11 +1324,10 @@ export default function MeusCursos({
 
               <button
                 onClick={() => setSubjectActiveTab("materiais")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "materiais" 
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "materiais"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>PDFs</span>
@@ -1294,11 +1335,10 @@ export default function MeusCursos({
 
               <button
                 onClick={() => setSubjectActiveTab("slides")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "slides" 
-                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "slides"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <Presentation className="w-3.5 h-3.5" />
                 <span>Slides</span>
@@ -1306,11 +1346,10 @@ export default function MeusCursos({
 
               <button
                 onClick={() => setSubjectActiveTab("questoes")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "questoes" 
-                    ? "bg-violet-600 text-white shadow-md shadow-violet-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "questoes"
+                    ? "bg-violet-600 text-white shadow-md shadow-violet-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <HelpCircle className="w-3.5 h-3.5" />
                 <span>Questões</span>
@@ -1318,11 +1357,10 @@ export default function MeusCursos({
 
               <button
                 onClick={() => setSubjectActiveTab("flashcards")}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${
-                  subjectActiveTab === "flashcards" 
-                    ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-105" 
+                className={`flex items-center space-x-1.5 px-3 py-1.5 text-[10px] font-sans font-black uppercase rounded-lg transition-all duration-300 cursor-pointer border-none ${subjectActiveTab === "flashcards"
+                    ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-105"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 bg-transparent"
-                }`}
+                  }`}
               >
                 <Award className="w-3.5 h-3.5" />
                 <span>Cards</span>
@@ -1376,8 +1414,8 @@ export default function MeusCursos({
         {/* Content area replacing the dashboard view */}
         <div className="mt-2">
           {subjectActiveTab === "aulas" && (
-            <AulasScreen 
-              onAskTutor={onAskTutor} 
+            <AulasScreen
+              onAskTutor={onAskTutor}
               disciplineName={cleanDisciplineName}
               rawDiscipline={selectedModule.rawDiscipline}
               selectedContentId={activeContentId}
@@ -1406,10 +1444,10 @@ export default function MeusCursos({
                   <p className="text-[10px] font-mono text-blue-600 mt-1 z-10">
                     {currentPlayingAudio ? (currentPlayingAudio.materiaName || "Áudio Aula") : "Selecione uma faixa ao lado"}
                   </p>
-                  
+
                   {currentPlayingAudio?.url && currentPlayingAudio.url.includes('drive.google.com') ? (
                     <div className="w-full h-14 relative overflow-hidden rounded-xl border border-slate-700 shadow-sm bg-white mt-6 z-10">
-                      <iframe 
+                      <iframe
                         src={(() => {
                           const match = currentPlayingAudio.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
                           if (match && match[1]) {
@@ -1426,7 +1464,7 @@ export default function MeusCursos({
                   ) : (
                     <>
                       <div className="mt-6 flex items-center space-x-4 z-10">
-                        <button 
+                        <button
                           onClick={handlePlayPauseAudio}
                           disabled={!currentPlayingAudio}
                           className="w-12 h-12 rounded-full bg-white text-blue-900 flex items-center justify-center hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer shadow-md border-none"
@@ -1434,7 +1472,7 @@ export default function MeusCursos({
                           {isAudioPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                         </button>
                       </div>
-                      
+
                       <div className="w-full mt-4 flex items-center space-x-2 z-10">
                         <span className="text-[10px] text-blue-700 font-mono">{audioCurrentTime}</span>
                         <div className="h-1 flex-1 bg-blue-200 rounded-full overflow-hidden relative">
@@ -1445,25 +1483,24 @@ export default function MeusCursos({
                     </>
                   )}
                 </div>
-                
+
                 <div className="w-full md:w-2/3 space-y-3">
                   <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2">
                     Faixas Disponíveis
                   </h4>
-                  
+
                   {courseAudios.length === 0 ? (
                     <div className="text-slate-400 text-xs italic py-4 text-center">Nenhum áudio cadastrado para esta matéria.</div>
                   ) : (
                     courseAudios.map((audio, index) => {
                       const isCurrent = currentPlayingAudio?.url === audio.url;
                       return (
-                        <div 
-                          key={audio.id || index} 
-                          className={`relative p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors group ${
-                            isCurrent 
-                              ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold' 
+                        <div
+                          key={audio.id || index}
+                          className={`relative p-3 border rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors group ${isCurrent
+                              ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold'
                               : 'bg-slate-50 border-slate-200/60 text-slate-600'
-                          }`}
+                            }`}
                           style={{ zIndex: 50 - index }}
                         >
                           {/* Left: status indicator */}
@@ -1484,9 +1521,8 @@ export default function MeusCursos({
                             className="flex-1 flex items-center justify-between cursor-pointer min-w-0"
                           >
                             <div className="flex items-center space-x-3 truncate">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                                isCurrent ? 'bg-blue-200' : 'bg-blue-100 group-hover:bg-blue-200'
-                              }`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isCurrent ? 'bg-blue-200' : 'bg-blue-100 group-hover:bg-blue-200'
+                                }`}>
                                 {isCurrent && isAudioPlaying ? (
                                   <Pause className="w-3.5 h-3.5 text-blue-700 fill-current" />
                                 ) : (
@@ -1559,7 +1595,7 @@ export default function MeusCursos({
           )}
 
           {subjectActiveTab === "questoes" && (
-            <QuestoesScreen 
+            <QuestoesScreen
               discipline={cleanDisciplineName}
               rawDiscipline={selectedModule.rawDiscipline}
             />
@@ -1575,10 +1611,10 @@ export default function MeusCursos({
                 <div className="lg:col-span-2 space-y-6">
                   {filteredFlashcards.length > 0 && filteredFlashcards[currentFlashcardIndex] ? (
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-                      
+
                       {/* Flappable Card */}
                       <div className="flex flex-col items-center justify-center py-4" style={{ perspective: '1000px' }}>
-                        <div 
+                        <div
                           onClick={() => setFlashcardFlipped(!flashcardFlipped)}
                           className="w-full max-w-2xl h-80 cursor-pointer select-none relative transition-transform duration-700"
                           style={{
@@ -1587,7 +1623,7 @@ export default function MeusCursos({
                           }}
                         >
                           {/* Lado da Pergunta (Front) */}
-                          <div 
+                          <div
                             className="absolute inset-0 w-full h-full bg-blue-50 border border-blue-200 rounded-2xl p-6 flex flex-col justify-between items-center text-center shadow-md backface-hidden"
                             style={{ backfaceVisibility: 'hidden' }}
                           >
@@ -1596,22 +1632,22 @@ export default function MeusCursos({
                               <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                               <span className="text-[8px] font-mono text-blue-600 font-bold uppercase tracking-wider">Pergunta Tática</span>
                             </div>
-                            
+
                             <div className="flex-1 flex items-center justify-center pt-4">
                               <p className="text-sm md:text-base font-sans font-extrabold text-blue-950 leading-relaxed px-4">
                                 {filteredFlashcards[currentFlashcardIndex]?.q}
                               </p>
                             </div>
-                            
+
                             <span className="text-[10px] text-blue-700 font-sans font-bold bg-blue-100/80 border border-blue-200/60 px-3 py-1 rounded-full hover:bg-blue-100 transition-colors">
                               Clique para revelar a resposta
                             </span>
                           </div>
 
                           {/* Lado da Resposta (Back) */}
-                          <div 
+                          <div
                             className="absolute inset-0 w-full h-full bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col justify-between items-center text-center shadow-md backface-hidden"
-                            style={{ 
+                            style={{
                               backfaceVisibility: 'hidden',
                               transform: 'rotateY(180deg)'
                             }}
@@ -1621,13 +1657,13 @@ export default function MeusCursos({
                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
                               <span className="text-[8px] font-mono text-emerald-600 font-bold uppercase tracking-wider">Resposta / Doutrina</span>
                             </div>
-                            
+
                             <div className="flex-1 flex items-center justify-center overflow-y-auto pt-6 pb-2 max-h-[220px] custom-scrollbar">
                               <p className="text-sm md:text-base font-sans font-extrabold text-emerald-950 leading-relaxed px-4 italic">
                                 {filteredFlashcards[currentFlashcardIndex]?.a}
                               </p>
                             </div>
-                            
+
                             <span className="text-[10px] text-emerald-700 font-sans font-bold bg-emerald-100/80 border border-emerald-200/60 px-3 py-1 rounded-full">
                               Clique para ver a pergunta
                             </span>
@@ -1765,10 +1801,10 @@ export default function MeusCursos({
                           const isActive = idx === currentFlashcardIndex;
                           const cardId = card.id?.toString() || idx.toString();
                           const status = flashcardStatuses[cardId];
-                          
+
                           let statusIcon = <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" title="Não Aberto" />;
                           let statusTitle = "Não Aberto";
-                          
+
                           if (status) {
                             if (status.answered) {
                               if (status.rating === "easy") {
@@ -1790,16 +1826,15 @@ export default function MeusCursos({
                           return (
                             <div
                               key={card.id || idx}
-                              className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center ${
-                                isActive
+                              className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center ${isActive
                                   ? "bg-blue-50 border-blue-200/50 text-blue-700 font-bold"
                                   : "bg-slate-50 border-slate-100 hover:bg-slate-100/80 text-slate-600"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center pr-2 shrink-0">
                                 {renderStatusIndicator(cardId)}
                               </div>
-                              <div 
+                              <div
                                 onClick={() => {
                                   setCurrentFlashcardIndex(idx);
                                   setFlashcardFlipped(false);

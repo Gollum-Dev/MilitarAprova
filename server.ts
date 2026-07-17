@@ -59,11 +59,12 @@ Aqui está uma resposta pré-programada de suporte para a sua pergunta:
     ];
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-flash-latest",
       contents: contents,
       config: {
-        systemInstruction: "Você é o Cabo Véio, um militar veterano calejado, extremamente experiente, com décadas de caserna, que conhece tudo sobre a rotina militar, regulamentos oficiais e macetes de sobrevivência nas Forças Militares. Seu estilo de fala é direto, de caserna, firme e objetivo. Chame o aluno de 'combatente' ou pelo sobrenome militar apropriado. Responda de forma curta, sucinta, simples e prática, indo direto ao ponto da dúvida. Use termos militares leves de forma natural e fundamente brevemente nos artigos legais aplicáveis.",
-        temperature: 0.7,
+        systemInstruction: "Você é o Cabo Véio, um militar veterano calejado, que conhece tudo sobre regulamentos oficiais e macetes. Seu estilo de fala é direto e firme de caserna. Chame o aluno de 'combatente'. IMPORTANTE: Seja EXTREMAMENTE conciso, direto ao ponto e rápido. Suas respostas não devem ultrapassar 2 parágrafos curtos. Sem enrolação.",
+        temperature: 0.4,
+        maxOutputTokens: 350,
       }
     });
 
@@ -151,7 +152,7 @@ ${lawsContext || "Nenhuma lei correspondente direta encontrada. Discorra de form
 Destaque o que cai na prova em poucas frases curtas.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-flash-latest",
         contents: prompt,
         config: {
           temperature: 0.4,
@@ -226,7 +227,7 @@ Retorne obrigatoriamente um objeto JSON com a seguinte estrutura estrita:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -314,7 +315,7 @@ Explique em no máximo 3 frases curtas por que a alternativa ${correctAnswer} es
 Dê um mnemônico ou macete rápido de 1 linha.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         temperature: 0.6,

@@ -304,30 +304,15 @@ export default function SimuladoresScreen({ onAskTutor, courseId }: SimuladoresS
       ) : (
         /* Simulators Dashboard List */
         <div className="space-y-6">
-          {/* Header Stats */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-            {/* AI Generator input */}
-            <div className="w-full md:w-auto bg-white/10 border border-white/20 rounded-xl p-3 flex flex-col sm:flex-row items-stretch gap-2 shrink-0">
-              <input
-                id="simulator-custom-subject"
-                type="text"
-                value={customSubjectInput}
-                onChange={(e) => setCustomSubjectInput(e.target.value)}
-                placeholder="Tema personalizado (Ex: CEDM)"
-                className="px-3 py-1.5 bg-white/15 border border-white/25 text-xs text-white placeholder-indigo-200 rounded focus:outline-none focus:border-white w-full sm:w-48"
-              />
-              <button
-                disabled={isGeneratingAi}
-                onClick={() => handleGenerateCustom(customSubjectInput || "Legislação Militar")}
-                className="py-1.5 px-4 bg-white hover:bg-slate-50 disabled:bg-indigo-300 text-indigo-950 text-xs font-sans font-bold uppercase rounded flex items-center justify-center space-x-1.5 cursor-pointer whitespace-nowrap shrink-0 border-none"
-              >
-                {isGeneratingAi ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="w-3.5 h-3.5" />
-                )}
-                <span>Gerar Simulado IA</span>
-              </button>
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-display font-bold text-white flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-indigo-400" />
+                Simulados e Avaliações
+              </h2>
+              <p className="text-sm text-slate-300 mt-1 font-sans">
+                Teste seus conhecimentos com simulados adaptativos e provas anteriores.
+              </p>
             </div>
           </div>
 

@@ -147,17 +147,29 @@ export default function TrilhaGuiadaScreen({
     const activeCourse = courses.find(c => c.id === activeCourseId) || courses[0];
     return (
       <div className="space-y-6 w-full animate-smooth-fade">
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm text-white">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="space-y-1">
-            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-2">
+        <div className="relative rounded-2xl p-6 md:p-8 overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm border border-indigo-900/30 text-white">
+          <div className="absolute inset-0 bg-blue-950 z-0 rounded-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
+            <img 
+              src="/Cabo_Veio_Logo.png" 
+              alt="Tactical Background" 
+              className="absolute inset-0 w-full h-full object-cover z-0 opacity-85"
+            />
+          </div>
+          
+          {/* Glow Effects */}
+          <div className="absolute top-1/4 left-1/4 w-[250px] h-[250px] bg-indigo-600/30 rounded-full blur-[80px] pointer-events-none z-10" />
+          <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] bg-cyan-500/20 rounded-full blur-[60px] pointer-events-none z-10" />
+
+          <div className="space-y-1 relative z-20">
+            <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-2 backdrop-blur-sm">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Configuração de Trilha Inteligente</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
+            <h2 className="text-2xl md:text-3xl font-display font-bold tracking-tight drop-shadow-md">
               Monte o seu Roteiro de Estudos Personalizado
             </h2>
-            <p className="text-sm text-indigo-200 mt-1 max-w-4xl truncate md:whitespace-nowrap">
+            <p className="text-sm text-indigo-100 mt-1 max-w-4xl truncate md:whitespace-nowrap drop-shadow-sm">
               Responda a estas rápidas perguntas para que o nosso algoritmo monte a sequência lógica ideal de matérias e o cronograma diário adaptado para o seu tempo.
             </p>
           </div>

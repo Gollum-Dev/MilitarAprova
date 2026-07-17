@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Clock, CheckCircle, BarChart3, Bot, ChevronRight, Award, Zap, ChevronDown } from "lucide-react";
+import { Joyride, Step, EventData, STATUS } from 'react-joyride';
+import { Clock, CheckCircle, BarChart3, Bot, ChevronRight, Award, Zap, ChevronDown, Info, X } from "lucide-react";
 import { fetchCourses } from "../lib/api";
 import { getStudentStats, StudentStats, getCompletedResourceIds, getResourceCompletionDates } from "../lib/progress";
 
@@ -98,7 +99,7 @@ export default function DashboardHome({
 
   const [coursesProgress, setCoursesProgress] = useState<{ id: string; title: string; progress: number }[]>([]);
 
-  const [dailyStats, setDailyStats] = useState([
+  const [dailyStats, setDailyStats] = useState<any[]>([
     { label: "VÍDEO", count: 0, highlighted: false },
     { label: "ÁUDIO", count: 0, highlighted: false },
     { label: "PDF", count: 0, highlighted: false },
@@ -110,6 +111,12 @@ export default function DashboardHome({
   const [trendFilter, setTrendFilter] = useState<"total" | "video" | "audio" | "pdf" | "slides" | "questoes" | "cards">("total");
   const [trendTimeRange, setTrendTimeRange] = useState<"7d" | "30d" | "6m" | "1y">("7d");
   const [trendData, setTrendData] = useState<any[]>([]);
+  const [infoModal, setInfoModal] = useState<{id: string, title: string, desc: string} | null>(null);
+  
+  // Joyride states
+  const [runTour, setRunTour] = useState(false);
+  const [tourSteps, setTourSteps] = useState<Step[]>([]);
+
   const [loadedCourses, setLoadedCourses] = useState<any[]>([]);
   const [subjectRanking, setSubjectRanking] = useState<{title: string, percent: number, completed: number, total: number}[]>([]);
   const [recentStudies, setRecentStudies] = useState<any[]>([]);
@@ -505,20 +512,93 @@ export default function DashboardHome({
     { value: "cards", label: "Flashcards" }
   ];
 
+  const handleStartTour = (cardId: string) => {
+    setInfoModal(null);
+    let steps: Step[] = [];
+
+    if (cardId === 'card1') {
+      steps = [
+        {
+          target: '.tour-c1-progress',
+          content: 'Estas barras mostram a sua porcentagem de conclusão em cada curso matriculado. Conforme você assiste aulas e faz simulados, a barra avança.',
+          skipBeacon: true,
+        },
+        {
+          target: '.tour-c1-ranking',
+          content: 'Aqui você vê um ranking automático das matérias que você mais estuda e daquelas que está deixando de lado. Ótimo para equilibrar sua rotina de estudos!',
+        }
+      ];
+    } else if (cardId === 'card2') {
+      steps = [
+        {
+          target: '.tour-c2-list',
+          content: 'Aqui está uma lista cronológica de tudo que você consumiu por último, seja um PDF lido, uma bateria de questões ou um vídeo assistido, com a data exata.',
+          skipBeacon: true,
+        }
+      ];
+    } else if (cardId === 'card3') {
+      steps = [
+        {
+          target: '.tour-c3-bars',
+          content: 'Neste gráfico de barras, você acompanha o volume de conteúdo consumido apenas no dia de HOJE, separado pelo tipo de material.',
+          skipBeacon: true,
+        }
+      ];
+    } else if (cardId === 'card4') {
+      steps = [
+        {
+          target: '.tour-c4-filters',
+          content: 'Nestes filtros, você pode escolher se quer ver a tendência geral ou focar em um tipo de material (ex: só PDFs), e também definir o intervalo de tempo (7 dias, 30 dias, etc).',
+          skipBeacon: true,
+        },
+        {
+          target: '.tour-c4-chart',
+          content: 'O gráfico de linha interativo desenha seus altos e baixos de produtividade na plataforma, ajudando você a visualizar sua constância e evitar quedas de rendimento.',
+        }
+      ];
+    }
+
+    setTourSteps(steps);
+    // Timeout to ensure modal closing animation doesn't interfere
+    setTimeout(() => {
+      setRunTour(true);
+    }, 300);
+  };
+
+  const handleJoyrideCallback = (data: EventData) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+    }
+  };
+
   return (
     <div className="space-y-6" id="dashboard-home-view">
       {/* Welcome Header Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-800 to-blue-900 border border-indigo-700/30 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="space-y-1">
-          <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-3">
+      <div className="relative rounded-2xl p-6 md:p-8 overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm border border-indigo-900/30">
+        <div className="absolute inset-0 bg-blue-950 z-0 rounded-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
+          <img 
+            src="/Cabo_Veio_Logo.png" 
+            alt="Tactical Background" 
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-85"
+          />
+        </div>
+        
+        {/* Glow Effects */}
+        <div className="absolute top-1/4 left-1/4 w-[250px] h-[250px] bg-indigo-600/30 rounded-full blur-[80px] pointer-events-none z-10" />
+        <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] bg-cyan-500/20 rounded-full blur-[60px] pointer-events-none z-10" />
+
+        <div className="space-y-1 relative z-20">
+          <div className="inline-flex items-center space-x-1.5 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-3.5 py-1 text-[10px] font-mono font-bold text-amber-300 uppercase mb-3 backdrop-blur-sm">
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Progressão e Evolução</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight drop-shadow-md">
             Bem-vindo de volta, <span className="text-amber-300">{userName.split(' ')[0]}</span>.
           </h2>
-          <p className="text-sm text-indigo-200 mt-1 max-w-3xl truncate md:whitespace-nowrap">
+          <p className="text-sm text-indigo-100 mt-1 max-w-3xl truncate md:whitespace-nowrap drop-shadow-sm">
             Acompanhe abaixo o resumo detalhado da progressão dos seus cursos e a evolução da sua produtividade.
           </p>
         </div>
@@ -532,13 +612,16 @@ export default function DashboardHome({
           <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:border-slate-300 transition-all h-[310px]">
             <div>
               <div className="flex justify-between items-start mb-6">
-                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                  Progresso dos Cursos Matriculados
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 flex items-center space-x-2">
+                  <span>Progresso dos Cursos Matriculados</span>
+                  <button onClick={() => setInfoModal({id: 'card1', title: "Progresso dos Cursos", desc: "Acompanhe a porcentagem de conclusão de cada curso matriculado. O ranking abaixo mostra os cursos que você mais (e menos) tem focado, medido em percentual de engajamento."})} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
                 </h3>
               </div>
               
               {/* Custom Progress Bar per Course */}
-              <div className="space-y-4 mb-6">
+              <div className="space-y-4 mb-6 tour-c1-progress">
                 {coursesProgress.length === 0 ? (
                   <div className="text-xs text-slate-400 italic">Carregando progresso dos cursos...</div>
                 ) : (
@@ -558,7 +641,7 @@ export default function DashboardHome({
 
               {/* Ranking de Matérias */}
               {subjectRanking.length > 0 && (
-                <div className="border-t border-slate-100 pt-5 mt-auto">
+                <div className="border-t border-slate-100 pt-5 mt-auto tour-c1-ranking">
                   <div className="grid grid-cols-2 gap-4">
                     {/* Mais Estudadas */}
                     <div>
@@ -603,15 +686,18 @@ export default function DashboardHome({
           {/* Card 5: Últimas Matérias Concluídas (Recent Studies) */}
           <div className="glass-panel rounded-2xl p-5 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between overflow-hidden">
             <div>
-              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 mb-3">
-                Últimas Matérias Concluídas
+              <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 mb-3 flex items-center space-x-2">
+                <span>Últimas Matérias Concluídas</span>
+                <button onClick={() => setInfoModal({id: 'card2', title: "Últimas Matérias Concluídas", desc: "Seu histórico de atividades recentes. Aqui você pode ver rapidamente os últimos conteúdos que consumiu, separados por tipo (Vídeo, PDF, Áudio, etc.) e data."})} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                  <Info className="w-3.5 h-3.5" />
+                </button>
               </h3>
               {recentStudies.length === 0 ? (
-                <div className="text-slate-400 text-xs italic py-8 text-center bg-slate-50/50 border border-slate-100 rounded-xl">
+                <div className="text-slate-400 text-xs italic py-8 text-center bg-slate-50/50 border border-slate-100 rounded-xl tour-c2-list">
                   Nenhuma matéria concluída recentemente.
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 tour-c2-list">
                   {recentStudies.map((study, idx) => {
                     let typeColor = "bg-blue-50 text-blue-600 border-blue-100";
                     let typeLabel = "PDF";
@@ -667,8 +753,11 @@ export default function DashboardHome({
           <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between">
             <div className="flex justify-between items-center mb-5">
               <div>
-                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                  Produtividade Diária
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 flex items-center space-x-2">
+                  <span>Produtividade Diária</span>
+                  <button onClick={() => setInfoModal({id: 'card3', title: "Produtividade Diária", desc: "Este gráfico de barras exibe o que você estudou exclusivamente hoje. Ele divide a sua produtividade pelo formato de material, ajudando a identificar seu foco no dia atual."})} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
                 </h3>
                 <p className="text-[10px] text-slate-400 font-mono">Matérias estudadas hoje por tipo</p>
               </div>
@@ -680,7 +769,7 @@ export default function DashboardHome({
             </div>
 
             {/* Styled Bars */}
-            <div className="flex items-end justify-between h-36 pt-4 px-2 bg-slate-50 rounded-xl border border-slate-100 relative">
+            <div className="flex items-end justify-between h-36 pt-4 px-2 bg-slate-50 rounded-xl border border-slate-100 relative tour-c3-bars">
               {/* Grid background lines */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-2 px-1 text-[8px] font-mono text-slate-300">
                 {(() => {
@@ -735,12 +824,15 @@ export default function DashboardHome({
           <div className="glass-panel rounded-2xl p-6 shadow-sm hover:border-slate-300 transition-all h-[310px] flex flex-col justify-between">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 space-y-4 md:space-y-0">
               <div>
-                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800">
-                  Tendência de Produtividade
+                <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-800 flex items-center space-x-2">
+                  <span>Tendência de Produtividade</span>
+                  <button onClick={() => setInfoModal({id: 'card4', title: "Tendência de Produtividade", desc: "Mostra a sua evolução de estudos em uma linha do tempo. Você pode selecionar o período (ex: Últimos 7 ou 30 dias) e qual filtro aplicar (Total, só vídeos, só questões) para analisar como seu ritmo varia ao longo do tempo."})} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
                 </h3>
                 <p className="text-[10px] text-slate-400 font-mono">Acompanhe seu ritmo de estudos</p>
               </div>
-              <div className="flex space-x-3 relative z-30">
+              <div className="flex space-x-3 relative z-30 tour-c4-filters">
                 <CustomDropdown
                   value={trendTimeRange}
                   options={timeRangeOptions}
@@ -756,7 +848,7 @@ export default function DashboardHome({
               </div>
             </div>
 
-            <div className="h-44 pt-4 pb-8 relative w-full bg-slate-50 rounded-xl border border-slate-100 overflow-hidden px-4">
+            <div className="h-44 pt-4 pb-8 relative w-full bg-slate-50 rounded-xl border border-slate-100 overflow-hidden px-4 tour-c4-chart">
               {(() => {
                 if (trendData.length === 0) return null;
                 
@@ -856,6 +948,77 @@ export default function DashboardHome({
           </div>
         </div>
       </div>
+
+      {infoModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-smooth-fade">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <Info className="w-4 h-4" />
+              </div>
+              <h4 className="font-bold text-slate-800 flex-1 pr-6 leading-tight">{infoModal.title}</h4>
+            </div>
+            <button onClick={() => setInfoModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+            <p className="text-sm text-slate-600 font-sans leading-relaxed mt-2 text-justify mb-6">
+              {infoModal.desc}
+            </p>
+            
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => setInfoModal(null)} 
+                className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-xs rounded-xl transition-colors"
+              >
+                Entendi
+              </button>
+              <button 
+                onClick={() => handleStartTour(infoModal.id)} 
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl transition-colors shadow-md shadow-indigo-500/20"
+              >
+                Mais Detalhes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        continuous={true}
+        scrollToFirstStep={true}
+        onEvent={handleJoyrideCallback}
+        options={{
+          zIndex: 1000,
+          arrowColor: '#fff',
+          backgroundColor: '#fff',
+          textColor: '#1e293b',
+          buttons: ['skip', 'back', 'primary']
+        }}
+        styles={{
+          buttonPrimary: {
+            backgroundColor: '#4f46e5',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            padding: '8px 16px',
+          },
+          buttonBack: {
+            color: '#64748b', // slate-500
+          },
+          buttonSkip: {
+            color: '#94a3b8', // slate-400
+          }
+        }}
+        locale={{
+          back: 'Voltar',
+          close: 'Fechar',
+          last: 'Finalizar',
+          next: 'Próximo',
+          skip: 'Pular'
+        }}
+      />
     </div>
   );
 }

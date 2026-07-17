@@ -1,7 +1,7 @@
 import { 
   Home, BookOpen, Tv, HelpCircle, GraduationCap, Scale, 
   MessageSquare, LineChart, Settings, LogOut, ShieldAlert, 
-  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation, Compass, Map
+  Award, Bot, ArrowLeft, HelpCircle as SupportIcon, FileText, Headphones, Presentation, Compass, Map, Trophy
 } from "lucide-react";
 import { Course } from "../data";
 import { fetchCourses } from "../lib/api";
@@ -115,7 +115,7 @@ export default function Sidebar({
   const courseSubItems = [
     { id: "materias", label: "Painel do Curso", icon: BookOpen },
     { id: "gestao", label: "Gestão de Estudo", icon: Compass },
-    { id: "simuladores", label: "Simulados", icon: GraduationCap },
+    { id: "simuladores", label: "Simulados", icon: Trophy },
     { id: "tutor", label: "Tutor IA", icon: MessageSquare },
   ];
 

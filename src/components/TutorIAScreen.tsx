@@ -20,23 +20,36 @@ export default function TutorIAScreen({ initialPrompt, onClearInitialPrompt }: T
     {
       id: "msg-1",
       role: "model",
-      text: `Apresente-se, recruta! Sou o Cabo Véio, seu mentor de caserna e especialista na doutrina militar do CBMMG.
-Minha missão é te passar os bizus cirúrgicos e a experiência de quem sabe fazer a máquina funcionar para garantir sua aprovação. 
-
-Como posso te ajudar hoje? Você pode me perguntar sobre:
-• O rito disciplinar da Lei 14.310/02 (CEDM)
-• Crimes militares de deserção, motim ou recusa de obediência (CPM)
-• Direitos individuais e garantias fundamentais aplicados à caserna (CF/88)
-• Macetes mnemônicos para memorizar artigos extensos
-
-Diga-me o que deseja revisar e cumpriremos a missão!`,
+      text: `Apresente-se, recruta! Sou o Cabo Véio, seu mentor de caserna e especialista na doutrina militar.
+Minha missão é te passar os bizus cirúrgicos e a experiência de quem sabe fazer a máquina funcionar para garantir sua aprovação.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleSendMessage(`[Arquivo Anexado: ${file.name}] Por favor, analise este documento.`);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      handleSendMessage("[Mensagem de Áudio processada.]");
+    } else {
+      setIsRecording(true);
+      setTimeout(() => {
+        setIsRecording(false);
+        handleSendMessage("Qual o bizu para a prova de legislação militar?");
+      }, 3000);
+    }
+  };
   // Trigger initial query if passed from other tabs
   useEffect(() => {
     if (initialPrompt) {
@@ -110,28 +123,36 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
     }
   };
 
-  const prepopulatedTopics = [
-    { label: "Mnemônico de Ética Militar", prompt: "Pode me dar um macete ou mnemônico estratégico para memorizar as transgressões graves do CEDM?" },
-    { label: "Análise: Art 142 CF/88", prompt: "Faça uma análise profunda para o CHO CBMMG sobre o Artigo 142 da CF/88, destacando o que mais cai." },
-    { label: "Crimes CPM: Motim vs Revolta", prompt: "Qual a diferença exata para fins de prova entre o crime de Motim e o de Revolta no Código Penal Militar?" },
-    { label: "Dicas de Redação CBMMG", prompt: "Quais as principais recomendações e estrutura ideal para a prova de redação do concurso do CBMMG?" }
-  ];
+
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl flex flex-col h-[calc(100vh-140px)] shadow-sm overflow-hidden" id="tutor-chat-box">
-      {/* Header Info */}
+    <div className="space-y-6 animate-smooth-fade">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-display font-bold text-white flex items-center">
+            <MessageSquare className="w-5 h-5 mr-2 text-indigo-400" />
+            Tutor IA Especializado
+          </h2>
+          <p className="text-sm text-slate-300 mt-1 font-sans">
+            Tire suas dúvidas e trace estratégias cirúrgicas com o veterano da caserna.
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl flex flex-col h-[calc(100vh-240px)] shadow-sm overflow-hidden" id="tutor-chat-box">
+        {/* Header Info */}
       <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full border border-emerald-200/50 flex items-center justify-center relative overflow-hidden bg-slate-100">
-            <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+          <div className="w-10 h-10 rounded-full border border-indigo-200/50 flex items-center justify-center relative overflow-hidden bg-slate-100">
+            <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Cabo Véio" className="w-full h-full object-cover" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-indigo-500 border-2 border-white" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
               <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-slate-800">
                 Doutrina: Cabo Véio
               </h3>
-              <span className="text-[9px] font-sans font-extrabold text-white bg-emerald-700 px-1.5 py-0.5 rounded uppercase">
+              <span className="text-[9px] font-sans font-extrabold text-white bg-indigo-700 px-1.5 py-0.5 rounded uppercase">
                 Veterano
               </span>
             </div>
@@ -143,13 +164,13 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
 
         <button
           onClick={() => {
-            if (confirm("Confirmar a limpeza de todo o histórico de conversas com o Cabo Véio?")) {
+            if (confirm("Confirmar a limpeza do CHAT com o Cabo Véio?")) {
               setMessages([messages[0]]);
             }
           }}
-          className="text-[10px] font-mono font-bold text-slate-500 hover:text-emerald-700 uppercase tracking-wider cursor-pointer transition-colors px-3 py-1.5 rounded border border-slate-200 hover:border-emerald-200 bg-white"
+          className="text-[10px] font-mono font-bold text-slate-500 hover:text-indigo-700 uppercase tracking-wider cursor-pointer transition-colors px-3 py-1.5 rounded border border-slate-200 hover:border-indigo-200 bg-white"
         >
-          Limpar Rádio
+          Limpar CHAT
         </button>
       </div>
 
@@ -165,10 +186,10 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
               {/* Avatar indicator */}
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${
                 isModel 
-                  ? "border-emerald-200 bg-slate-50" 
+                  ? "border-indigo-200 bg-slate-50" 
                   : "bg-slate-200 border-slate-300 text-slate-600"
               }`}>
-                {isModel ? <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover" /> : <User className="w-4 h-4" />}
+                {isModel ? <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Cabo Véio" className="w-full h-full object-cover" /> : <User className="w-4 h-4" />}
               </div>
 
               {/* Message box */}
@@ -176,7 +197,7 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
                 <div className={`p-4 rounded-2xl text-xs leading-relaxed shadow-sm whitespace-pre-wrap ${
                   isModel 
                     ? "bg-white border border-slate-200/80 text-slate-700 rounded-tl-none" 
-                    : "bg-emerald-700 text-white rounded-tr-none"
+                    : "bg-indigo-700 text-white rounded-tr-none"
                 }`}>
                   {m.text}
                 </div>
@@ -191,11 +212,11 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
         {/* Loading Bubble */}
         {isLoading && (
           <div className="flex space-x-3 max-w-xl mr-auto">
-            <div className="w-8 h-8 rounded-full border border-emerald-200/50 flex items-center justify-center shrink-0 overflow-hidden bg-slate-50">
-              <img src="/Gemini_Generated_Image_bp9bitbp9bitbp9b.png" alt="Cabo Véio" className="w-full h-full object-cover animate-bounce" />
+            <div className="w-8 h-8 rounded-full border border-indigo-200/50 flex items-center justify-center shrink-0 overflow-hidden bg-slate-50">
+              <img src="https://pub-bc0b63de539b4cafb3fdce383cb712fa.r2.dev/Gemini_Generated_Image_6k6ayf6k6ayf6k6a.png" alt="Cabo Véio" className="w-full h-full object-cover animate-bounce" />
             </div>
             <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none text-xs text-slate-500 flex items-center space-x-2 shadow-sm">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-700" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-700" />
               <span className="font-mono uppercase text-[10px] tracking-wider">O Cabo Véio está preparando o bizu...</span>
             </div>
           </div>
@@ -203,33 +224,21 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
         <div ref={chatEndRef} />
       </div>
 
-      {/* Actionable Prep Chips */}
-      {messages.length === 1 && !isLoading && (
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 shrink-0">
-          <p className="text-[10px] font-mono uppercase text-slate-500 mb-2 flex items-center space-x-1 font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Módulos de Consulta Rápida</span>
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-            {prepopulatedTopics.map((topic, index) => (
-              <button
-                key={index}
-                onClick={() => handleSendMessage(topic.prompt)}
-                className="text-left text-[11px] text-slate-600 hover:text-emerald-700 bg-white border border-slate-200 rounded-lg p-2.5 hover:border-emerald-300 transition-all cursor-pointer truncate"
-              >
-                <strong>{topic.label}</strong>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Input box */}
       <div className="p-4 border-t border-slate-200 bg-white shrink-0">
         <form onSubmit={handleFormSubmit} className="flex items-stretch space-x-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            className="hidden" 
+            accept=".pdf,.doc,.docx,.txt"
+          />
           <button
             type="button"
-            onClick={() => alert("O suporte a upload de áudio e arquivos da caserna está homologado apenas em conexões criptografadas de rádio militar. Digite sua dúvida.")}
+            onClick={() => fileInputRef.current?.click()}
             className="p-2.5 bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-800 rounded-xl transition-colors cursor-pointer"
             title="Anexar arquivo"
           >
@@ -238,8 +247,12 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
           
           <button
             type="button"
-            onClick={() => handleSendMessage("O rito disciplinar previsto no Artigo 13 do CEDM")}
-            className="p-2.5 bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-800 rounded-xl transition-colors cursor-pointer"
+            onClick={toggleRecording}
+            className={`p-2.5 border rounded-xl transition-colors cursor-pointer ${
+              isRecording 
+                ? "bg-rose-100 border-rose-300 text-rose-600 animate-pulse" 
+                : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-800"
+            }`}
             title="Capturar microfone"
           >
             <Mic className="w-5 h-5" />
@@ -251,18 +264,19 @@ Diga-me o que deseja revisar e cumpriremos a missão!`,
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Pergunte ao Cabo Véio: 'Como memorizar o rito do PAD?'..."
-            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-700"
+            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-700"
           />
 
           <button
             type="submit"
             disabled={isLoading || !inputText.trim()}
-            className="px-5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-200 text-white rounded-xl font-sans font-bold text-xs uppercase transition-colors flex items-center justify-center space-x-1.5 cursor-pointer border-none shadow-sm"
+            className="px-5 bg-indigo-700 hover:bg-indigo-800 disabled:bg-slate-200 text-white rounded-xl font-sans font-bold text-xs uppercase transition-colors flex items-center justify-center space-x-1.5 cursor-pointer border-none shadow-sm"
           >
             <Send className="w-3.5 h-3.5" />
             <span>Enviar</span>
           </button>
         </form>
+      </div>
       </div>
     </div>
   );

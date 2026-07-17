@@ -3,11 +3,12 @@ import {
   ShieldAlert, Award, ArrowRight, Target, Tv, BookOpen, 
   ChevronRight, CheckCircle, X, Sparkles, BarChart3, TrendingUp, 
   Activity, Map, Bot, FileText, Headphones, MonitorPlay, 
-  Library, Clock, Phone, Mail
+  Library, Clock, Phone, Mail, MessageCircle
 } from "lucide-react";
 import { fetchCourses } from "../lib/api";
-import { sendSupportMessage } from "../lib/support";
+import { sendSupportMessage, getAdminSettings } from "../lib/support";
 import { Course } from "../data";
+import MockSimulado from "./MockSimulado";
 
 interface LandingPageProps {
   onNavigateToLogin: (courseId?: string) => void;
@@ -24,6 +25,12 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
   const [contactEmail, setContactEmail] = useState("");
   const [contactMessage, setContactMessage] = useState("");
   const [isSendingContact, setIsSendingContact] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showMockTest, setShowMockTest] = useState(false);
+
+  const [adminPhone, setAdminPhone] = useState("(31) 99999-9999");
+  const [adminEmail, setAdminEmail] = useState("contato@caboveio.com.br");
 
   useEffect(() => {
     fetchCourses()
@@ -35,6 +42,13 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         console.error("Erro ao carregar cursos na LandingPage:", err);
         setLoading(false);
       });
+
+    getAdminSettings().then(settings => {
+      if (settings) {
+        if (settings.support_phone) setAdminPhone(settings.support_phone);
+        if (settings.support_email) setAdminEmail(settings.support_email);
+      }
+    });
   }, []);
 
   const handleBuyClick = (course: Course) => {
@@ -62,6 +76,21 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
     } finally {
       setIsSendingContact(false);
     }
+  };
+
+  const handleEmailFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName || !contactMessage) return;
+    
+    // Build mailto link
+    const subject = encodeURIComponent(`Contato pelo Site - ${contactName}`);
+    const body = encodeURIComponent(contactMessage);
+    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
+    
+    // Reset and close
+    setContactName("");
+    setContactMessage("");
+    setShowEmailForm(false);
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -172,7 +201,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
           <div className="flex items-center">
             <button 
               onClick={() => onNavigateToLogin()}
-              className="px-5 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 text-white rounded-full text-[10px] md:text-xs font-sans font-black uppercase tracking-widest transition-all shadow-[0_4px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_25px_rgba(79,70,229,0.5)] flex items-center space-x-2 active:scale-95 cursor-pointer border border-indigo-400/30"
+              className="px-5 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30 text-white font-sans font-black text-[10px] md:text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 border-none active:scale-[0.98]"
             >
               <span>Acessar</span>
               <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -186,7 +215,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         <div className="absolute inset-0 bg-blue-950 z-0">
           <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
           <img 
-            src="/login-bg-premium.png" 
+            src="/Cabo_Veio_Logo.png" 
             alt="Cabo Véio Tactical Background" 
             className="absolute inset-0 w-full h-full object-cover z-0 opacity-85"
           />
@@ -304,7 +333,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                     {/* Buy Button */}
                     <button 
                       onClick={() => handleBuyClick(course)}
-                      className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-wider transition-all cursor-pointer border-none flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
+                      className="w-full py-3.5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30 text-white rounded-xl text-xs font-sans font-black uppercase tracking-widest transition-all cursor-pointer border-none flex items-center justify-center space-x-1.5 active:scale-[0.98]"
                     >
                       <span>Matricular-se Agora</span>
                     </button>
@@ -463,13 +492,13 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                 <Target className="w-3.5 h-3.5" />
                 <span>Simuladores e Questões</span>
               </div>
-              <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight">
+              <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight text-justify">
                 Prática Levada a Sério: Treino Difícil, Jogo Fácil
               </h3>
-              <p className="text-slate-600 font-sans text-base leading-relaxed">
+              <p className="text-slate-600 font-sans text-base leading-relaxed text-justify">
                 A teoria é fundamental, mas é a prática que garante o resultado. Nosso sistema de questões é robusto e feito para testar seus limites:
               </p>
-              <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-slate-500 my-4 text-sm font-sans">
+              <blockquote className="border-l-4 border-indigo-500 pl-4 italic text-slate-500 my-4 text-sm font-sans text-justify">
                 "O segredo da aprovação está na resolução de questões e na familiaridade com a prova."
               </blockquote>
               <ul className="space-y-4">
@@ -477,21 +506,21 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                   <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-800 text-sm font-sans block mb-1">Banco de Questões</strong>
-                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Filtre questões por matéria, assunto e nível de dificuldade.</span>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed text-justify block">Filtre questões por matéria, assunto e nível de dificuldade.</span>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-800 text-sm font-sans block mb-1">Simulados Inéditos</strong>
-                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Teste seus conhecimentos em um ambiente que simula o dia real do exame, com controle de tempo.</span>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed text-justify block">Teste seus conhecimentos em um ambiente que simula o dia real do exame, com controle de tempo.</span>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
                   <CheckCircle className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-800 text-sm font-sans block mb-1">Provas Anteriores</strong>
-                    <span className="text-xs text-slate-500 font-sans leading-relaxed">Acesse o acervo completo das provas passadas para entender o padrão da banca examinadora.</span>
+                    <span className="text-xs text-slate-500 font-sans leading-relaxed text-justify block">Acesse o acervo completo das provas passadas para entender o padrão da banca examinadora.</span>
                   </div>
                 </li>
               </ul>
@@ -508,7 +537,7 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                     <h4 className="text-lg font-bold text-slate-800">Pronto para o Desafio?</h4>
                     <p className="text-xs text-slate-500 mt-2 font-sans">Simule as condições reais do seu concurso agora mesmo.</p>
                   </div>
-                  <button onClick={() => onNavigateToLogin()} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-wider text-xs transition-colors shadow-md">
+                  <button onClick={() => setShowMockTest(true)} className="w-full py-3.5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30 text-white rounded-xl font-sans font-black uppercase tracking-widest text-xs transition-all border-none flex items-center justify-center active:scale-[0.98]">
                     Iniciar Simulado
                   </button>
                 </div>
@@ -575,41 +604,68 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
             <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-800 tracking-tight mb-4">
               Fale com a Nossa Equipe
             </h3>
-            <p className="text-slate-500 font-sans max-w-2xl mx-auto text-base leading-relaxed">
+            <p className="text-slate-500 font-sans max-w-5xl mx-auto text-base leading-relaxed">
               Ficou com alguma dúvida ou precisa de suporte? Nossa equipe está pronta para ajudar você a alcançar sua aprovação.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="space-y-8 flex flex-col justify-center">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-6 hover:-translate-y-1 transition-transform">
-                <div className="w-14 h-14 bg-green-100 text-green-600 rounded-xl flex items-center justify-center shrink-0">
-                  <Phone className="w-7 h-7" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-800 text-base uppercase">WhatsApp / Telefone</h4>
-                  <p className="text-slate-500 text-sm font-sans mt-1">
-                    (31) 99999-9999
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {/* WhatsApp */}
+            <a href={`https://wa.me/55${adminPhone.replace(/\D/g, '')}?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida.`} target="_blank" rel="noopener noreferrer" className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:-translate-y-2 hover:shadow-lg transition-all flex flex-col items-center text-center group cursor-pointer no-underline">
+              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform">
+                <Phone className="w-8 h-8" />
               </div>
+              <h4 className="font-bold text-slate-800 text-lg uppercase mb-2">WhatsApp</h4>
+              <p className="text-slate-500 text-sm font-sans">
+                {adminPhone}
+              </p>
+            </a>
 
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-6 hover:-translate-y-1 transition-transform">
-                <div className="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
-                  <Mail className="w-7 h-7" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-800 text-base uppercase">E-mail de Suporte</h4>
-                  <p className="text-slate-500 text-sm font-sans mt-1">
-                    contato@caboveio.com.br
-                  </p>
-                </div>
+            {/* E-mail */}
+            <button onClick={() => {
+              if (showEmailForm) {
+                setShowEmailForm(false);
+              } else {
+                setShowEmailForm(true);
+                setShowContactForm(false);
+                setTimeout(() => { document.getElementById('email-form')?.scrollIntoView({behavior: 'smooth'}) }, 100); 
+              }
+            }} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:-translate-y-2 hover:shadow-lg transition-all flex flex-col items-center text-center group cursor-pointer border-none outline-none">
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-transform">
+                <Mail className="w-8 h-8" />
               </div>
-            </div>
+              <h4 className="font-bold text-slate-800 text-lg uppercase mb-2">E-mail</h4>
+              <p className="text-slate-500 text-sm font-sans">
+                {adminEmail}
+              </p>
+            </button>
 
-            <div className="bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl" />
-              <h4 className="font-bold text-slate-800 text-xl mb-6 relative z-10">Envie uma Mensagem Direta</h4>
+            {/* Mensagem Direta */}
+            <button onClick={() => { 
+              if (showContactForm) {
+                setShowContactForm(false);
+              } else {
+                setShowContactForm(true); 
+                setShowEmailForm(false);
+                setTimeout(() => { document.getElementById('mensagem-direta-form')?.scrollIntoView({behavior: 'smooth'}) }, 100); 
+              }
+            }} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:-translate-y-2 hover:shadow-lg transition-all flex flex-col items-center text-center group cursor-pointer border-none outline-none">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-8 h-8" />
+              </div>
+              <h4 className="font-bold text-slate-800 text-lg uppercase mb-2">Mensagem</h4>
+              <p className="text-slate-500 text-sm font-sans">
+                Fale conosco por aqui
+              </p>
+            </button>
+          </div>
+
+          {showContactForm && (
+            <div id="mensagem-direta-form" className="w-full mx-auto bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden animate-smooth-fade">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-50 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl" />
+              
+              <h4 className="font-bold text-slate-800 text-xl mb-6 relative z-10 text-center">Envie uma Mensagem Direta</h4>
               <form onSubmit={handleContactSubmit} className="space-y-5 relative z-10">
                 <div>
                   <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Seu Nome / Posto</label>
@@ -623,12 +679,37 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
                   <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Sua Dúvida ou Mensagem</label>
                   <textarea required value={contactMessage} onChange={e => setContactMessage(e.target.value)} rows={4} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-colors resize-none" placeholder="Como podemos te ajudar na sua aprovação?"></textarea>
                 </div>
-                <button type="submit" disabled={isSendingContact} className="w-full py-4 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-all cursor-pointer border-none shadow-lg shadow-indigo-600/30 disabled:opacity-70 disabled:cursor-not-allowed">
-                  {isSendingContact ? "Enviando..." : "Enviar Mensagem ao Administrador"}
+                <button type="submit" disabled={isSendingContact} className="w-full py-4 bg-indigo-600 hover:bg-indigo-800 text-white rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-all cursor-pointer border-none shadow-lg shadow-indigo-600/30 disabled:opacity-70 disabled:cursor-not-allowed mt-2">
+                  {isSendingContact ? "Enviando..." : "Enviar Mensagem"}
                 </button>
               </form>
             </div>
-          </div>
+          )}
+
+          {showEmailForm && (
+            <div id="email-form" className="w-full mx-auto bg-white p-8 md:p-10 rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden animate-smooth-fade">
+              <div className="absolute top-0 left-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 right-0 w-48 h-48 bg-indigo-50 rounded-full blur-3xl" />
+              
+              <h4 className="font-bold text-slate-800 text-xl mb-6 relative z-10 text-center">Escrever E-mail</h4>
+              <p className="text-slate-500 text-sm text-center mb-6 relative z-10 max-w-2xl mx-auto">
+                Preencha os campos abaixo. Ao clicar em enviar, o seu aplicativo de e-mail padrão será aberto com a mensagem pronta para envio.
+              </p>
+              <form onSubmit={handleEmailFormSubmit} className="space-y-5 relative z-10">
+                <div>
+                  <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Seu Nome / Posto</label>
+                  <input type="text" required value={contactName} onChange={e => setContactName(e.target.value)} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Ex: Cb Silva" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-sans font-bold text-slate-600 uppercase tracking-wider mb-2">Mensagem</label>
+                  <textarea required value={contactMessage} onChange={e => setContactMessage(e.target.value)} rows={5} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-sans text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-colors resize-none" placeholder="O que você gostaria de nos dizer?"></textarea>
+                </div>
+                <button type="submit" className="w-full py-4 bg-blue-600 hover:bg-blue-800 text-white rounded-xl font-sans font-bold text-sm uppercase tracking-wider transition-all cursor-pointer border-none shadow-lg shadow-blue-600/30 mt-2">
+                  Abrir no Aplicativo de E-mail
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </section>
 
@@ -740,6 +821,29 @@ export default function LandingPage({ onNavigateToLogin }: LandingPageProps) {
           </div>
         </div>
       </footer>
+
+      {/* FLOATING WHATSAPP BUTTON */}
+      <a 
+        href={`https://wa.me/55${adminPhone.replace(/\D/g, '')}?text=Ol%C3%A1!%20Vim%20pelo%20site%20e%20gostaria%20de%20tirar%20uma%20d%C3%BAvida.`} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/40 hover:shadow-green-500/60 transition-all hover:scale-110 active:scale-95 group animate-smooth-fade"
+        title="Fale conosco no WhatsApp"
+      >
+        <MessageCircle className="w-7 h-7 text-white" />
+        {/* Ping Animation */}
+        <span className="absolute -top-1 -right-1 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-white"></span>
+        </span>
+      </a>
+
+      {showMockTest && (
+        <MockSimulado 
+          onClose={() => setShowMockTest(false)} 
+          onNavigateToLogin={onNavigateToLogin} 
+        />
+      )}
     </div>
   );
 }

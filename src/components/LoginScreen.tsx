@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft, User, Phone, FileText } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ShieldAlert, Award, ArrowLeft, User, Phone, FileText, X } from "lucide-react";
 import { validateStudentLogin, createStudent } from "../lib/student";
 import { supabase } from "../lib/supabase";
 import { initializeProgress } from "../lib/progress";
@@ -22,6 +22,8 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
+
+  const [activeModal, setActiveModal] = useState<"terms" | "privacy" | "contact" | null>(null);
 
   const handleGoogleLogin = async () => {
     try {
@@ -139,43 +141,25 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
       <div className="hidden lg:flex lg:w-[55%] relative bg-blue-950 items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply z-10" />
         <img 
-          src="/login-bg-premium.png" 
+          src="/Cabo_Veio_Logo.png" 
           alt="Cabo Véio Tactical Background" 
           className="absolute inset-0 w-full h-full object-cover z-0 opacity-90"
         />
-        {/* Decorative elements over image */}
-        <div className="relative z-20 text-center px-12 mt-[-10%]">
-           <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-800 border border-amber-400/20 flex items-center justify-center shadow-2xl mb-8">
-             <div className="relative">
-               <ShieldAlert className="w-12 h-12 text-white" />
-               <div className="absolute inset-0 flex items-center justify-center opacity-40">
-                 <Award className="w-6 h-6 text-white" />
-               </div>
-             </div>
-           </div>
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
-              A Doutrina que Aprova
-            </h2>
-            <p className="text-indigo-100/90 text-lg md:text-xl font-sans max-w-xl mx-auto drop-shadow-md leading-relaxed">
-              A plataforma tática definitiva para a sua aprovação.
-            </p>
-        </div>
+
       </div>
 
       {/* Right side Login Form */}
-      <div className="w-full lg:w-[45%] flex flex-col justify-between p-6 md:p-12 relative overflow-y-auto">
+      <div className="w-full lg:w-[45%] flex flex-col justify-between p-6 md:p-12 relative bg-white">
         {/* Background radial glow specific to right side */}
-        <div className="absolute top-[-10%] right-[-20%] w-[500px] h-[500px] rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none" />
+        <div className="absolute top-[-10%] right-[-20%] w-[500px] h-[500px] rounded-full bg-blue-600/5 blur-[100px] pointer-events-none z-0" />
+        <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-amber-500/5 blur-[100px] pointer-events-none z-0" />
 
         {/* Header / Logo (Visible mostly on mobile, but kept small on desktop) */}
         <div className="w-full flex justify-center pt-4 lg:hidden z-10">
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-indigo-500 to-indigo-800 border border-amber-400/20 flex items-center justify-center shadow-sm">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-blue-800 to-slate-900 border border-amber-400/30 flex items-center justify-center shadow-lg">
               <div className="relative">
-                <ShieldAlert className="w-9 h-9 text-white" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-40">
-                  <Award className="w-4 h-4 text-white" />
-                </div>
+                <ShieldAlert className="w-9 h-9 text-amber-400" />
               </div>
             </div>
             <div>
@@ -190,7 +174,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
         </div>
 
         {/* Form Container */}
-        <div className="w-full max-w-md mx-auto my-auto glass-panel rounded-2xl p-6 md:p-8 shadow-md z-10 animate-smooth-zoom" id="login-card">
+        <div className="w-full max-w-md mx-auto my-auto bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] z-10 animate-smooth-zoom" id="login-card">
           {initialCourseId && (
             <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs font-sans font-bold flex items-start space-x-2.5 shadow-sm">
               <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -202,40 +186,32 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
           )}
 
           {/* Tab Selector */}
-          <div className="flex border-b border-slate-100 mb-6">
+          <div className="flex p-1.5 bg-slate-100 rounded-xl mb-8 border border-slate-200/60 shadow-inner">
             <button
               type="button"
               onClick={() => setIsRegisterMode(false)}
-              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${!isRegisterMode ? 'text-indigo-600 border-b-2 border-indigo-600 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+              className={`flex-1 py-3 text-xs font-sans font-black uppercase tracking-widest transition-all rounded-lg cursor-pointer border-none flex items-center justify-center space-x-2 ${!isRegisterMode ? 'bg-white text-blue-700 shadow-md ring-1 ring-slate-200 scale-100' : 'bg-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'}`}
             >
-              Entrar
+              <Lock className={`w-4 h-4 ${!isRegisterMode ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span>Entrar</span>
             </button>
             <button
               type="button"
               onClick={() => setIsRegisterMode(true)}
-              className={`flex-1 pb-3.5 text-xs font-sans font-extrabold uppercase tracking-wider transition-colors border-none bg-transparent cursor-pointer ${isRegisterMode ? 'text-indigo-600 border-b-2 border-indigo-600 font-black' : 'text-slate-400 hover:text-slate-655'}`}
+              className={`flex-1 py-3 text-xs font-sans font-black uppercase tracking-widest transition-all rounded-lg cursor-pointer border-none flex items-center justify-center space-x-2 ${isRegisterMode ? 'bg-white text-blue-700 shadow-md ring-1 ring-slate-200 scale-100' : 'bg-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'}`}
             >
-              Cadastrar-se
+              <User className={`w-4 h-4 ${isRegisterMode ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span>Cadastrar</span>
             </button>
           </div>
 
-          <div className="mb-6 text-center">
-            <h2 className="text-xl font-display font-bold text-slate-800 tracking-tight uppercase">
-              {isRegisterMode ? "Crie sua Conta de Aluno" : "Área do Aluno"}
-            </h2>
-            {isRegisterMode && (
-              <p className="text-xs text-slate-500 mt-1 font-sans">
-                Preencha os dados abaixo para criar seu acesso.
-              </p>
-            )}
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegisterMode ? (
               <>
                 {/* Nome Completo */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Nome Completo</label>
+                  <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Nome Completo</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -244,14 +220,14 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerName}
                       onChange={(e) => setRegisterName(e.target.value)}
                       placeholder="Recruta Silva"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-sans text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
 
                 {/* Email de Cadastro */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">E-mail</label>
+                  <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">E-mail</label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -260,14 +236,14 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       placeholder="aluno@email.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-sans text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
 
                 {/* Senha de Cadastro */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha</label>
+                  <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Senha</label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -276,7 +252,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
                       placeholder="Defina uma senha"
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-mono text-slate-800 placeholder:text-slate-400"
                     />
                     <button
                       type="button"
@@ -290,7 +266,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
 
                 {/* Telefone */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Telefone / WhatsApp (opcional)</label>
+                  <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Telefone / WhatsApp (opcional)</label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -298,7 +274,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={registerPhone}
                       onChange={(e) => setRegisterPhone(e.target.value)}
                       placeholder="(31) 99999-9999"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-sans text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -307,7 +283,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
               <>
                 {/* Email de Login */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Identificação (E-mail)</label>
+                  <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Identificação (E-mail)</label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -317,7 +293,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="aluno@email.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-sans text-slate-800"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-sans text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -325,8 +301,8 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                 {/* Senha de Login */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="block text-[10px] font-sans font-bold text-slate-600 uppercase tracking-wider">Senha de Acesso</label>
-                    <a href="#recuperar" className="text-[10px] font-sans font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
+                    <label className="block text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Senha de Acesso</label>
+                    <a href="#recuperar" className="text-[10px] font-sans font-bold text-amber-600 hover:text-amber-700 transition-colors uppercase tracking-wide">Esqueci a Senha</a>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -337,7 +313,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Sua senha"
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none rounded-lg text-sm transition-all font-mono text-slate-800"
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none rounded-xl text-sm transition-all font-mono text-slate-800 placeholder:text-slate-400"
                     />
                     <button
                       type="button"
@@ -356,12 +332,12 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
               id="login-submit"
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-800 disabled:bg-indigo-600/50 text-white font-sans font-bold text-sm uppercase rounded-lg shadow-sm transition-all cursor-pointer flex items-center justify-center space-x-2 border border-transparent active:scale-[0.98]"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30 disabled:opacity-50 text-white font-sans font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2 border-none active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
               ) : (
-                <span>{isRegisterMode ? "CADASTRAR E ENTRAR" : "ENTRAR"}</span>
+                <span>{isRegisterMode ? "CADASTRAR E ENTRAR" : "ENTRAR NA PLATAFORMA"}</span>
               )}
             </button>
           </form>
@@ -369,7 +345,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
           {/* Divider */}
           <div className="my-6 flex items-center justify-between">
             <span className="w-1/5 border-b border-slate-200"></span>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">INFORMAÇÃO</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">OU ENTRE COM</span>
             <span className="w-1/5 border-b border-slate-200"></span>
           </div>
 
@@ -378,7 +354,7 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
             id="google-login"
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full py-2.5 px-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-600 hover:text-slate-800 rounded-lg text-xs font-sans flex items-center justify-center space-x-3 transition-colors cursor-pointer shadow-sm backdrop-blur-sm"
+            className="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 hover:text-slate-800 rounded-xl text-xs font-sans font-bold flex items-center justify-center space-x-3 transition-colors cursor-pointer shadow-sm"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -398,17 +374,17 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span>Acessar via Conta do Google</span>
+            <span>Conta do Google</span>
           </button>
 
           {/* Bottom register link */}
-          <div className="mt-6 text-center text-sm">
-            <p className="text-slate-500">
+          <div className="mt-6 text-center text-xs">
+            <p className="text-slate-500 font-sans">
               {isRegisterMode ? "Já possui uma conta?" : "Ainda não possui conta?"}{" "}
               <button
                 type="button"
                 onClick={() => setIsRegisterMode(!isRegisterMode)}
-                className="text-indigo-600 hover:underline font-sans font-semibold transition-all cursor-pointer border-none bg-transparent"
+                className="text-blue-700 hover:text-amber-600 font-sans font-bold transition-all cursor-pointer border-none bg-transparent uppercase tracking-wider text-[10px]"
               >
                 {isRegisterMode ? "Faça login" : "Criar conta"}
               </button>
@@ -417,17 +393,93 @@ export default function LoginScreen({ onLoginSuccess, onBackToLanding, initialCo
         </div>
 
         {/* Footer */}
-        <div className="w-full text-center py-4 text-xs font-sans text-slate-500 border-t border-slate-200/80 z-10 mt-auto">
+        <div className="w-full text-center py-4 text-[10px] font-mono text-slate-400 border-t border-slate-100 z-10 mt-auto">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 max-w-6xl mx-auto px-4">
             <span>© 2024 Cabo Véio. Todos os direitos reservados.</span>
             <div className="flex space-x-4">
-              <button className="hover:text-slate-800 uppercase transition-colors cursor-pointer border-none bg-transparent">Termos</button>
-              <button className="hover:text-slate-800 uppercase transition-colors cursor-pointer border-none bg-transparent">Privacidade</button>
-              <button className="hover:text-slate-800 uppercase transition-colors cursor-pointer border-none bg-transparent">Contato</button>
+              <button onClick={() => setActiveModal("terms")} className="hover:text-slate-600 uppercase transition-colors cursor-pointer border-none bg-transparent">Termos</button>
+              <button onClick={() => setActiveModal("privacy")} className="hover:text-slate-600 uppercase transition-colors cursor-pointer border-none bg-transparent">Privacidade</button>
+              <button onClick={() => setActiveModal("contact")} className="hover:text-slate-600 uppercase transition-colors cursor-pointer border-none bg-transparent">Contato</button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal Legal/Contato */}
+      {activeModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-smooth-fade">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl relative animate-smooth-zoom">
+            {/* Header Modal */}
+            <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="text-xl font-display font-bold text-slate-800 uppercase tracking-tight">
+                {activeModal === "terms" && "Termos de Uso"}
+                {activeModal === "privacy" && "Política de Privacidade"}
+                {activeModal === "contact" && "Fale Conosco"}
+              </h3>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="bg-slate-200/50 hover:bg-slate-200 text-slate-500 p-2 rounded-full transition-colors border-none cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {/* Conteúdo */}
+            <div className="p-6 overflow-y-auto">
+              {activeModal === "contact" ? (
+                <div className="space-y-4 font-sans">
+                  <p className="text-slate-600 text-sm mb-4">Envie sua dúvida ou sugestão e nossa equipe entrará em contato em breve.</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Seu Nome</label>
+                      <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none" placeholder="Digite seu nome completo" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Seu E-mail</label>
+                      <input type="email" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none" placeholder="email@exemplo.com" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Mensagem</label>
+                      <textarea className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none min-h-[120px] resize-none" placeholder="Como podemos te ajudar?"></textarea>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        alert("Sua mensagem foi enviada com sucesso! Retornaremos o mais breve possível.");
+                        setActiveModal(null);
+                      }}
+                      className="w-full py-4 mt-2 bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/30 border-none cursor-pointer"
+                    >
+                      Enviar Mensagem
+                    </button>
+                  </div>
+                </div>
+              ) : activeModal === "terms" ? (
+                <div className="prose prose-sm text-slate-600 font-sans text-justify space-y-4 max-w-none">
+                  <h4 className="text-slate-800 font-bold text-lg m-0">1. Aceitação dos Termos</h4>
+                  <p className="mt-1">Ao acessar a plataforma Cabo Véio, você concorda em cumprir estes termos de serviço, todas as leis e regulamentos aplicáveis e concorda que é responsável pelo cumprimento de todas as leis locais aplicáveis.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">2. Uso da Licença</h4>
+                  <p className="mt-1">É concedida permissão para baixar temporariamente uma cópia dos materiais (informações ou software) na plataforma Cabo Véio, apenas para visualização transitória pessoal e não comercial.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">3. Isenção de Responsabilidade</h4>
+                  <p className="mt-1">Os materiais na plataforma Cabo Véio são fornecidos 'como estão'. O Cabo Véio não oferece garantias, expressas ou implícitas, e, por este meio, isenta e nega todas as outras garantias, incluindo, sem limitação, garantias implícitas ou condições de comercialização.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">4. Precisão dos Materiais</h4>
+                  <p className="mt-1">Os materiais exibidos na plataforma podem incluir erros técnicos, tipográficos ou fotográficos. O Cabo Véio não garante que qualquer material em sua plataforma seja preciso, completo ou atual.</p>
+                </div>
+              ) : (
+                <div className="prose prose-sm text-slate-600 font-sans text-justify space-y-4 max-w-none">
+                  <h4 className="text-slate-800 font-bold text-lg m-0">1. Coleta de Informações</h4>
+                  <p className="mt-1">Coletamos informações pessoais que você nos fornece voluntariamente ao se registrar na plataforma, expressar interesse em obter informações sobre nós ou nossos produtos e serviços.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">2. Uso das Informações</h4>
+                  <p className="mt-1">Usamos as informações pessoais coletadas via nossa plataforma para uma variedade de fins comerciais descritos abaixo. Processamos suas informações pessoais para esses fins com base em nossos interesses comerciais legítimos, a fim de celebrar ou executar um contrato com você, com seu consentimento e/ou para conformidade com nossas obrigações legais.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">3. Compartilhamento de Dados</h4>
+                  <p className="mt-1">Não compartilhamos, vendemos, alugamos ou negociamos nenhuma de suas informações com terceiros para fins promocionais.</p>
+                  <h4 className="text-slate-800 font-bold text-lg m-0 mt-6">4. Segurança</h4>
+                  <p className="mt-1">Implementamos medidas de segurança técnicas e organizacionais apropriadas, projetadas para proteger a segurança de qualquer informação pessoal que processamos. No entanto, lembre-se de que não podemos garantir que a internet em si seja 100% segura.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

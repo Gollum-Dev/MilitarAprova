@@ -16,9 +16,13 @@ export default function GestaoEstudoScreen({ selectedCourse, onNavigateToSubject
   const [noteDraft, setNoteDraft] = useState("");
 
   useEffect(() => {
-    // Expand the first module by default if none is expanded
+    // Expand all modules by default if none is expanded
     if (selectedCourse?.modules?.length > 0 && Object.keys(expandedModules).length === 0) {
-      setExpandedModules({ [selectedCourse.modules[0].id]: true });
+      const allExpanded: Record<string, boolean> = {};
+      selectedCourse.modules.forEach((mod: any) => {
+        allExpanded[mod.id] = true;
+      });
+      setExpandedModules(allExpanded);
     }
     
     // Load notes from local storage
@@ -53,13 +57,13 @@ export default function GestaoEstudoScreen({ selectedCourse, onNavigateToSubject
 
   return (
     <div className="space-y-6 animate-smooth-fade">
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-display font-bold text-slate-800 flex items-center">
-            <Compass className="w-5 h-5 mr-2 text-blue-600" />
+          <h2 className="text-xl font-display font-bold text-white flex items-center">
+            <Compass className="w-5 h-5 mr-2 text-indigo-400" />
             Gestão de Estudo e Notas
           </h2>
-          <p className="text-sm text-slate-500 mt-1 font-sans">
+          <p className="text-sm text-slate-300 mt-1 font-sans">
             Acompanhe seu progresso, marque matérias estudadas e registre suas anotações pessoais.
           </p>
         </div>
